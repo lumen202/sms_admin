@@ -1,4 +1,4 @@
-module finalproject.admin {
+module sms.admin {
 
     requires transitive javafx.controls;
     requires transitive core.fx;
@@ -17,13 +17,14 @@ module finalproject.admin {
     requires java.sql.rowset;
     requires javafx.base;
 
-    opens finalproject.admin to javafx.fxml;
-    opens finalproject.admin.app to javafx.fxml, core.fx;
-    opens finalproject.admin.app.attendance to core.fx, javafx.fxml;
-    opens finalproject.admin.app.viewstudent to core.fx, javafx.fxml;
-    opens finalproject.admin.app.payroll to core.fx, javafx.fxml;
-    opens finalproject.admin.app.viewstudent.studentform to core.fx, javafx.fxml;
-    opens finalproject.admin.app.home to core.fx, javafx.fxml;
+    opens sms.admin to javafx.fxml;
+    opens sms.admin.app to javafx.fxml, core.fx;
+    opens sms.admin.app.attendance to core.fx, javafx.fxml;
+    opens sms.admin.app.student.viewstudent to core.fx, javafx.fxml;
+    opens sms.admin.app.payroll to core.fx, javafx.fxml;
+    opens sms.admin.app.student.viewstudent.studentform to core.fx, javafx.fxml;
+    opens sms.admin.app.student to core.fx, javafx.fxml;
+    opens sms.admin.app.enrollment to core.fx, javafx.fxml;
 
-    exports finalproject.admin;
+    exports sms.admin;
 }

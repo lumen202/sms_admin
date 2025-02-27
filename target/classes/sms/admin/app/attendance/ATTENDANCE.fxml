@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane prefHeight="515.0" prefWidth="1030.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.AttendanceController">
+    
+    <!-- Top Section: Month & Year Selection -->
+    <top>
+        <ToolBar>
+            <Label text="Month &amp; Year:" />
+            <ComboBox fx:id="monthYearComboBox" prefWidth="200" />
+            <Label text="Week:" />
+            <ComboBox fx:id="weekComboBox" prefWidth="150.0" />
+            <Region fx:id="spacer" HBox.hgrow="ALWAYS" />
+            <Button fx:id="manageAttendanceBtn" text="Manage Attendance" />
+            <Button fx:id="exportBtn" text="Export" />
+        </ToolBar>
+    </top>
+    
+    <!-- Center Section: Attendance Table -->
+    <center>
+        <VBox spacing="10" VBox.vgrow="ALWAYS">
+            <padding>
+                <Insets bottom="10" left="10" right="10" top="10" />
+            </padding>
+            <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="ATTENDANCE RECORD" />
+            <TableView fx:id="attendanceTable" VBox.vgrow="ALWAYS">
+                <columns>
+                    <!-- Student Info Columns -->
+                    <TableColumn fx:id="colNo" prefWidth="50" text="ID" />
+                    <TableColumn fx:id="colLastName" prefWidth="120" text="Last Name" />
+                    <TableColumn fx:id="colFirstName" prefWidth="120" text="First Name" />
+                    <TableColumn fx:id="colMiddleName" prefWidth="119.0" text="Middle Name" />
+                    
+                    <!-- Time Roll Parent Column -->
+                    <TableColumn fx:id="timeRollColumn" prefWidth="433.0" text="Time Roll">
+                        <columns>
+                            <TableColumn fx:id="dateColumn" prefWidth="50" text="Date" />
+                            
+                            <!-- Dynamic Attendance Checkboxes for Each Day -->
+                            <TableColumn text="Mon" />
+                            <TableColumn text="Tue" />
+                            <TableColumn text="Wed" />
+                            <TableColumn text="Thu" />
+                            <TableColumn text="Fri" />
+                        </columns>
+                    </TableColumn>
+                    
+                    <TableColumn fx:id="totalDaysColumn" prefWidth="133.0" text="Total No. of Days" />
+                </columns>
+            <columnResizePolicy>
+               <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+            </columnResizePolicy>
+            </TableView>
+        </VBox>
+    </center>
+   <padding>
+      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+   </padding>
+</BorderPane>
