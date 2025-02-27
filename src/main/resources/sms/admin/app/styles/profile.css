@@ -1,0 +1,29 @@
+.profile-container {
+    -fx-background-color: white;
+}
+
+.section-header {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.info-section {
+    -fx-background-color: #f8f9fa;
+    -fx-padding: 15;
+    -fx-background-radius: 5;
+}
+
+.text-field:disabled {
+    -fx-opacity: 0.8;
+}
+
+.text-field {
+    -fx-background-color: white;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 3;
+}
+
+.text-field:editable {
+    -fx-background-color: white;
+    -fx-border-color: #80bdff;
+}

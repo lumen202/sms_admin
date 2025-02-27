@@ -26,6 +26,8 @@ import javax.crypto.SecretKey;
 import java.util.Base64;
 import dev.sol.core.application.loader.FXLoader;
 
+// Add these imports
+
 public class RootController extends FXController {
 
     @FXML
@@ -129,11 +131,12 @@ public class RootController extends FXController {
     }
 
     private void highlightButton(Button button) {
-        attendanceButton.setStyle("");
-        payrollButton.setStyle("");
-        studentButton.setStyle("");
-        enrollmentButton.setStyle("");  // Add this line
-        button.setStyle("-fx-background-color: #ADD8E6;");
+        String defaultStyle = "-fx-background-color: #800000; -fx-text-fill: white;";
+        attendanceButton.setStyle(defaultStyle);
+        payrollButton.setStyle(defaultStyle);
+        studentButton.setStyle(defaultStyle);
+        enrollmentButton.setStyle(defaultStyle);
+        button.setStyle("-fx-background-color: #ADD8E6; -fx-text-fill: black;");
     }
 
     @FXML

@@ -1,0 +1,241 @@
+/* Theme Colors */
+* {
+    -sms-primary: #003366;
+    -sms-secondary: #800000;
+    -sms-background: #f8f9fa;
+    -sms-border: #dee2e6;
+    -sms-accent: #ffd700;
+}
+
+/* Headers */
+.main-header {
+    -fx-background-color: -sms-primary;
+    -fx-padding: 10;
+}
+
+.page-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.app-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+/* Navigation */
+.nav-bar {
+    -fx-background-color: -sms-secondary;
+    -fx-padding: 8;
+    -fx-spacing: 10;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.nav-button:hover {
+    -fx-background-color: derive(-sms-secondary, 20%);
+}
+
+/* Tables */
+.table-view {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: -sms-border;
+    -fx-border-radius: 5;
+    -fx-padding: 0;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #FFFFFF;
+    -fx-padding: 5px;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: -sms-border;
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent;
+    -fx-size: 45px;
+    -fx-border-width: 0 0 0 0;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: -sms-primary;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: #FFFFFF;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: #f0f0f0;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: #f8f9fa;
+}
+
+.table-view .table-row-cell:even {
+    -fx-background-color: white;
+}
+
+.table-view .table-row-cell:hover {
+    -fx-background-color: derive(-sms-primary, 85%);
+}
+
+.table-view .table-row-cell:selected {
+    -fx-background-color: derive(-sms-primary, 75%);
+}
+
+/* Buttons */
+.action-button {
+    -fx-background-color: -sms-primary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.secondary-button {
+    -fx-background-color: -sms-secondary;
+    -fx-text-fill: white;
+}
+
+.action-button, .secondary-button {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* Add new button style for blue buttons */
+.blue-button {
+    -fx-background-color: -sms-primary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+
+.blue-button:hover {
+    -fx-background-color: derive(-sms-primary, 20%);
+}
+
+/* Forms */
+.form-section {
+    -fx-background-color: -sms-background;
+    -fx-padding: 10;
+    -fx-background-radius: 5;
+    -fx-border-color: -sms-border;
+    -fx-border-radius: 5;
+}
+
+/* Status Bar */
+.status-bar {
+    -fx-background-color: -sms-background;
+    -fx-padding: 8;
+    -fx-border-color: -sms-border;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* Content Area */
+.content-area {
+    -fx-background-color: white;
+    -fx-padding: 10;
+}
+
+.section-header {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sms-primary;
+    -fx-padding: 0 0 5 0;
+}
+
+/* Menu Styling */
+.menu-button {
+    -fx-background-color: derive(-sms-primary, 20%);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-padding: 5 10;
+    -fx-min-height: 35;
+    -fx-max-height: 35;
+}
+
+.menu-button .label {
+    -fx-text-fill: white;
+}
+
+.menu-button .menu-item {
+    -fx-padding: 5 10;
+    -fx-background-color: white;
+    -fx-min-height: 25;
+}
+
+.menu-button .menu-item:hover {
+    -fx-background-color: -sms-primary;
+}
+
+.menu-button .menu-item .label {
+    -fx-text-fill: -sms-primary;
+    -fx-font-size: 12px;
+}
+
+.menu-button .menu-item:hover .label {
+    -fx-text-fill: white;
+}
+
+.menu-button:hover {
+    -fx-background-color: derive(-sms-primary, 30%);
+}
+
+/* Update Combo Box styling */
+.combo-box {
+    -fx-background-color: -sms-primary;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: -sms-primary;
+}
+
+.combo-box:hover {
+    -fx-background-color: derive(-sms-primary, 20%);
+}
+
+.combo-box .list-view {
+    -fx-background-color: -sms-primary;
+}
+
+.combo-box .list-cell:hover {
+    -fx-background-color: derive(-sms-primary, 30%);
+}
+
+/* Header specific controls */
+.header-combo-box {
+    -fx-background-color: derive(-sms-primary, 30%);
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+.header-combo-box .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: derive(-sms-primary, 30%);
+}
+
+.header-combo-box:hover {
+    -fx-background-color: derive(-sms-primary, 40%);
+}
+
+.header-menu-button {
+    -fx-background-color: derive(-sms-primary, 30%);
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 5 10;
+}
+
+.header-menu-button:hover {
+    -fx-background-color: derive(-sms-primary, 40%);
+}
