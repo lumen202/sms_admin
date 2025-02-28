@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SceneLoaderUtil {
-    private static final double FADE_DURATION = 500;
+    private static final double FADE_DURATION = 100; // Reduced duration for smoother transition
     private static final Map<String, FXController> controllerCache = new HashMap<>();
 
     @SuppressWarnings("unchecked")
@@ -67,8 +67,35 @@ public class SceneLoaderUtil {
                 throw new RuntimeException("Failed to load FXML: " + fxmlPath);
             }
 
-            contentPane.getChildren().clear();
-            contentPane.getChildren().add(root);
+            // Create fade out transition for current content
+            if (!contentPane.getChildren().isEmpty()) {
+                FadeTransition fadeOut = new FadeTransition(Duration.millis(FADE_DURATION),
+                        contentPane.getChildren().get(0));
+                fadeOut.setFromValue(1.0);
+                fadeOut.setToValue(0.0);
+
+                // Create fade in transition for new content
+                root.setOpacity(0.0);
+                FadeTransition fadeIn = new FadeTransition(Duration.millis(FADE_DURATION), root);
+                fadeIn.setFromValue(0.0);
+                fadeIn.setToValue(1.0);
+
+                fadeOut.setOnFinished(e -> {
+                    contentPane.getChildren().clear();
+                    contentPane.getChildren().add(root);
+                    fadeIn.play();
+                });
+
+                fadeOut.play();
+            } else {
+                // If no current content, just fade in the new content
+                root.setOpacity(0.0);
+                contentPane.getChildren().add(root);
+                FadeTransition fadeIn = new FadeTransition(Duration.millis(FADE_DURATION), root);
+                fadeIn.setFromValue(0.0);
+                fadeIn.setToValue(1.0);
+                fadeIn.play();
+            }
 
             C controller = (C) loader.getController();
             if (controller != null) {

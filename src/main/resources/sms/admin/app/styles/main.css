@@ -83,11 +83,44 @@
 }
 
 .table-view .table-row-cell:hover {
-    -fx-background-color: derive(-sms-primary, 85%);
+    -fx-background-color: #e6f2ff;  /* Light blue for hover */
 }
 
 .table-view .table-row-cell:selected {
-    -fx-background-color: derive(-sms-primary, 75%);
+    -fx-background-color: #e6f2ff;  /* Same as hover color */
+    -fx-text-fill: -sms-primary;
+}
+
+.table-view .table-row-cell:selected .table-cell {
+    -fx-text-fill: -sms-primary;
+    -fx-font-weight: bold;
+}
+
+.table-view:focused .table-row-cell:selected {
+    -fx-background-color: #cce5ff;  /* Slightly darker when focused */
+}
+
+.table-view:focused .table-row-cell:selected .table-cell {
+    -fx-text-fill: -sms-primary;
+}
+
+/* Table Selection Styling */
+.table-view .table-row-cell:selected {
+    -fx-background-color: #e6f2ff;  /* Same as hover color */
+    -fx-text-fill: -sms-primary;
+}
+
+.table-view .table-row-cell:selected .table-cell {
+    -fx-text-fill: -sms-primary;
+    -fx-font-weight: bold;
+}
+
+.table-view:focused .table-row-cell:selected {
+    -fx-background-color: #cce5ff;  /* Slightly darker when focused */
+}
+
+.table-view:focused .table-row-cell:selected .table-cell {
+    -fx-text-fill: -sms-primary;
 }
 
 /* Buttons */
@@ -238,4 +271,23 @@
 
 .header-menu-button:hover {
     -fx-background-color: derive(-sms-primary, 40%);
+}
+
+/* ScrollPane Styling */
+.edge-to-edge {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.edge-to-edge .viewport {
+    -fx-background-color: transparent;
+}
+
+.edge-to-edge .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 0 1;
+}
+
+.edge-to-edge .scroll-bar:vertical .thumb {
+    -fx-background-color: derive(-sms-border, -10%);
 }

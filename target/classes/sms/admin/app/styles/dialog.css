@@ -1,0 +1,240 @@
+/* Theme Colors - Copy from main.css to make dialog.css self-contained */
+* {
+    -sms-primary: #003366;
+    -sms-secondary: #800000;
+    -sms-background: #f8f9fa;
+    -sms-border: #dee2e6;
+    -sms-accent: #ffd700;
+}
+
+.dialog-pane {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0.5, 0.0, 0.0);
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-padding: 0;
+}
+
+.dialog-pane .scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.dialog-pane .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.dialog-title-bar {
+    -fx-background-color: -sms-primary;
+    -fx-padding: 10;
+}
+
+.dialog-title {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.close-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-cursor: hand;
+}
+
+.close-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+}
+
+.profile-container {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0.5, 0.0, 0.0);
+}
+
+.info-section {
+    -fx-background-color: #f8f9fa;
+    -fx-padding: 15;
+    -fx-background-radius: 5;
+}
+
+.section-header {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #003366;  /* Use direct color instead of variable */
+}
+
+.text-field:disabled {
+    -fx-opacity: 0.8;
+}
+
+.text-field {
+    -fx-background-color: white;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 3;
+}
+
+.text-field:editable {
+    -fx-background-color: white;
+    -fx-border-color: #80bdff;
+}
+
+/* ScrollPane styling */
+.edge-to-edge {
+    -fx-background-color: transparent;
+    -fx-fit-to-width: true;
+    -fx-hbar-policy: never;  /* Hide horizontal scrollbar */
+    -fx-vbar-policy: as-needed;  /* Show vertical scrollbar when needed */
+}
+
+.edge-to-edge > .viewport {
+    -fx-background-color: transparent;
+}
+
+.edge-to-edge > .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 0 1;
+}
+
+.edge-to-edge > .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+}
+
+.edge-to-edge > .scroll-bar:vertical .thumb {
+    -fx-background-color: derive(-sms-border, -10%);
+    -fx-background-radius: 2;
+}
+
+.edge-to-edge > .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: derive(-sms-border, -20%);
+}
+
+.edge-to-edge .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.edge-to-edge .scroll-bar:vertical .thumb {
+    -fx-background-color: #c0c0c0;
+}
+
+.edge-to-edge .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #a0a0a0;
+}
+
+.edge-to-edge .scroll-bar:vertical .thumb:pressed {
+    -fx-background-color: #808080;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-fit-to-width: true;
+    -fx-pannable: true;
+    -fx-hbar-policy: never;
+    -fx-vbar-policy: as-needed;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0 0 0 1;
+}
+
+.scroll-pane > .scroll-bar:vertical > .track {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .scroll-bar:vertical > .track-background {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .scroll-bar:vertical > .thumb {
+    -fx-background-color: #c0c0c0;
+    -fx-background-radius: 5em;
+}
+
+.scroll-pane > .scroll-bar:vertical > .thumb:hover {
+    -fx-background-color: #a0a0a0;
+}
+
+.scroll-pane > .corner {
+    -fx-background-color: transparent;
+}
+
+/* Profile ScrollPane styling */
+.profile-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-fit-to-width: true;
+    -fx-hbar-policy: never;
+    -fx-vbar-policy: as-needed;
+}
+
+.profile-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.profile-scroll-pane > .scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.profile-scroll-pane > .scroll-bar > .track {
+    -fx-background-color: transparent;
+}
+
+.profile-scroll-pane > .scroll-bar > .thumb {
+    -fx-background-color: #c0c0c0;
+    -fx-background-radius: 5em;
+    -fx-pref-width: 8px;
+}
+
+.profile-scroll-pane > .scroll-bar > .thumb:hover {
+    -fx-background-color: #a0a0a0;
+}
+
+.profile-scroll-pane > .corner {
+    -fx-background-color: transparent;
+}
+
+/* Button styles */
+.action-button {
+    -fx-background-color: #003366;  /* Blue */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 8 15;
+    -fx-cursor: hand;
+}
+
+.action-button:hover {
+    -fx-background-color: derive(#003366, 20%);
+}
+
+.secondary-button {
+    -fx-background-color: #cc0000;  /* Red */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 8 15;
+    -fx-cursor: hand;
+}
+
+.secondary-button:hover {
+    -fx-background-color: derive(#cc0000, 20%);
+}
+
+/* Remove or comment out the back-button styles since we're not using them anymore
+.back-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #003366;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-padding: 5 10;
+    -fx-cursor: hand;
+}
+
+.back-button:hover {
+    -fx-background-color: #e6f2ff;
+}
+*/

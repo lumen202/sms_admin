@@ -1,40 +1,58 @@
 package sms.admin.app.student;
 
-import dev.finalproject.models.Cluster;
+import dev.finalproject.App;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
-import dev.sol.core.application.loader.FXLoaderFactory;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.StackPane;
 import sms.admin.app.student.viewstudent.StudentProfileLoader;
 import sms.admin.util.YearData;
 import atlantafx.base.controls.ModalPane;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 public class StudentController extends FXController {
+
+    @FXML
+    private TableView<Student> studentTableView;
+    @FXML
+    private TableColumn<Student, Integer> studentIDColumn;
+    @FXML
+    private TableColumn<Student, String> firstNameColumn;
+    @FXML
+    private TableColumn<Student, String> middleNameColumn;
+    @FXML
+    private TableColumn<Student, String> lastNameColumn;
+    @FXML
+    private TableColumn<Student, String> nameExtensionColumn;
+    @FXML
+    private TableColumn<Student, String> clusterColumn;
+    @FXML
+    private TableColumn<Student, String> contactColumn;
+    @FXML
+    private TableColumn<Student, String> emailColumn;
+    // @FXML
+    // private TableColumn<Student, String> addressColumn;
 
     @FXML
     private StackPane contentPane; // Container where scenes are loaded
     @FXML
     private ModalPane formodal; // ModalPane from AtlantaFX (defined in FXML without children)
 
-    @FXML
-    private TableView<Student> studentTableView;
-    // @FXML
-    // private TableColumn<Cluster, Integer> clusterID;
-    // @FXML
-    // private TableColumn<Cluster, String> clusterName;
-
-    private ObservableList<Cluster> clusterMasterList;
+    private ObservableList<Student> studentMasterList;
     private ContextMenu studentMenu;
+    private ModalPane studentProfileModal;
 
     @Override
     protected void load_fields() {
+        studentMasterList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+
         // Retrieve the "selectedYear" parameter passed from RootController.
         // If not set, use the current year (from YearData.getYears()).
         String selectedYear = (String) getParameter("selectedYear");
@@ -48,17 +66,17 @@ public class StudentController extends FXController {
     @Override
     protected void load_bindings() {
         // Setup sample data for the cluster table.
-        clusterMasterList = FXCollections.observableArrayList();
-        clusterMasterList.add(new Cluster(1, "Cluster A"));
-        clusterMasterList.add(new Cluster(2, "Cluster B"));
 
-        // clusterID.setCellValueFactory(cell ->
-        // cell.getValue().clusterIDProperty().asObject());
-        // clusterName.setCellValueFactory(cell ->
-        // cell.getValue().clusterNameProperty());
-        // clusterTableView.setItems(clusterMasterList);
+        studentIDColumn.setCellValueFactory(cell -> cell.getValue().studentIDProperty().asObject());
+        firstNameColumn.setCellValueFactory(cell -> cell.getValue().firstNameProperty());
+        middleNameColumn.setCellValueFactory(cell -> cell.getValue().middleNameProperty());
+        lastNameColumn.setCellValueFactory(cell -> cell.getValue().lastNameProperty());
+        nameExtensionColumn.setCellValueFactory(cell -> cell.getValue().nameExtensionProperty());
+        contactColumn.setCellValueFactory(cell -> cell.getValue().contactProperty());
+        emailColumn.setCellValueFactory(cell -> cell.getValue().emailProperty());
+        clusterColumn.setCellValueFactory(cell -> cell.getValue().clusterIDProperty().getValue().clusterNameProperty());
 
-        // Setup a sample context menu.
+        studentTableView.setItems(studentMasterList);
         studentMenu = new ContextMenu();
         MenuItem editMenu = new MenuItem("Edit Student Profile");
         editMenu.setOnAction(e -> openStudentProfile());
@@ -79,16 +97,27 @@ public class StudentController extends FXController {
     @FXML
     private void openStudentProfile() {
         try {
-            // Create an instance of StudentFormLoader.
-            StudentProfileLoader loader = (StudentProfileLoader) FXLoaderFactory
-                    .createInstance(StudentProfileLoader.class,
-                            getClass().getResource("/sms/admin/app/student/viewstudent/STUDENT_PROFILE.fxml"))
-                    .addParameter("selectedYear", getParameter("selectedYear"))
-                    .initialize(); // Loads the FXML into the loader
+            Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
+            if (selectedStudent == null) {
+                return;
+            }
+
+            Stage stage = new Stage(StageStyle.UNDECORATED);
+            stage.initOwner(studentTableView.getScene().getWindow());
+
+            // Use FXLoader as intended
+            StudentProfileLoader loader = new StudentProfileLoader();
+            loader.createInstance(getClass().getResource("/sms/admin/app/student/viewstudent/STUDENT_PROFILE.fxml"));
+            loader.addParameter("OWNER_STAGE", stage);
+            loader.addParameter("SELECTED_STUDENT", selectedStudent);
+
+            // Let the loader handle everything else
+            loader.initialize();
             loader.load();
+
         } catch (Exception ex) {
             ex.printStackTrace();
-            System.err.println("Failed to open student profle modal");
+            System.err.println("Failed to open student profile: " + ex.getMessage());
         }
     }
 

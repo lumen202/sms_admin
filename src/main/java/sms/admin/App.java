@@ -15,6 +15,7 @@ import dev.sol.core.registry.FXNodeRegister;
 import dev.sol.core.scene.FXSkin;
 import dev.sol.db.DBService;
 import javafx.collections.FXCollections;
+import javafx.scene.image.Image;
 import sms.admin.app.RootLoader;
 
 public class App extends FXApplication {
@@ -29,9 +30,13 @@ public class App extends FXApplication {
         public void initialize() throws Exception {
                 setTitle("Student Management System - Admin");
                 setSkin(FXSkin.PRIMER_LIGHT);
+                getApplicationStage().getIcons().add(
+                                new Image(getClass()
+                                                .getResource("/sms/admin/assets/img/logo.png")
+                                                .toExternalForm()));
 
                 applicationStage.getOnCloseRequest();
-                // initialize_dataset();
+                initialize_dataset();
                 initialize_application();
         }
 
