@@ -1,10 +1,12 @@
 package sms.admin;
 
+
 import dev.finalproject.data.AddressDAO;
 import dev.finalproject.data.AttendanceLogDAO;
 import dev.finalproject.data.AttendanceRecordDAO;
 import dev.finalproject.data.ClusterDAO;
 import dev.finalproject.data.GuardianDAO;
+import dev.finalproject.data.SchoolYearDAO;
 import dev.finalproject.data.StudentDAO;
 import dev.finalproject.data.StudentGuardianDAO;
 import dev.sol.core.application.FXApplication;
@@ -45,7 +47,13 @@ public class App extends FXApplication {
                 COLLECTIONS_REGISTRY.register("CLUSTER",
                                 FXCollections.observableArrayList(ClusterDAO.getClusterList()));
 
-                StudentDAO.initialize(COLLECTIONS_REGISTRY.getList("CLUSTER"));
+                COLLECTIONS_REGISTRY.register("SCHOOL_YEAR",
+                                FXCollections.observableArrayList(SchoolYearDAO.getSchoolYearList()));
+
+                StudentDAO.initialize(
+                                COLLECTIONS_REGISTRY.getList("CLUSTER"),
+                                COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR"));
+                                
                 COLLECTIONS_REGISTRY.register("STUDENT",
                                 FXCollections.observableArrayList(StudentDAO.getStudentList()));
 

@@ -3,6 +3,7 @@ module sms.admin {
     requires transitive javafx.controls;
     requires transitive core.fx;
     requires transitive core.db;
+    requires transitive dev.finalproject;
 
     requires javafx.fxml;
     requires atlantafx.base;
@@ -11,7 +12,7 @@ module sms.admin {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.materialdesign2;
     requires org.kordamp.ikonli.materialdesign;
-    requires dev.finalproject;
+    
 
     requires core.util;
     requires java.sql.rowset;
@@ -25,6 +26,11 @@ module sms.admin {
     opens sms.admin.app.student.viewstudent.studentform to core.fx, javafx.fxml;
     opens sms.admin.app.student to core.fx, javafx.fxml;
     opens sms.admin.app.enrollment to core.fx, javafx.fxml;
+    opens sms.admin.app.schoolyear to core.fx, javafx.fxml;
 
     exports sms.admin;
+    exports sms.admin.app;
+    exports sms.admin.app.student;
+    exports sms.admin.app.student.viewstudent;
+    exports sms.admin.app.schoolyear;
 }

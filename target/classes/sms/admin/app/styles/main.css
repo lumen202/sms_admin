@@ -291,3 +291,66 @@
 .edge-to-edge .scroll-bar:vertical .thumb {
     -fx-background-color: derive(-sms-border, -10%);
 }
+
+.icon-menu-button {
+    -fx-background-color: transparent !important;
+    -fx-padding: 0;
+    -fx-min-width: 35;
+    -fx-min-height: 35;
+    -fx-background-radius: 50%;
+}
+
+.icon-menu-button:hover {
+    -fx-background-color: transparent !important;
+}
+
+.icon-menu-button:showing {
+    -fx-background-color: transparent !important;
+}
+
+.icon-menu-button > .arrow-button {
+    -fx-padding: 0;
+}
+
+.icon-menu-button > .arrow-button > .arrow {
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.icon-menu-button .menu-item:hover {
+    -fx-background-color: derive(-sms-primary, 90%);
+}
+
+.menu-icon {
+    -fx-fill: white !important;
+    -fx-icon-color: white !important;
+}
+
+.icon-menu-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-min-width: 35;
+    -fx-min-height: 35;
+    -fx-background-radius: 50%;
+}
+
+.icon-menu-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
+.icon-menu-button:showing {
+    -fx-background-color: transparent;
+}
+
+.icon-menu-button > .arrow-button {
+    -fx-padding: 0;
+}
+
+.icon-menu-button > .arrow-button > .arrow {
+    -fx-padding: 0;
+    -fx-shape: "";
+}
+
+.menu-icon {
+    -fx-fill: white;
+}

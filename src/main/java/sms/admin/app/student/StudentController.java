@@ -1,15 +1,19 @@
 package sms.admin.app.student;
 
 import dev.finalproject.App;
+import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
+import dev.sol.core.application.loader.FXLoaderFactory;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import sms.admin.app.student.viewstudent.StudentProfileLoader;
 import sms.admin.util.YearData;
@@ -41,17 +45,21 @@ public class StudentController extends FXController {
     // private TableColumn<Student, String> addressColumn;
 
     @FXML
-    private StackPane contentPane; // Container where scenes are loaded
+    private BorderPane contentPane; // Changed from StackPane to BorderPane to match FXML
     @FXML
     private ModalPane formodal; // ModalPane from AtlantaFX (defined in FXML without children)
+    @FXML
+    private StackPane modalContainer;
 
     private ObservableList<Student> studentMasterList;
+    private ObservableList<Student> originalMasterList;  // Add this field to store original list
     private ContextMenu studentMenu;
-    private ModalPane studentProfileModal;
 
     @Override
     protected void load_fields() {
-        studentMasterList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+        // Store original master list
+        originalMasterList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+        studentMasterList = originalMasterList;  // Initial reference
 
         // Retrieve the "selectedYear" parameter passed from RootController.
         // If not set, use the current year (from YearData.getYears()).
@@ -61,6 +69,14 @@ public class StudentController extends FXController {
             selectedYear = YearData.getYears().get(0);
         }
         System.out.println("HomeController.load_fields: selectedYear = " + selectedYear);
+
+        // Apply initial filter based on selected year
+        updateYear(selectedYear);
+
+        // Configure modal panes like the example
+        formodal.setAlignment(Pos.TOP_CENTER);
+        formodal.usePredefinedTransitionFactories(Side.TOP);
+        formodal.setPersistent(true);
     }
 
     @Override
@@ -94,6 +110,20 @@ public class StudentController extends FXController {
 
     }
 
+    public void updateYear(String year) {
+        if (year == null || originalMasterList == null) return;
+        
+        // Convert year string to yearID (assuming year format is "2023-2024")
+        final int yearID = Integer.parseInt(year.split("-")[0]);
+        
+        // Filter students based on yearID
+        studentTableView.setItems(originalMasterList.filtered(student -> {
+            if (student.getYearID() == null) return false;
+            SchoolYear schoolYear = student.getYearID();
+            return schoolYear != null && schoolYear.getYearID() == yearID;
+        }));
+    }
+
     @FXML
     private void openStudentProfile() {
         try {
@@ -102,35 +132,29 @@ public class StudentController extends FXController {
                 return;
             }
 
-            Stage stage = new Stage(StageStyle.UNDECORATED);
-            stage.initOwner(studentTableView.getScene().getWindow());
+            // Create new stage for profile
+            Stage profileStage = new Stage(StageStyle.UNDECORATED);
+            profileStage.initOwner(studentTableView.getScene().getWindow());
 
-            // Use FXLoader as intended
-            StudentProfileLoader loader = new StudentProfileLoader();
-            loader.createInstance(getClass().getResource("/sms/admin/app/student/viewstudent/STUDENT_PROFILE.fxml"));
-            loader.addParameter("OWNER_STAGE", stage);
-            loader.addParameter("SELECTED_STUDENT", selectedStudent);
+            // Load the profile
+            StudentProfileLoader loader = (StudentProfileLoader) FXLoaderFactory
+                    .createInstance(StudentProfileLoader.class,
+                            getClass().getResource("/sms/admin/app/student/viewstudent/STUDENT_PROFILE.fxml"))
+                    .addParameter("OWNER_STAGE", studentTableView.getScene().getWindow())
+                    .addParameter("SELECTED_STUDENT", selectedStudent)
+                    .initialize();
 
-            // Let the loader handle everything else
-            loader.initialize();
+            // Let the loader handle scene creation and showing
             loader.load();
 
         } catch (Exception ex) {
             ex.printStackTrace();
-            System.err.println("Failed to open student profile: " + ex.getMessage());
         }
     }
 
-    /**
-     * Called via FXML (for example, from a "Close" button inside the modal) to hide
-     * the student form.
-     */
     @FXML
     private void closeModal() {
         formodal.hide();
     }
 
-    /**
-     * Example handler for editing a student from the context menu.
-     */
 }

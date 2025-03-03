@@ -29,23 +29,35 @@
                <children>
                   <StackPane>
                      <children>
-                        <ImageView fx:id="profileImageView" fitHeight="150.0" fitWidth="150.0"
-                           pickOnBounds="true" preserveRatio="true">
-                           <image>
-                              <Image url="@../../../../assets/img/default-profile.png" />
-                           </image>
-                        </ImageView>
-                        <Button fx:id="changePhotoButton" mnemonicParsing="false"
-                           text="Change Photo" visible="false" StackPane.alignment="BOTTOM_CENTER">
-                           <StackPane.margin>
-                              <Insets bottom="5.0" />
-                           </StackPane.margin>
-                        </Button>
+                        <VBox alignment="CENTER" spacing="5">
+                           <children>
+                              <!-- Profile Image Container -->
+                              <StackPane styleClass="profile-image-container">
+                                 <ImageView fx:id="profileImageView" fitHeight="150.0" fitWidth="150.0"
+                                    pickOnBounds="true" preserveRatio="true">
+                                    <image>
+                                       <Image url="@../../../../../assets/img/default-profile.png" />
+                                    </image>
+                                    <StackPane.margin>
+                                       <Insets bottom="5.0" />
+                                    </StackPane.margin>
+                                 </ImageView>
+                                 <Button fx:id="changePhotoButton" styleClass="photo-button" 
+                                        text="Change Photo" visible="false" 
+                                        StackPane.alignment="BOTTOM_CENTER">
+                                    <StackPane.margin>
+                                       <Insets bottom="5.0" />
+                                    </StackPane.margin>
+                                 </Button>
+                              </StackPane>
+                              <Label fx:id="studentNameLabel" styleClass="profile-name" 
+                                     text="Student Name" />
+                              <Label fx:id="studentIdLabel" styleClass="profile-id" 
+                                     text="Student ID" />
+                           </children>
+                        </VBox>
                      </children>
                   </StackPane>
-                  <Label fx:id="studentNameLabel" style="-fx-font-size: 24; -fx-font-weight: bold;"
-                     text="Student Name" />
-                  <Label fx:id="studentIdLabel" style="-fx-font-size: 16;" text="Student ID" />
                </children>
             </VBox>
             <HBox alignment="CENTER_LEFT" spacing="10">
@@ -57,7 +69,7 @@
          </top>
 
          <center>
-            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="profile-scroll-pane">
+            <ScrollPane fitToWidth="true" styleClass="profile-scroll-pane" VBox.vgrow="ALWAYS">
                <content>
                   <VBox spacing="15">
                      <padding>
@@ -209,9 +221,9 @@
                      </VBox>
                   </VBox>
                </content>
-               <BorderPane.margin>
-                  <Insets top="5" bottom="5" />
-               </BorderPane.margin>
+               <VBox.margin>
+                  <Insets bottom="10.0" />
+               </VBox.margin>
             </ScrollPane>
          </center>
 

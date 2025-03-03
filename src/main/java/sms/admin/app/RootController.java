@@ -1,8 +1,9 @@
 package sms.admin.app;
 
+import dev.finalproject.App;
+import dev.finalproject.models.SchoolYear;
 import dev.sol.core.application.FXController;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -15,11 +16,12 @@ import sms.admin.app.enrollment.EnrollmentController;
 import sms.admin.app.enrollment.EnrollmentLoader;
 import sms.admin.app.payroll.PayrollController;
 import sms.admin.app.payroll.PayrollLoader;
+import sms.admin.app.schoolyear.SchoolYearDialog;
 import sms.admin.app.student.StudentController;
 import sms.admin.app.student.StudentLoader;
 import sms.admin.util.ControllerLoader;
 import sms.admin.util.SceneLoaderUtil;
-import sms.admin.util.YearData;
+import sms.admin.util.SchoolYearUtil;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -45,9 +47,10 @@ public class RootController extends FXController {
 
     @FXML
     private ComboBox<String> yearComboBox;
-
     @FXML
     private Scene scene;
+
+    private ObservableList<SchoolYear> schoolYearList;
 
     // Store the active controller (e.g., PayrollController or AttendanceController)
     private FXController currentController;
@@ -96,26 +99,27 @@ public class RootController extends FXController {
     @Override
     protected void load_bindings() {
         scene = (Scene) getParameter("scene");
-        // Initially load student.
 
-        // Listen for changes to the yearComboBox.
-        yearComboBox.valueProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> obs, String oldYear, String newYear) {
+        // Update year listener
+        yearComboBox.valueProperty().addListener((obs, oldYear, newYear) -> {
+            if (newYear != null) {
                 System.out.println("RootController: Year changed to " + newYear);
-                if (currentController instanceof AttendanceController) {
-                    ((AttendanceController) currentController).updateYear(newYear);
-                } else if (currentController instanceof PayrollController) {
-                    ((PayrollController) currentController).updateYear(newYear);
-                }
+                updateCurrentController(newYear);
             }
         });
     }
 
     @Override
     protected void load_fields() {
-        yearComboBox.setItems(YearData.getYears()); // Use YearData instead
-        yearComboBox.setValue(YearData.getCurrentAcademicYear()); // Use YearData instead
+        schoolYearList = App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR");
+        yearComboBox.setItems(SchoolYearUtil.convertToStringList(schoolYearList));
+
+        // Set current year as default using findCurrentYear
+        SchoolYear currentYear = SchoolYearUtil.findCurrentYear(schoolYearList);
+        if (currentYear != null) {
+            yearComboBox.setValue(SchoolYearUtil.formatSchoolYear(currentYear));
+        }
+
         loadSceneWithYear("/sms/admin/app/student/STUDENT.fxml",
                 StudentLoader.class,
                 StudentController.class);
@@ -150,6 +154,49 @@ public class RootController extends FXController {
             System.out.println("Generated Encrypted Key: " + encryptedKey);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleNewSchoolYear() {
+        SchoolYearDialog dialog = new SchoolYearDialog(null);
+        dialog.showAndWait().ifPresent(newSchoolYear -> {
+            // Add to database
+            // Add to schoolYearList
+            schoolYearList.add(newSchoolYear);
+            yearComboBox.setValue(SchoolYearUtil.formatSchoolYear(newSchoolYear));
+        });
+    }
+
+    @FXML
+    private void handleEditSchoolYear() {
+        String currentYear = yearComboBox.getValue();
+        SchoolYear selectedYear = schoolYearList.stream()
+            .filter(sy -> SchoolYearUtil.formatSchoolYear(sy).equals(currentYear))
+            .findFirst()
+            .orElse(null);
+
+        if (selectedYear != null) {
+            SchoolYearDialog dialog = new SchoolYearDialog(selectedYear);
+            dialog.showAndWait().ifPresent(updatedSchoolYear -> {
+                // Update in database
+                // Update in list
+                int index = schoolYearList.indexOf(selectedYear);
+                schoolYearList.set(index, updatedSchoolYear);
+                yearComboBox.setValue(SchoolYearUtil.formatSchoolYear(updatedSchoolYear));
+            });
+        }
+    }
+
+    private void updateCurrentController(String newYear) {
+        if (currentController instanceof AttendanceController) {
+            ((AttendanceController) currentController).updateYear(newYear);
+        } else if (currentController instanceof PayrollController) {
+            ((PayrollController) currentController).updateYear(newYear);
+        } else if (currentController instanceof StudentController) {
+            ((StudentController) currentController).updateYear(newYear);
+        } else if (currentController instanceof EnrollmentController) {
+            ((EnrollmentController) currentController).updateYear(newYear);
         }
     }
 

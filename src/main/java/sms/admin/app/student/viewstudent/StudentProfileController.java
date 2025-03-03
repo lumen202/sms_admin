@@ -1,8 +1,6 @@
 package sms.admin.app.student.viewstudent;
 
-import atlantafx.base.controls.ModalPane;
 import dev.sol.core.application.FXController;
-import dev.sol.core.application.loader.FXLoaderFactory;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -13,7 +11,6 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import sms.admin.app.student.viewstudent.studentform.StudentFormLoader;
 import dev.finalproject.App;
 import dev.finalproject.models.Address;
 import dev.finalproject.models.Guardian;
@@ -30,28 +27,115 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class StudentProfileController extends FXController {
+
+    // Core fields
     private Stage stage;
-    private ModalPane modalPane;
     private Student student;
+    private boolean isEditMode = false;
+
+    // Data lists
     private ObservableList<Address> addressMasterList;
     private ObservableList<StudentGuardian> studentGuardianMasterList;
     private ObservableList<Guardian> guardianMasterlist;
-    private ModalPane forModal;
     private List<TextField> editableFields;
-    private boolean isEditMode = false;
 
+    // FXML injected fields - grouped by section
+    @FXML
+    private ImageView profileImageView;
+    @FXML
+    private Label studentNameLabel, studentIdLabel;
+
+    // Buttons
+    @FXML
+    private Button changePhotoButton, editButton, saveButton, cancelButton, backButton;
+
+    // Personal Info Fields
+    @FXML
+    private TextField firstNameField, middleNameField, lastNameField, nameExtField;
+
+    // Contact Fields
+    @FXML
+    private TextField contactField, emailField;
+
+    // Address Fields
+    @FXML
+    private TextField streetAddressField, barangayField, cityField,
+            municipalityField, zipCodeField;
+
+    // Academic Fields
+    @FXML
+    private TextField clusterField, clusterDetailsField;
+
+    // Guardian Fields
+    @FXML
+    private TextField guardianNameField, guardianContactField;
+
+    @Override
+    protected void load_fields() {
+        // Initialize master lists
+        initializeMasterLists();
+
+        // Initialize editable fields
+        initializeEditableFields();
+
+        // Set initial UI state
+        initializeKeyHandler();
+    }
+
+    private void initializeMasterLists() {
+        addressMasterList = App.COLLECTIONS_REGISTRY.getList("ADDRESS");
+        studentGuardianMasterList = App.COLLECTIONS_REGISTRY.getList("STUDENT_GUARDIAN");
+        guardianMasterlist = App.COLLECTIONS_REGISTRY.getList("GUARDIAN");
+    }
+
+    private void initializeEditableFields() {
+        editableFields = List.of(
+                firstNameField, middleNameField, lastNameField, nameExtField,
+                streetAddressField, barangayField, cityField, municipalityField, zipCodeField,
+                contactField, emailField, clusterField, clusterDetailsField,
+                guardianNameField, guardianContactField);
+    }
+
+    private void initializeKeyHandler() {
+        if (stage != null && stage.getScene() != null) {
+            stage.getScene().setOnKeyPressed(this::handleKeyPress);
+        }
+    }
+
+    @Override
+    protected void load_listeners() {
+        // Button actions
+        editButton.setOnAction(e -> handleEdit());
+        saveButton.setOnAction(e -> handleSave());
+        cancelButton.setOnAction(e -> handleCancel());
+        backButton.setOnAction(e -> handleBack());
+        changePhotoButton.setOnAction(e -> handleChangePhoto());
+
+        // Profile image hover effects
+        profileImageView.setOnMouseEntered(e -> changePhotoButton.setVisible(isEditMode));
+        profileImageView.setOnMouseExited(e -> changePhotoButton.setVisible(false));
+    }
+
+    // Public setters
     public void setStage(Stage stage) {
         this.stage = stage;
     }
 
-    public void setModalPane(ModalPane modalPane) {
-        this.modalPane = modalPane;
-    }
-
-    public void setStudent(Student student) {
+    public void setStudent(@SuppressWarnings("exports") Student student) {
         this.student = student;
         if (student != null) {
             loadStudentData();
+        }
+    }
+
+    // Event handlers
+    private void handleKeyPress(KeyEvent event) {
+        if (event.getCode() == KeyCode.ESCAPE) {
+            if (isEditMode)
+                handleCancel();
+            else
+                closeDialog();
+            event.consume();
         }
     }
 
@@ -63,85 +147,6 @@ public class StudentProfileController extends FXController {
             slideUp.setOnFinished(e -> stage.close());
             slideUp.play();
         }
-    }
-
-    @FXML
-    private ImageView profileImageView;
-    @FXML
-    private Button changePhotoButton;
-    @FXML
-    private Button editButton;
-    @FXML
-    private Button saveButton;
-    @FXML
-    private Button cancelButton;
-    @FXML
-    private Label studentNameLabel;
-    @FXML
-    private Label studentIdLabel;
-    @FXML
-    private Button backButton;
-    @FXML
-    private TextField firstNameField;
-    @FXML
-    private TextField middleNameField;
-    @FXML
-    private TextField lastNameField;
-    @FXML
-    private TextField nameExtField;
-    @FXML
-    private TextField addressField;
-    @FXML
-    private TextField contactField;
-    @FXML
-    private TextField clusterField;
-    @FXML
-    private TextField clusterDetailsField;
-    @FXML
-    private TextField guardianNameField;
-    @FXML
-    private TextField guardianContactField;
-    @FXML
-    private TextField streetAddressField;
-    @FXML
-    private TextField barangayField;
-    @FXML
-    private TextField cityField;
-    @FXML
-    private TextField municipalityField;
-    @FXML
-    private TextField zipCodeField;
-    @FXML
-    private TextField emailField;
-
-    @Override
-    protected void load_fields() {
-        // Initialize lists first
-        addressMasterList = App.COLLECTIONS_REGISTRY.getList("ADDRESS");
-        studentGuardianMasterList = App.COLLECTIONS_REGISTRY.getList("STUDENT_GUARDIAN");
-        guardianMasterlist = App.COLLECTIONS_REGISTRY.getList("GUARDIAN");
-
-        // Then initialize fields
-        editableFields = List.of(
-                firstNameField, middleNameField, lastNameField, nameExtField,
-                streetAddressField, barangayField, cityField, municipalityField, zipCodeField,
-                contactField, emailField,
-                clusterField, clusterDetailsField,
-                guardianNameField, guardianContactField);
-
-        // Set initial button states
-        backButton.setVisible(true);
-        editButton.setVisible(true);
-        saveButton.setVisible(false);
-        cancelButton.setVisible(false);
-        changePhotoButton.setVisible(false);
-
-        // Add scene key handler
-        if (stage != null && stage.getScene() != null) {
-            stage.getScene().setOnKeyPressed(this::handleKeyPress);
-        }
-
-        // Note: loadStudentData() will be called by setStudent()
     }
 
     private void showNonEmptyFields() {
@@ -210,19 +215,6 @@ public class StudentProfileController extends FXController {
                         label.setVisible(true);
                         label.setManaged(true);
                     });
-        });
-    }
-
-    @Override
-    protected void load_listeners() {
-        editButton.setOnAction(event -> toggleEditMode());
-        saveButton.setOnAction(event -> saveChanges());
-        changePhotoButton.setOnAction(event -> handleChangePhoto());
-        profileImageView.setOnMouseEntered(e -> changePhotoButton.setVisible(true));
-        profileImageView.setOnMouseExited(e -> {
-            if (!isEditMode) {
-                changePhotoButton.setVisible(false);
-            }
         });
     }
 
@@ -351,7 +343,7 @@ public class StudentProfileController extends FXController {
 
     @Override
     protected void load_bindings() {
-        // Add any necessary bindings here
+        // No bindings needed currently
     }
 
     @FXML
@@ -372,23 +364,6 @@ public class StudentProfileController extends FXController {
         changePhotoButton.setVisible(false);
     }
 
-    private void initializeEdit() {
-        if (forModal == null) {
-            forModal = new ModalPane();
-            forModal.setId("studentFormModal");
-            forModal.setStyle("-fx-background-color: rgba(0, 0, 0, 0.5);");
-        }
-        if (editButton.getScene() != null) {
-            StudentFormLoader loader = (StudentFormLoader) FXLoaderFactory
-                    .createInstance(StudentFormLoader.class,
-                            getClass().getResource("/sms.admin/app/viewstudent/studentform/STUDENT_FORM.fxml"));
-            loader.addParameter("MODAL", forModal);
-            loader.addParameter("SCENE_ROOT", editButton.getScene().getRoot());
-            loader.initialize();
-            loader.load();
-        }
-    }
-
     @FXML
     private void handleEdit() {
         isEditMode = true;
@@ -405,24 +380,24 @@ public class StudentProfileController extends FXController {
 
             // Make section header visible
             section.getChildren().stream()
-                .filter(node -> node instanceof Label && 
-                        node.getStyleClass().contains("section-header"))
-                .forEach(header -> {
-                    header.setVisible(true);
-                    header.setManaged(true);
-                });
+                    .filter(node -> node instanceof Label &&
+                            node.getStyleClass().contains("section-header"))
+                    .forEach(header -> {
+                        header.setVisible(true);
+                        header.setManaged(true);
+                    });
 
             // Make field label visible
             GridPane grid = (GridPane) field.getParent();
             int rowIndex = GridPane.getRowIndex(field) != null ? GridPane.getRowIndex(field) : 0;
             grid.getChildren().stream()
-                .filter(node -> node instanceof Label && 
-                        GridPane.getRowIndex(node) != null && 
-                        GridPane.getRowIndex(node) == rowIndex)
-                .forEach(label -> {
-                    label.setVisible(true);
-                    label.setManaged(true);
-                });
+                    .filter(node -> node instanceof Label &&
+                            GridPane.getRowIndex(node) != null &&
+                            GridPane.getRowIndex(node) == rowIndex)
+                    .forEach(label -> {
+                        label.setVisible(true);
+                        label.setManaged(true);
+                    });
         });
 
         // Update button visibility
@@ -459,16 +434,5 @@ public class StudentProfileController extends FXController {
     @FXML
     private void handleBack() {
         closeDialog();
-    }
-
-    private void handleKeyPress(KeyEvent event) {
-        if (event.getCode() == KeyCode.ESCAPE) {
-            if (isEditMode) {
-                handleCancel();
-            } else {
-                closeDialog();
-            }
-            event.consume();
-        }
     }
 }

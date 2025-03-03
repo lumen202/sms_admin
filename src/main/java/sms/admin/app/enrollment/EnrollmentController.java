@@ -241,4 +241,10 @@ public class EnrollmentController extends FXController {
             // TODO: Add CSV processing logic here
         }
     }
+
+    public void updateYear(String year) {
+        // Update enrollment data based on selected year
+        // Add your year-specific enrollment logic here
+        System.out.println("Updating enrollment data for year: " + year);
+    }
 }

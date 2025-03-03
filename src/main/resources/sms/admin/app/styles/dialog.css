@@ -8,7 +8,7 @@
 }
 
 .dialog-pane {
-    -fx-background-color: white;
+    -fx-background-color: transparent;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0.5, 0.0, 0.0);
     -fx-background-radius: 5;
     -fx-border-radius: 5;
@@ -47,18 +47,27 @@
 
 .profile-container {
     -fx-background-color: white;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0.5, 0.0, 0.0);
+    -fx-padding: 20;
+    -fx-background-radius: 5;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 0);
+    -fx-min-width: 600;
+    -fx-min-height: 700;
+    -fx-pref-width: 600;
+    -fx-pref-height: 700;
+    -fx-max-width: 600;
+    -fx-max-height: 700;
 }
 
 .info-section {
     -fx-background-color: #f8f9fa;
-    -fx-padding: 15;
+    -fx-padding: 10;
     -fx-background-radius: 5;
 }
 
 .section-header {
-    -fx-font-size: 16px;
+    -fx-font-size: 16;
     -fx-font-weight: bold;
+    -fx-padding: 0 0 5 0;
     -fx-text-fill: #003366;  /* Use direct color instead of variable */
 }
 
@@ -169,10 +178,14 @@
     -fx-fit-to-width: true;
     -fx-hbar-policy: never;
     -fx-vbar-policy: as-needed;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
 }
 
 .profile-scroll-pane > .viewport {
     -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
 }
 
 .profile-scroll-pane > .scroll-bar {
@@ -199,7 +212,7 @@
 
 /* Button styles */
 .action-button {
-    -fx-background-color: #003366;  /* Blue */
+    -fx-background-color: -sms-primary;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-font-size: 13px;
@@ -208,11 +221,11 @@
 }
 
 .action-button:hover {
-    -fx-background-color: derive(#003366, 20%);
+    -fx-background-color: derive(-sms-primary, 20%);
 }
 
 .secondary-button {
-    -fx-background-color: #cc0000;  /* Red */
+    -fx-background-color: -sms-secondary;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-font-size: 13px;
@@ -221,20 +234,128 @@
 }
 
 .secondary-button:hover {
-    -fx-background-color: derive(#cc0000, 20%);
+    -fx-background-color: derive(-sms-secondary, 20%);
 }
 
-/* Remove or comment out the back-button styles since we're not using them anymore
-.back-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: #003366;
-    -fx-font-size: 20px;
+.secondary-color-button {
+    -fx-background-color: -sms-secondary;  /* Using your app's secondary color */
+    -fx-text-fill: white;
     -fx-font-weight: bold;
-    -fx-padding: 5 10;
+    -fx-font-size: 13px;
+    -fx-padding: 8 15;
     -fx-cursor: hand;
 }
 
-.back-button:hover {
-    -fx-background-color: #e6f2ff;
+.secondary-color-button:hover {
+    -fx-background-color: derive(-sms-secondary, 20%);
 }
-*/
+
+.danger-button {
+    -fx-background-color: #dc3545;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 8 15;
+    -fx-cursor: hand;
+}
+
+.danger-button:hover {
+    -fx-background-color: derive(#dc3545, 20%);
+}
+
+.modal-pane {
+    -fx-background-color: rgba(0, 0, 0, 0.5);
+}
+
+.profile-image-container {
+    -fx-background-color: white;
+    -fx-background-radius: 75;
+    -fx-border-radius: 75;
+    -fx-border-color: -sms-primary;
+    -fx-border-width: 2;
+    -fx-min-height: 150;
+    -fx-min-width: 150;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 0);
+}
+
+.profile-name {
+    -fx-font-size: 24;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sms-primary;
+}
+
+.profile-id {
+    -fx-font-size: 16;
+    -fx-text-fill: -sms-secondary;
+}
+
+.photo-button {
+    -fx-background-color: rgba(0, 0, 0, 0.6);
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 5 10;
+    -fx-background-radius: 15;
+    -fx-cursor: hand;
+}
+
+.photo-button:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.8);
+}
+
+.custom-dialog {
+    -fx-background-color: #f5f5f5;
+    -fx-padding: 20;
+    -fx-background-radius: 5;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 0);
+}
+
+.dialog-header {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sms-primary;
+    -fx-padding: 0 0 20 0;
+}
+
+.dialog-content {
+    -fx-spacing: 20;
+}
+
+.date-picker {
+    -fx-min-width: 200px;
+    -fx-background-color: white;
+}
+
+.date-picker .arrow-button {
+    -fx-background-color: -sms-primary;
+}
+
+.date-picker .arrow-button:hover {
+    -fx-background-color: derive(-sms-primary, 20%);
+}
+
+.date-picker .arrow-button .arrow {
+    -fx-background-color: white;
+}
+
+.custom-dialog .action-button {
+    -fx-background-color: -sms-primary;
+    -fx-text-fill: white;
+    -fx-padding: 8 15;
+    -fx-cursor: hand;
+}
+
+.custom-dialog .secondary-button {
+    -fx-background-color: -sms-secondary;
+    -fx-text-fill: white;
+    -fx-padding: 8 15;
+    -fx-cursor: hand;
+}
+
+.custom-dialog .action-button:hover {
+    -fx-background-color: derive(-sms-primary, 20%);
+}
+
+.custom-dialog .secondary-button:hover {
+    -fx-background-color: derive(-sms-secondary, 20%);
+}
+
