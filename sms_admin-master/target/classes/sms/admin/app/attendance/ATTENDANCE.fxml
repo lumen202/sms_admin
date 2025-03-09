@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import atlantafx.base.controls.ModalPane?>
+<?import javafx.scene.control.Button?>
 
 <StackPane xmlns="http://javafx.com/javafx/21.0.5" xmlns:fx="http://javafx.com/fxml/1" 
     fx:controller="sms.admin.app.attendance.AttendanceController" 
@@ -23,12 +24,14 @@
             
             <top>
                 <VBox spacing="5">
-                    <padding>
-                        <Insets bottom="5" left="10" right="10" top="5" />
-                    </padding>
-                    <HBox alignment="CENTER_LEFT" spacing="10">
-                        <ComboBox fx:id="monthYearComboBox" prefWidth="200" />
+                    <HBox spacing="10" alignment="CENTER_LEFT" styleClass="form-section">
+                        <padding>
+                            <Insets top="10" right="10" bottom="10" left="10"/>
+                        </padding>
+                        <Label text="Select Period" styleClass="section-header"/>
+                        <ComboBox fx:id="monthYearComboBox" prefWidth="200" promptText="Select Month and Year"/>
                         <Region HBox.hgrow="ALWAYS" />
+                        <Button text="Export" prefWidth="80" prefHeight="30" styleClass="secondary-button"/>
                     </HBox>
                 </VBox>
             </top>
@@ -38,6 +41,7 @@
                     <padding>
                         <Insets bottom="5" left="5" right="5" top="5" />
                     </padding>
+                    <Label text="Attendance Record" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
                     <TableView fx:id="attendanceTable" VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="colNo" text="#" resizable="false"/>
@@ -59,7 +63,6 @@
                 </VBox>
             </center>
         </BorderPane>
-        
         <ModalPane fx:id="modalContainer" visible="false">
             <content>
                 <StackPane fx:id="dialogContainer" maxWidth="600" maxHeight="500"/>
