@@ -1,11 +1,14 @@
 package sms.admin.app.schoolyear;
 
+import java.io.IOException;
+
 import dev.finalproject.models.SchoolYear;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.stage.Modality;
 import javafx.stage.StageStyle;
-import java.io.IOException;
 
 public class SchoolYearDialog extends Dialog<SchoolYear> {
 
@@ -24,7 +27,8 @@ public class SchoolYearDialog extends Dialog<SchoolYear> {
             getDialogPane().getStylesheets().add(
                 getClass().getResource("/sms/admin/app/styles/dialog.css").toExternalForm()
             );
-            getDialogPane().setStyle("-fx-background-color: transparent;");
+            getDialogPane().setStyle("-fx-background-color: transparent; -fx-padding: 0;");
+            getDialogPane().getScene().setFill(null);
 
             // Add dialog button types
             getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);

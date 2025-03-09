@@ -35,6 +35,7 @@ import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import sms.admin.app.attendance.dialog.AttendanceLogDialog;
 import sms.admin.app.attendance.dialog.AttendanceLogDialogController;
 import sms.admin.app.student.viewstudent.StudentProfileLoader;
 import sms.admin.util.attendance.AttendanceUtil;

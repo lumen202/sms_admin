@@ -22,7 +22,7 @@ public class AttendanceEditUtil {
         comboBox.setValue(currentValue.isEmpty() ? AttendanceUtil.PRESENT_MARK : currentValue);
         return comboBox;
     }
-    
+
     public static void handleAttendanceEdit(
             TableCell<Student, String> cell,
             Student student,

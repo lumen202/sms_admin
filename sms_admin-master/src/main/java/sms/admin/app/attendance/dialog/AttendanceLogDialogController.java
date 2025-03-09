@@ -5,7 +5,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import atlantafx.base.controls.ModalPane;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;

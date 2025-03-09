@@ -13,9 +13,9 @@ sms\admin\app\attendance\dialog\AttendanceLogDialog.class
 sms\admin\app\payroll\PayrollLoader.class
 sms\admin\app\attendance\AttendanceController$1.class
 sms\admin\util\scene\SceneLoaderUtil.class
+sms\admin\app\payroll\PayrollController$2.class
 sms\admin\app\student\viewstudent\StudentProfileLoader.class
 sms\admin\util\YearData.class
-sms\admin\app\attendance\AttendanceLogDialog.class
 sms\admin\util\TimeUtil.class
 sms\admin\App.class
 sms\admin\util\loader\BaseLoader.class
@@ -25,9 +25,11 @@ sms\admin\app\student\StudentController.class
 module-info.class
 sms\admin\app\attendance\attendancelog\AttendanceLogLoader.class
 sms\admin\app\student\viewstudent\StudentProfileController.class
+sms\admin\app\payroll\PayrollController$3.class
 sms\admin\app\attendance\AttendanceController.class
 sms\admin\app\attendance\attendancelog\AttendanceLogController.class
 sms\admin\app\student\StudentLoader.class
+sms\admin\app\payroll\PayrollController$1.class
 sms\admin\app\attendance\dialog\AttendanceLogDialogController.class
 sms\admin\app\schoolyear\SchoolYearDialogController$1.class
 sms\admin\util\ControllerUtil.class
