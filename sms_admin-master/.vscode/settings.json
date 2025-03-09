@@ -1,0 +1,8 @@
+{
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "git.ignoreLimitWarning": true,
+  "files.associations": {
+    "*.fxml": "xml"
+  },
+  "javafx.sceneBuilder.path": "C:/Users/hp/AppData/Local/SceneBuilder/SceneBuilder.exe"
+}
