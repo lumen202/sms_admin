@@ -1,12 +1,13 @@
 package sms.admin.app.payroll;
 
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.YearMonth;
-import java.text.DecimalFormat;
 
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
+import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -16,12 +17,12 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.control.Label;
 import sms.admin.util.YearData;
 import sms.admin.util.attendance.AttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
@@ -47,29 +48,21 @@ public class PayrollController extends FXController {
 
     @Override
     protected void load_fields() {
-        // Initialize lists
-        studentList = DataUtil.createStudentList();
-        attendanceLog = DataUtil.createAttendanceLogList();
+        // Initialize lists with data - create fresh copies
+        studentList = FXCollections.observableArrayList(DataUtil.createStudentList());
+        attendanceLog = FXCollections.observableArrayList(DataUtil.createAttendanceLogList());
 
-        if (studentList == null) {
-            studentList = FXCollections.observableArrayList();
-        }
-
-        if (attendanceLog == null) {
-            attendanceLog = FXCollections.observableArrayList();
-        }
-
+        // Setup table
         setupTable();
 
-        if (yearMonthComboBox != null) {
-            String selectedYear = (String) getParameter("selectedYear");
-            if (selectedYear == null) {
-                selectedYear = YearData.getCurrentAcademicYear();
-            }
-            DateTimeUtils.updateMonthYearComboBox(yearMonthComboBox, selectedYear);
-            System.out.println("PayrollController.load_fields: selectedYear = " + selectedYear);
+        // Initialize with selected year or current academic year
+        String selectedYear = (String) getParameter("selectedYear");
+        if (selectedYear == null) {
+            selectedYear = DateTimeUtils.getCurrentAcademicYear();
         }
-        updateTotalAmount();
+        
+        // Apply initial year filter
+        initializeWithYear(selectedYear);
     }
 
     private void setupTable() {
@@ -216,9 +209,46 @@ public class PayrollController extends FXController {
     }
 
     public void updateYear(String newYear) {
+        initializeWithYear(newYear);
+    }
+
+    public void initializeWithYear(String year) {
+        if (year == null) return;
+
+        // Parse the year range (e.g., "2023-2024")
+        String[] yearRange = year.split("-");
+        int startYear = Integer.parseInt(yearRange[0]);
+        int endYear = Integer.parseInt(yearRange[1]);
+
+        // Filter students based on school year
+        studentList = DataUtil.createStudentList().filtered(student -> {
+            if (student.getYearID() == null) return false;
+            SchoolYear schoolYear = student.getYearID();
+            return schoolYear.getYearStart() == startYear && 
+                   schoolYear.getYearEnd() == endYear;
+        });
+
+        // Update table and refresh display
+        payrollTable.setItems(studentList);
+        payrollTable.refresh();
+        updateTotalAmount();
+
+        // Update month combo box and select appropriate month
         if (yearMonthComboBox != null) {
-            System.out.println("PayrollController.updateYear called with newYear = " + newYear);
-            DateTimeUtils.updateMonthYearComboBox(yearMonthComboBox, newYear);
+            DateTimeUtils.updateMonthYearComboBox(yearMonthComboBox, year);
+            
+            // Get current month-year
+            YearMonth current = YearMonth.now();
+            String currentFormatted = current.format(DateTimeUtils.MONTH_YEAR_FORMATTER);
+            
+            // Try to select current month if it's in the list
+            if (yearMonthComboBox.getItems().contains(currentFormatted)) {
+                yearMonthComboBox.setValue(currentFormatted);
+            }
+            // If current month is not in the academic year, select first month
+            else if (!yearMonthComboBox.getItems().isEmpty()) {
+                yearMonthComboBox.setValue(yearMonthComboBox.getItems().get(0));
+            }
         }
     }
 }

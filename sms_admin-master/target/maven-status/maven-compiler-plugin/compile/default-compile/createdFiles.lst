@@ -24,6 +24,7 @@ sms\admin\app\enrollment\EnrollmentLoader.class
 sms\admin\app\student\StudentController.class
 module-info.class
 sms\admin\app\attendance\attendancelog\AttendanceLogLoader.class
+sms\admin\app\attendance\dialog\AttendanceLogDialog$CustomBaseLoader.class
 sms\admin\app\student\viewstudent\StudentProfileController.class
 sms\admin\app\payroll\PayrollController$3.class
 sms\admin\app\attendance\AttendanceController.class

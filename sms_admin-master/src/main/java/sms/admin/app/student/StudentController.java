@@ -5,6 +5,7 @@ import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import dev.sol.core.application.loader.FXLoaderFactory;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -57,24 +58,23 @@ public class StudentController extends FXController {
 
     @Override
     protected void load_fields() {
-        // Store original master list
-        // originalMasterList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+        // Initialize data
         originalMasterList = DataUtil.createStudentList();
-        studentMasterList = originalMasterList; // Initial reference
+        studentMasterList = FXCollections.observableArrayList(originalMasterList);
+        
+        // Set items to table
+        studentTableView.setItems(studentMasterList);
 
-        // Retrieve the "selectedYear" parameter passed from RootController.
-        // If not set, use the current year (from YearData.getYears()).
+        // Get selected year
         String selectedYear = (String) getParameter("selectedYear");
         if (selectedYear == null) {
-            // YearData.getYears() returns a list with current year at index 0.
-            selectedYear = YearData.getYears().get(0);
+            selectedYear = YearData.getCurrentAcademicYear();
         }
-        System.out.println("HomeController.load_fields: selectedYear = " + selectedYear);
+        
+        // Apply initial filter
+        initializeWithYear(selectedYear);
 
-        // Apply initial filter based on selected year
-        updateYear(selectedYear);
-
-        // Configure modal panes like the example
+        // Configure modal panes
         formodal.setAlignment(Pos.TOP_CENTER);
         formodal.usePredefinedTransitionFactories(Side.TOP);
         formodal.setPersistent(true);
@@ -112,19 +112,38 @@ public class StudentController extends FXController {
     }
 
     public void updateYear(String year) {
+        initializeWithYear(year);
+    }
+
+    public void initializeWithYear(String year) {
         if (year == null || originalMasterList == null)
             return;
 
         // Convert year string to yearID (assuming year format is "2023-2024")
-        final int yearID = Integer.parseInt(year.split("-")[0]);
+        final int startYear = Integer.parseInt(year.split("-")[0]);
+        final int endYear = Integer.parseInt(year.split("-")[1]);
+        System.out.println("Filtering students for years: " + startYear + "-" + endYear);
 
-        // Filter students based on yearID
-        studentTableView.setItems(originalMasterList.filtered(student -> {
-            if (student.getYearID() == null)
+        // Filter students based on school year
+        ObservableList<Student> filteredList = originalMasterList.filtered(student -> {
+            if (student.getYearID() == null) {
+                System.out.println("Student has no year: " + student.getFirstName());
                 return false;
+            }
             SchoolYear schoolYear = student.getYearID();
-            return schoolYear != null && schoolYear.getYearID() == yearID;
-        }));
+            boolean matches = schoolYear != null && 
+                            schoolYear.getYearStart() == startYear && 
+                            schoolYear.getYearEnd() == endYear;
+            System.out.println("Student " + student.getFirstName() + 
+                " year: " + (schoolYear != null ? schoolYear.getYearStart() + "-" + schoolYear.getYearEnd() : "null") + 
+                " matches: " + matches);
+            return matches;
+        });
+
+        // Set the filtered list to the table and refresh
+        studentTableView.setItems(filteredList);
+        studentMasterList = filteredList;
+        studentTableView.refresh();
     }
 
     @FXML

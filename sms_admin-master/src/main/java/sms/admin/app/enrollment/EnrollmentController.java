@@ -1,12 +1,16 @@
 package sms.admin.app.enrollment;
 
+import java.io.File;
+
 import dev.sol.core.application.FXController;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import sms.admin.util.ValidationUtils;
-
-import java.io.File;
 public class EnrollmentController extends FXController {
 
     @FXML
@@ -243,8 +247,12 @@ public class EnrollmentController extends FXController {
     }
 
     public void updateYear(String year) {
+        initializeWithYear(year);
+    }
+
+    public void initializeWithYear(String year) {
         // Update enrollment data based on selected year
-        // Add your year-specific enrollment logic here
-        System.out.println("Updating enrollment data for year: " + year);
+        System.out.println("Initializing enrollment data for year: " + year);
+        // Add your year-specific enrollment initialization logic here
     }
 }

@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DateTimeUtils {
-    private static final DateTimeFormatter MONTH_YEAR_FORMATTER = DateTimeFormatter.ofPattern("MMMM yyyy");
+    public static final DateTimeFormatter MONTH_YEAR_FORMATTER = DateTimeFormatter.ofPattern("MMMM yyyy");
 
     public static ObservableList<String> getYearsList(int numberOfYears) {
         List<String> years = new ArrayList<>();
@@ -35,6 +35,25 @@ public class DateTimeUtils {
         }
     }
 
+    public static boolean isInAcademicYear(int targetYear, int targetMonth, String academicYear) {
+        if (academicYear == null) return false;
+        
+        String[] years = academicYear.split("-");
+        if (years.length != 2) return false;
+
+        int startYear = Integer.parseInt(years[0]);
+        int endYear = Integer.parseInt(years[1]);
+
+        // Academic year runs from July of start year to June of end year
+        if (targetYear == startYear) {
+            return targetMonth >= 7; // July onwards of start year
+        } else if (targetYear == endYear) {
+            return targetMonth <= 6; // Up to June of end year
+        }
+        
+        return false;
+    }
+
     public static void updateMonthYearComboBox(ComboBox<String> comboBox, String academicYear) {
         if (comboBox == null || academicYear == null)
             return;
@@ -42,31 +61,60 @@ public class DateTimeUtils {
         try {
             String[] years = academicYear.split("-");
             if (years.length != 2)
-                throw new IllegalArgumentException("Invalid academic year: " + academicYear);
+                throw new IllegalArgumentException("Invalid academic year format: " + academicYear);
 
             int startYear = Integer.parseInt(years[0].trim());
             int endYear = Integer.parseInt(years[1].trim());
+            
             ObservableList<String> monthYears = FXCollections.observableArrayList();
-            YearMonth current = YearMonth.now();
 
-            YearMonth ym = YearMonth.of(startYear, 7); // Start from July
-            YearMonth endDate = YearMonth.of(endYear, 6); // End in June
-
-            while (!ym.isAfter(endDate)) {
+            // Add months from July to December of start year
+            for (int month = 7; month <= 12; month++) {
+                YearMonth ym = YearMonth.of(startYear, month);
                 monthYears.add(ym.format(MONTH_YEAR_FORMATTER));
-                ym = ym.plusMonths(1);
+            }
+
+            // Add months from January to June of end year
+            for (int month = 1; month <= 6; month++) {
+                YearMonth ym = YearMonth.of(endYear, month);
+                monthYears.add(ym.format(MONTH_YEAR_FORMATTER));
             }
 
             comboBox.setItems(monthYears);
-            comboBox.setValue(
-                    monthYears.contains(current.format(MONTH_YEAR_FORMATTER)) ? current.format(MONTH_YEAR_FORMATTER)
-                            : monthYears.get(0));
+            
+            // Set current month if it falls within the academic year
+            YearMonth current = YearMonth.now();
+            String currentFormatted = current.format(MONTH_YEAR_FORMATTER);
+            
+            // If current month is in the list, use it; otherwise use first month
+            if (monthYears.contains(currentFormatted)) {
+                comboBox.setValue(currentFormatted);
+            } else {
+                comboBox.setValue(monthYears.get(0));
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
             comboBox.setItems(FXCollections.observableArrayList(
                     YearMonth.now().format(MONTH_YEAR_FORMATTER)));
             comboBox.setValue(comboBox.getItems().get(0));
+        }
+    }
+
+    public static int[] parseAcademicYear(String academicYear) {
+        try {
+            String[] years = academicYear.split("-");
+            if (years.length != 2)
+                throw new IllegalArgumentException("Invalid academic year format: " + academicYear);
+
+            return new int[] {
+                Integer.parseInt(years[0].trim()),
+                Integer.parseInt(years[1].trim())
+            };
+        } catch (Exception e) {
+            e.printStackTrace();
+            int currentYear = LocalDate.now().getYear();
+            return new int[] { currentYear, currentYear + 1 };
         }
     }
 

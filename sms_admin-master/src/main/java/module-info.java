@@ -37,5 +37,5 @@ module sms.admin {
     exports sms.admin.app.student;
     exports sms.admin.app.student.viewstudent;
     exports sms.admin.app.schoolyear;
-    exports sms.admin.app.attendance.dialog to javafx.fxml;
+    exports sms.admin.app.attendance.dialog to javafx.fxml, core.fx;
 }

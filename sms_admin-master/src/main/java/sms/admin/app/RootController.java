@@ -15,8 +15,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.MenuItem;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import sms.admin.app.attendance.AttendanceController;
 import sms.admin.app.attendance.AttendanceLoader;
 import sms.admin.app.enrollment.EnrollmentController;
@@ -58,38 +58,50 @@ public class RootController extends FXController {
     @FXML
     private void handleStudentButton() {
         highlightButton(studentButton);
+        String selectedYear = yearComboBox.getValue();
         currentController = SceneLoaderUtil.loadScene(
             "/sms/admin/app/student/STUDENT.fxml",
             getClass(),
             StudentLoader.class,
-            Map.of("selectedYear", yearComboBox.getValue()),
+            Map.of("selectedYear", selectedYear),
             contentPane
         );
+        if (currentController instanceof StudentController controller) {
+            controller.initializeWithYear(selectedYear);
+        }
     }
 
     @FXML
-    private void handlePayrollButton() {  // Changed from handlesPayrollButton
+    private void handlePayrollButton() {
         highlightButton(payrollButton);
+        String selectedYear = yearComboBox.getValue();
         currentController = SceneLoaderUtil.loadScene(
             "/sms/admin/app/payroll/PAYROLL.fxml",
             getClass(),
             PayrollLoader.class,
-            Map.of("selectedYear", yearComboBox.getValue()),
+            Map.of("selectedYear", selectedYear),
             contentPane
         );
+        if (currentController instanceof PayrollController controller) {
+            controller.initializeWithYear(selectedYear);
+        }
     }
 
     @FXML
     private void handleAttendanceButton() {
         highlightButton(attendanceButton);
+        String selectedYear = yearComboBox.getValue();
         try {
             currentController = SceneLoaderUtil.loadScene(
                 "/sms/admin/app/attendance/ATTENDANCE.fxml",
                 getClass(),
                 AttendanceLoader.class,
-                Map.of("selectedYear", yearComboBox.getValue()),
+                Map.of("selectedYear", selectedYear),
                 contentPane
             );
+            if (currentController instanceof AttendanceController controller) {
+                controller.initializeWithYear(selectedYear);
+            }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -98,13 +110,17 @@ public class RootController extends FXController {
     @FXML
     private void handleEnrollmentButton() {
         highlightButton(enrollmentButton);
+        String selectedYear = yearComboBox.getValue();
         currentController = SceneLoaderUtil.loadScene(
             "/sms/admin/app/enrollment/ENROLLMENT.fxml",
             getClass(),
             EnrollmentLoader.class,
-            Map.of("selectedYear", yearComboBox.getValue()),
+            Map.of("selectedYear", selectedYear),
             contentPane
         );
+        if (currentController instanceof EnrollmentController controller) {
+            controller.initializeWithYear(selectedYear);
+        }
     }
 
     @Override
@@ -113,32 +129,41 @@ public class RootController extends FXController {
 
         // Update year listener
         yearComboBox.valueProperty().addListener((obs, oldYear, newYear) -> {
-            if (newYear != null) {
+            if (newYear != null && !newYear.equals(oldYear)) {
                 System.out.println("RootController: Year changed to " + newYear);
-                updateCurrentController(newYear);
+                reloadCurrentScene();
             }
         });
     }
 
     @Override
     protected void load_fields() {
-        // schoolYearList = App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR");
+        // Initialize school year list
         schoolYearList = DataUtil.createSchoolYearList();
         yearComboBox.setItems(SchoolYearUtil.convertToStringList(schoolYearList));
 
-        // Set current year as default using findCurrentYear
+        // Set current year as default
         SchoolYear currentYear = SchoolYearUtil.findCurrentYear(schoolYearList);
         if (currentYear != null) {
-            yearComboBox.setValue(SchoolYearUtil.formatSchoolYear(currentYear));
+            String yearString = SchoolYearUtil.formatSchoolYear(currentYear);
+            yearComboBox.setValue(yearString);
+            
+            // Load initial scene with selected year
+            handleStudentButton();
         }
-
-        // Load initial scene
-        handleStudentButton();
     }
 
     @Override
     protected void load_listeners() {
-        // Use setOnAction consistently for all buttons
+        // Update year listener with immediate refresh
+        yearComboBox.valueProperty().addListener((obs, oldYear, newYear) -> {
+            if (newYear != null && !newYear.equals(oldYear)) {
+                System.out.println("RootController: Year changed to " + newYear);
+                updateCurrentController(newYear);
+            }
+        });
+
+        // Rest of the listeners...
         payrollButton.setOnAction(event -> handlePayrollButton());
         attendanceButton.setOnAction(event -> handleAttendanceButton());
         studentButton.setOnAction(event -> handleStudentButton());
@@ -215,20 +240,28 @@ public class RootController extends FXController {
     }
 
     private void updateCurrentController(String newYear) {
+        if (currentController != null) {
+            if (currentController instanceof StudentController controller) {
+                controller.initializeWithYear(newYear);
+            } else if (currentController instanceof PayrollController controller) {
+                controller.initializeWithYear(newYear);
+            } else if (currentController instanceof AttendanceController controller) {
+                controller.initializeWithYear(newYear);
+            } else if (currentController instanceof EnrollmentController controller) {
+                controller.initializeWithYear(newYear);
+            }
+        }
+    }
+
+    private void reloadCurrentScene() {
         if (currentController == null) return;
 
-        try {
-            if (currentController instanceof AttendanceController) {
-                ((AttendanceController) currentController).updateYear(newYear);
-            } else if (currentController instanceof PayrollController) {
-                ((PayrollController) currentController).updateYear(newYear);
-            } else if (currentController instanceof StudentController) {
-                ((StudentController) currentController).updateYear(newYear);
-            } else if (currentController instanceof EnrollmentController) {
-                ((EnrollmentController) currentController).updateYear(newYear);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        switch (currentController) {
+            case StudentController ignored -> handleStudentButton();
+            case PayrollController ignored -> handlePayrollButton();
+            case AttendanceController ignored -> handleAttendanceButton();
+            case EnrollmentController ignored -> handleEnrollmentButton();
+            default -> {}
         }
     }
 

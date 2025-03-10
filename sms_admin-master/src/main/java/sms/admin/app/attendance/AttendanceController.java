@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
 import atlantafx.base.controls.ModalPane;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
+import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import dev.sol.core.application.loader.FXLoaderFactory;
@@ -87,28 +89,18 @@ public class AttendanceController extends FXController {
 
     @Override
     protected void load_fields() {
-        // Initialize lists
-        studentList = DataUtil.createStudentList();
-        attendanceLog = DataUtil.createAttendanceLogList();
+        // Initialize lists with fresh data
+        studentList = FXCollections.observableArrayList(DataUtil.createStudentList());
+        attendanceLog = FXCollections.observableArrayList(DataUtil.createAttendanceLogList());
 
-        if (studentList == null) {
-            studentList = FXCollections.observableArrayList();
-        }
-
-        if (attendanceLog == null) {
-            attendanceLog = FXCollections.observableArrayList();
-        }
-
-        // Setup single table
+        // Setup table
         setupTable();
         setupColumnWidths();
         
-        // Initialize based on selected year
+        // Initialize with selected year
         String selectedYear = getSelectedYearOrDefault();
-        if (selectedYear != null) {
-            DateTimeUtils.updateMonthYearComboBox(monthYearComboBox, selectedYear);
-        }
-
+        initializeWithYear(selectedYear);
+        
         setupMonthColumns();
         updateStudentCountLabels();
     }
@@ -363,14 +355,54 @@ public class AttendanceController extends FXController {
   
 
     private void showAttendanceLogDialog(Student student, LocalDate date) {
-        AttendanceLogDialog dialog = new AttendanceLogDialog(student, date, attendanceLog);
-        dialog.showAndWait();
+        new AttendanceLogDialog(student, date, attendanceLog);
         System.out.println("Attendance Log dialog closed.");
     }
 
     public void updateYear(String newYear) {
-        DateTimeUtils.updateMonthYearComboBox(monthYearComboBox, newYear);
-        setupMonthColumns();
+        initializeWithYear(newYear);
+    }
+
+    public void initializeWithYear(String year) {
+        if (year == null) return;
+
+        // Parse the year range (e.g., "2023-2024")
+        String[] yearRange = year.split("-");
+        int startYear = Integer.parseInt(yearRange[0]);
+        int endYear = Integer.parseInt(yearRange[1]);
+
+        // Filter students based on school year
+        studentList = DataUtil.createStudentList().filtered(student -> {
+            if (student.getYearID() == null) return false;
+            SchoolYear schoolYear = student.getYearID();
+            return schoolYear.getYearStart() == startYear && 
+                   schoolYear.getYearEnd() == endYear;
+        });
+
+        // Update table
+        attendanceTable.setItems(studentList);
+        
+        // Update month combo box and select appropriate month
+        if (monthYearComboBox != null) {
+            DateTimeUtils.updateMonthYearComboBox(monthYearComboBox, year);
+            
+            // Get current month-year
+            YearMonth current = YearMonth.now();
+            String currentFormatted = current.format(DateTimeUtils.MONTH_YEAR_FORMATTER);
+            
+            // Try to select current month if it's in the list
+            if (monthYearComboBox.getItems().contains(currentFormatted)) {
+                monthYearComboBox.setValue(currentFormatted);
+            }
+            // If current month is not in the academic year, select first month
+            else if (!monthYearComboBox.getItems().isEmpty()) {
+                monthYearComboBox.setValue(monthYearComboBox.getItems().get(0));
+            }
+            
+            setupMonthColumns();
+        }
+        
+        updateStudentCountLabels();
     }
 
     @FXML
