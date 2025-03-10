@@ -42,7 +42,19 @@
                <ComboBox fx:id="yearMonthComboBox" prefWidth="200" promptText="Select Month and Year"/>
                <Region HBox.hgrow="ALWAYS"/>
                <HBox spacing="5">
-                  <Button text="Export" prefWidth="80" prefHeight="30" styleClass="secondary-button"/>
+                  <MenuButton fx:id="exportButton" text="Export" prefWidth="80" prefHeight="30" styleClass="secondary-button">
+                     <style>
+                        -fx-background-color: maroon;
+                        -fx-text-fill: white;
+                        -fx-font-weight: bold;
+                        -fx-opacity: 1.0;
+                     </style>
+                     <items>
+                        <MenuItem fx:id="exportExcel" text="Excel" />
+                        <MenuItem fx:id="exportCsv" text="CSV" />
+                        <MenuItem fx:id="exportPdf" text="PDF" />
+                     </items>
+                  </MenuButton>
                   <MenuButton text="Management" prefWidth="70" prefHeight="30" styleClass="menu-button">
                      <items>
                         <MenuItem text="Attendance">
