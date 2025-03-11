@@ -11,6 +11,7 @@ import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -19,8 +20,11 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import sms.admin.app.student.viewstudent.StudentProfileLoader;
+import sms.admin.util.exporter.StudentTableExporter;
 import sms.admin.util.YearData;
 import sms.admin.util.mock.DataUtil;
+
+import java.time.LocalDate;
 
 public class StudentController extends FXController {
 
@@ -51,6 +55,14 @@ public class StudentController extends FXController {
     private ModalPane formodal; // ModalPane from AtlantaFX (defined in FXML without children)
     @FXML
     private StackPane modalContainer;
+    @FXML
+    private MenuButton exportButton;
+    @FXML
+    private MenuItem exportExcel;
+    @FXML
+    private MenuItem exportCsv;
+    @FXML
+    private MenuItem exportPdf;
 
     private ObservableList<Student> studentMasterList;
     private ObservableList<Student> originalMasterList; // Add this field to store original list
@@ -109,6 +121,10 @@ public class StudentController extends FXController {
     protected void load_listeners() {
         // When testButton is clicked, open the student form modal.
 
+        // Add export menu item handlers
+        exportExcel.setOnAction(event -> handleExport("excel"));
+        exportCsv.setOnAction(event -> handleExport("csv"));
+        exportPdf.setOnAction(event -> handleExport("pdf"));
     }
 
     public void updateYear(String year) {
@@ -177,6 +193,27 @@ public class StudentController extends FXController {
     @FXML
     private void closeModal() {
         formodal.hide();
+    }
+
+    private void handleExport(String type) {
+        try {
+            String title = "Student List Report";
+            String fileName = String.format("students_%s.%s",
+                LocalDate.now().toString(),
+                type.equals("excel") ? "xlsx" : type.toLowerCase());
+            String outputPath = System.getProperty("user.home") + "/Downloads/" + fileName;
+            
+            StudentTableExporter exporter = new StudentTableExporter();
+            switch (type) {
+                case "excel" -> exporter.exportToExcel(studentTableView, title, outputPath);
+                case "pdf" -> exporter.exportToPdf(studentTableView, title, outputPath);
+                case "csv" -> exporter.exportToCsv(studentTableView, title, outputPath);
+            }
+            
+            System.out.println("Export completed: " + outputPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }

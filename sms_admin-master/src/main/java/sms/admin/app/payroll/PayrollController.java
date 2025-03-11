@@ -18,6 +18,8 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -26,6 +28,7 @@ import javafx.scene.layout.AnchorPane;
 import sms.admin.util.YearData;
 import sms.admin.util.attendance.AttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
+import sms.admin.util.exporter.PayrollTableExporter;
 import sms.admin.util.mock.DataUtil;
 
 public class PayrollController extends FXController {
@@ -39,6 +42,10 @@ public class PayrollController extends FXController {
     @FXML private TableColumn<Student, Double> colFare;
     @FXML private TableColumn<Student, Double> colTotalAmount;
     @FXML private Label totalAmountLabel;
+    @FXML private MenuButton exportButton;
+    @FXML private MenuItem exportExcel;
+    @FXML private MenuItem exportCsv;
+    @FXML private MenuItem exportPdf;
 
     private ObservableList<Student> studentList;
     private ObservableList<AttendanceLog> attendanceLog;
@@ -202,6 +209,35 @@ public class PayrollController extends FXController {
             payrollTable.refresh(); // Refresh calculations when month changes
             updateTotalAmount();
         });
+
+        // Add export menu item handlers
+        exportExcel.setOnAction(event -> handleExport("excel"));
+        exportCsv.setOnAction(event -> handleExport("csv"));
+        exportPdf.setOnAction(event -> handleExport("pdf"));
+    }
+
+    private void handleExport(String type) {
+        try {
+            String selectedMonthYear = yearMonthComboBox.getValue();
+            if (selectedMonthYear == null) return;
+
+            String title = "Payroll Report - " + selectedMonthYear;
+            String fileName = String.format("payroll_%s.%s",
+                selectedMonthYear.replace(" ", "_").toLowerCase(),
+                type.equals("excel") ? "xlsx" : type);
+            String outputPath = System.getProperty("user.home") + "/Downloads/" + fileName;
+            
+            PayrollTableExporter exporter = new PayrollTableExporter();
+            switch (type) {
+                case "excel" -> exporter.exportToExcel(payrollTable, title, outputPath);
+                case "pdf" -> exporter.exportToPdf(payrollTable, title, outputPath);
+                case "csv" -> exporter.exportToCsv(payrollTable, title, outputPath);
+            }
+            
+            System.out.println("Export completed: " + outputPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML

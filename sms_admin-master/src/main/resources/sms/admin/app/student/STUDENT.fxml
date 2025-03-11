@@ -4,6 +4,8 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
@@ -30,7 +32,19 @@
                         <HBox spacing="5">
                             <Button fx:id="editButton" prefWidth="80" styleClass="blue-button" text="Edit" />
                             <Button fx:id="deleteButton" prefWidth="80" styleClass="blue-button" text="Delete" />
-                            <Button fx:id="exportButton" prefWidth="80" styleClass="secondary-color-button" text="Export" />
+                            <MenuButton fx:id="exportButton" text="Export" prefWidth="80" prefHeight="30" styleClass="secondary-button">
+                                <style>
+                                    -fx-background-color: maroon;
+                                    -fx-text-fill: white;
+                                    -fx-font-weight: bold;
+                                    -fx-opacity: 1.0;
+                                </style>
+                                <items>
+                                    <MenuItem fx:id="exportExcel" text="Excel" />
+                                    <MenuItem fx:id="exportCsv" text="CSV" />
+                                    <MenuItem fx:id="exportPdf" text="PDF" />
+                                </items>
+                            </MenuButton>
                         </HBox>
                     </HBox>
                 </VBox>
