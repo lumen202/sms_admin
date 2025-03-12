@@ -44,6 +44,8 @@
                         <MenuItem fx:id="exportExcel" text="Excel" />
                         <MenuItem fx:id="exportCsv" text="CSV" />
                         <MenuItem fx:id="exportPdf" text="PDF" />
+                        <MenuItem fx:id="exportDetailedExcel" text="Detailed Excel" />
+                        <MenuItem fx:id="exportDetailedPdf" text="Detailed PDF" />
                      </items>
                   </MenuButton>
                   <MenuButton prefHeight="35.0" prefWidth="139.0" styleClass="menu-button" text="Management">

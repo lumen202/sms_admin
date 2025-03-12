@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.YearMonth;
 
+import com.itextpdf.layout.Document;
+
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
 import dev.finalproject.models.SchoolYear;
@@ -36,6 +38,15 @@ import sms.admin.util.attendance.AttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
 import sms.admin.util.exporter.PayrollTableExporter;
 import sms.admin.util.mock.DataUtil;
+import sms.admin.util.exporter.exporterv2.DetailedPayrollExporter;
+import sms.admin.util.exporter.exporterv2.DetailedPayrollPdfExporter;
+import java.io.FileOutputStream;
+
+// Add these imports at the top
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+// ...existing imports...
 
 public class PayrollController extends FXController {
 
@@ -65,6 +76,10 @@ public class PayrollController extends FXController {
     private MenuItem exportCsv;
     @FXML
     private MenuItem exportPdf;
+    @FXML
+    private MenuItem exportDetailedExcel; // Add this field
+    @FXML
+    private MenuItem exportDetailedPdf; // Add this field
 
     private ObservableList<Student> masterStudentList;
     private FilteredList<Student> filteredStudentList;
@@ -257,6 +272,8 @@ public class PayrollController extends FXController {
         exportExcel.setOnAction(event -> handleExport("excel"));
         exportCsv.setOnAction(event -> handleExport("csv"));
         exportPdf.setOnAction(event -> handleExport("pdf"));
+        exportDetailedExcel.setOnAction(event -> handleDetailedExport("excel"));
+        exportDetailedPdf.setOnAction(event -> handleDetailedExport("pdf")); // Add this line
     }
 
     private void handleExport(String type) {
@@ -279,6 +296,43 @@ public class PayrollController extends FXController {
             }
 
             System.out.println("Export completed: " + outputPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleDetailedExport(String type) {
+        try {
+            String selectedMonthYear = yearMonthComboBox.getValue();
+            if (selectedMonthYear == null)
+                return;
+
+            String[] parts = selectedMonthYear.split(" ");
+            YearMonth selectedMonth = YearMonth.of(
+                    Integer.parseInt(parts[1]),
+                    Month.valueOf(parts[0].toUpperCase()));
+
+            String fileName = String.format("detailed_payroll_%s.%s",
+                    selectedMonthYear.replace(" ", "_").toLowerCase(),
+                    type.equals("excel") ? "xlsx" : "pdf");
+            String outputPath = System.getProperty("user.home") + "/Downloads/" + fileName;
+
+            if (type.equals("excel")) {
+                DetailedPayrollExporter exporter = new DetailedPayrollExporter(selectedMonth, attendanceLog);
+                exporter.exportToExcel(payrollTable, "Detailed Payroll", outputPath);
+            } else {
+                DetailedPayrollPdfExporter exporter = new DetailedPayrollPdfExporter(selectedMonth, attendanceLog);
+
+                // Proper PDF document creation
+                PdfWriter writer = new PdfWriter(outputPath);
+                PdfDocument pdf = new PdfDocument(writer);
+                Document document = new Document(pdf);
+
+                exporter.exportToPdf(document, payrollTable.getItems(), "Detailed Payroll");
+                document.close();
+            }
+
+            System.out.println("Detailed " + type + " export completed: " + outputPath);
         } catch (Exception e) {
             e.printStackTrace();
         }
