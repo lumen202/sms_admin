@@ -1,0 +1,32 @@
+.profile-container {
+    -fx-background-color: white;
+    -fx-padding: 20;
+}
+
+.section-header {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #003366;
+}
+
+.profile-info-section {
+    -fx-background-color: #f8f9fa;
+    -fx-padding: 15;
+    -fx-background-radius: 5;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 5;
+}
+
+.profile-field:disabled {
+    -fx-opacity: 0.8;
+}
+
+.profile-field {
+    -fx-background-color: white;
+    -fx-border-color: -fx-border-gray;
+    -fx-border-radius: 3;
+}
+
+.profile-field:editable {
+    -fx-border-color: -fx-primary-color;
+}
