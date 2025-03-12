@@ -6,7 +6,7 @@ import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
-import java.util.HashMap; // Add proper XSSF imports
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +39,11 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
     private static final String HALF_DAY_SYMBOL = "\u00BD"; // ½
     private static final String EXCUSED_SYMBOL = "E";
 
-    private final YearMonth currentMonth = YearMonth.now();
+    private YearMonth selectedMonth; // Add this field
+
+    public AttendanceTableExporter(YearMonth selectedMonth) {
+        this.selectedMonth = selectedMonth;
+    }
 
     @Override
     public String getSheetName() {
@@ -52,19 +56,18 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
         headers.add("ID");
         headers.add("Full Name");
 
-        // Add days of the month
-        for (int day = 1; day <= currentMonth.lengthOfMonth(); day++) {
-            LocalDate date = currentMonth.atDay(day);
+        // Use selectedMonth instead of currentMonth
+        for (int day = 1; day <= selectedMonth.lengthOfMonth(); day++) {
+            LocalDate date = selectedMonth.atDay(day);
             if (!AttendanceUtil.isWeekend(date)) {
                 headers.add(String.format("%02d", day));
             }
         }
 
-        // Use shorter header names for summary columns
-        headers.add("✓"); // Present
-        headers.add("✗"); // Absent
-        headers.add("½"); // Half Day
-        headers.add("E"); // Excused
+        headers.add("Present");
+        headers.add("Absent");
+        headers.add("Half Day");
+        headers.add("Excused");
 
         return headers;
     }
@@ -73,34 +76,34 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
     public List<String> getRowData(Student student) {
         ObservableList<AttendanceLog> logs = DataUtil.createAttendanceLogList();
         List<String> rowData = new ArrayList<>();
+        LocalDate today = LocalDate.now();
 
         // Basic info
         rowData.add(String.valueOf(student.getStudentID()));
         rowData.add(String.format("%s, %s %s", student.getLastName(), student.getFirstName(), student.getMiddleName()));
 
-        // Daily attendance - use unicode symbols
-        for (int day = 1; day <= currentMonth.lengthOfMonth(); day++) {
-            LocalDate date = currentMonth.atDay(day);
+        // Update the daily attendance loop to use selectedMonth
+        for (int day = 1; day <= selectedMonth.lengthOfMonth(); day++) {
+            LocalDate date = selectedMonth.atDay(day);
             if (!AttendanceUtil.isWeekend(date)) {
-                String status = AttendanceUtil.getAttendanceStatus(student, date, logs);
-                String symbol = switch (status) {
-                    case AttendanceUtil.PRESENT_MARK ->
-                        PRESENT_SYMBOL;
-                    case AttendanceUtil.ABSENT_MARK ->
-                        ABSENT_SYMBOL;
-                    case AttendanceUtil.HALF_DAY_MARK ->
-                        HALF_DAY_SYMBOL;
-                    case AttendanceUtil.EXCUSED_MARK ->
-                        EXCUSED_SYMBOL;
-                    default ->
-                        ABSENT_SYMBOL;
-                };
-                rowData.add(symbol);
+                if (date.isAfter(today)) {
+                    rowData.add(""); // Future date - leave empty
+                } else {
+                    String status = AttendanceUtil.getAttendanceStatus(student, date, logs);
+                    String symbol = switch (status) {
+                        case AttendanceUtil.PRESENT_MARK -> PRESENT_SYMBOL;
+                        case AttendanceUtil.ABSENT_MARK -> ABSENT_SYMBOL;
+                        case AttendanceUtil.HALF_DAY_MARK -> HALF_DAY_SYMBOL;
+                        case AttendanceUtil.EXCUSED_MARK -> EXCUSED_SYMBOL;
+                        default -> ""; // Changed from ABSENT_SYMBOL to empty for missing/future records
+                    };
+                    rowData.add(symbol);
+                }
             }
         }
 
-        // Add summary counts
-        Map<String, Long> summary = calculateAttendanceSummary(student, logs, currentMonth);
+        // Update summary calculation to use selectedMonth
+        Map<String, Long> summary = calculateAttendanceSummary(student, logs, selectedMonth);
         rowData.add(String.valueOf(summary.get("present")));
         rowData.add(String.valueOf(summary.get("absent")));
         rowData.add(String.valueOf(summary.get("halfDay")));
@@ -113,23 +116,19 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
             YearMonth month) {
         Map<String, Long> summary = new HashMap<>();
         long present = 0, absent = 0, halfDay = 0, excused = 0;
+        LocalDate today = LocalDate.now();
 
-        // Count weekdays only
+        // Count weekdays only up to current date
         for (int day = 1; day <= month.lengthOfMonth(); day++) {
             LocalDate date = month.atDay(day);
-            if (!AttendanceUtil.isWeekend(date)) {
+            if (!AttendanceUtil.isWeekend(date) && !date.isAfter(today)) {
                 String status = AttendanceUtil.getAttendanceStatus(student, date, logs);
                 switch (status) {
-                    case AttendanceUtil.PRESENT_MARK ->
-                        present++;
-                    case AttendanceUtil.ABSENT_MARK ->
-                        absent++;
-                    case AttendanceUtil.HALF_DAY_MARK ->
-                        halfDay++;
-                    case AttendanceUtil.EXCUSED_MARK ->
-                        excused++;
-                    default ->
-                        absent++; // Count missing records as absent
+                    case AttendanceUtil.PRESENT_MARK -> present++;
+                    case AttendanceUtil.ABSENT_MARK -> absent++;
+                    case AttendanceUtil.HALF_DAY_MARK -> halfDay++;
+                    case AttendanceUtil.EXCUSED_MARK -> excused++;
+                    default -> absent++; // Count missing records as absent
                 }
             }
         }
@@ -206,27 +205,40 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
             if (fontStream == null) {
                 throw new IOException("Font file not found in resources.");
             }
-            // Read all bytes from the stream (requires Java 9+)
             byte[] fontBytes = fontStream.readAllBytes();
-            // Create the PdfFont using the byte array, specifying the encoding and embedding strategy
-            PdfFont font = PdfFontFactory.createFont(fontBytes, PdfEncodings.IDENTITY_H, PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
+            PdfFont font = PdfFontFactory.createFont(fontBytes, PdfEncodings.IDENTITY_H,
+                    PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
 
-            // Set font for the title
-            document.add(new Paragraph(title).setFont(font));
+            // Calculate dynamic font size based on number of columns
+            float fontSize = calculateDynamicFontSize(getHeaders().size());
+
+            // Set font for the title with slightly larger size
+            document.add(new Paragraph(title).setFont(font).setFontSize(fontSize + 2));
+            document.add(new Paragraph("\n")); // Add some spacing
 
             // Create table with the number of columns based on headers
             Table table = new Table(getHeaders().size());
+            table.setWidth(com.itextpdf.layout.properties.UnitValue.createPercentValue(100));
 
             // Add headers with font
             for (String header : getHeaders()) {
-                table.addCell(new Cell().add(new Paragraph(header).setFont(font)));
+                Cell cell = new Cell().add(new Paragraph(header).setFont(font).setFontSize(fontSize));
+                cell.setTextAlignment(com.itextpdf.layout.properties.TextAlignment.CENTER);
+                table.addCell(cell);
             }
 
             // Add data with font
             for (Student item : items) {
                 List<String> rowData = getRowData(item);
-                for (String value : rowData) {
-                    table.addCell(new Cell().add(new Paragraph(value).setFont(font)));
+                for (int i = 0; i < rowData.size(); i++) {
+                    Cell cell = new Cell().add(new Paragraph(rowData.get(i)).setFont(font).setFontSize(fontSize));
+                    // Left align the name column (index 1)
+                    if (i == 1) {
+                        cell.setTextAlignment(com.itextpdf.layout.properties.TextAlignment.LEFT);
+                    } else {
+                        cell.setTextAlignment(com.itextpdf.layout.properties.TextAlignment.CENTER);
+                    }
+                    table.addCell(cell);
                 }
             }
 
@@ -234,6 +246,24 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
             document.add(table);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private float calculateDynamicFontSize(int columnCount) {
+        // Base size for few columns
+        float baseSize = 10f;
+
+        // Adjust font size based on column count
+        if (columnCount <= 15) {
+            return baseSize;
+        } else if (columnCount <= 20) {
+            return 8f;
+        } else if (columnCount <= 25) {
+            return 7f;
+        } else if (columnCount <= 30) {
+            return 6f;
+        } else {
+            return 5f; // Minimum size
         }
     }
 

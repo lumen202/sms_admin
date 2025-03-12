@@ -15,9 +15,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane stylesheets="@../styles/main.css,@../styles/dialog.css"
-    xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1"
-    fx:controller="sms.admin.app.student.StudentController">
+<StackPane stylesheets="@../styles/main.css,@../styles/dialog.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.student.StudentController">
     <padding>
         <Insets bottom="2" left="5" right="5" top="2" />
     </padding>
@@ -29,16 +27,12 @@
                         <Insets bottom="5" left="10" right="10" top="5" />
                     </padding>
                     <HBox alignment="CENTER_LEFT" spacing="10"> 
-                        <TextField fx:id="searchField" prefWidth="300"  
-                            promptText="Search students..." />
+                        <TextField fx:id="searchField" prefWidth="300" promptText="Search students..." />
                         <Region HBox.hgrow="ALWAYS" />
                         <HBox spacing="5">
-                            <Button fx:id="editButton" prefWidth="80" styleClass="blue-button"
-                                text="Edit" />
-                            <Button fx:id="deleteButton" prefWidth="80" styleClass="blue-button"
-                                text="Delete" />
-                            <MenuButton fx:id="exportButton" text="Export" prefWidth="80"
-                                prefHeight="30" styleClass="secondary-button">
+                            <Button fx:id="editButton" prefWidth="80" styleClass="blue-button" text="Edit" />
+                            <Button fx:id="deleteButton" prefWidth="80" styleClass="blue-button" text="Delete" />
+                            <MenuButton fx:id="exportButton" minHeight="23.0" prefHeight="35.0" prefWidth="95.0" text="Export">
                                 <items>
                                     <MenuItem fx:id="exportExcel" text="Excel" />
                                     <MenuItem fx:id="exportCsv" text="CSV" />
@@ -61,14 +55,11 @@
                             <Insets bottom="5" left="10" right="10" top="5" />
                         </padding>
                         <columns>
-                            <TableColumn fx:id="studentIDColumn" prefWidth="80.0"
-                                style="-fx-alignment: CENTER;" text="ID" />
+                            <TableColumn fx:id="studentIDColumn" prefWidth="80.0" style="-fx-alignment: CENTER;" text="ID" />
                             <TableColumn fx:id="firstNameColumn" prefWidth="120.0" text="First Name" />
-                            <TableColumn fx:id="middleNameColumn" prefWidth="120.0"
-                                text="Middle Name" />
+                            <TableColumn fx:id="middleNameColumn" prefWidth="120.0" text="Middle Name" />
                             <TableColumn fx:id="lastNameColumn" prefWidth="120.0" text="Last Name" />
-                            <TableColumn fx:id="nameExtensionColumn" prefWidth="90.0"
-                                text="Name Ext." />
+                            <TableColumn fx:id="nameExtensionColumn" prefWidth="90.0" text="Name Ext." />
                             <TableColumn fx:id="clusterColumn" prefWidth="100.0" text="Cluster" />
                             <TableColumn fx:id="contactColumn" prefWidth="120.0" text="Contact No." />
                             <TableColumn fx:id="emailColumn" prefWidth="150.0" text="Email" />

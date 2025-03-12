@@ -17,6 +17,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
@@ -26,6 +28,9 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.Node;
+import sms.admin.app.RootController;
+import sms.admin.app.attendance.AttendanceController;
 import sms.admin.util.YearData;
 import sms.admin.util.attendance.AttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
@@ -70,6 +75,8 @@ public class PayrollController extends FXController {
 
     @Override
     protected void load_fields() {
+        // Add this line at the start of load_fields
+        rootPane.getProperties().put("controller", this);
         // Initialize lists with data - create fresh copies
         masterStudentList = FXCollections.observableArrayList(DataUtil.createStudentList());
         filteredStudentList = new FilteredList<>(masterStudentList);
@@ -86,6 +93,12 @@ public class PayrollController extends FXController {
 
         // Apply initial year filter
         initializeWithYear(selectedYear);
+
+        // Get initially selected month from parameters
+        String selectedMonth = (String) getParameter("selectedMonth");
+        if (selectedMonth != null && yearMonthComboBox.getItems().contains(selectedMonth)) {
+            yearMonthComboBox.setValue(selectedMonth);
+        }
     }
 
     private void setupTable() {
@@ -222,8 +235,22 @@ public class PayrollController extends FXController {
     @Override
     protected void load_listeners() {
         yearMonthComboBox.setOnAction(event -> {
-            payrollTable.refresh(); // Refresh calculations when month changes
+            if (!yearMonthComboBox.isFocused()) {
+                return; // Ignore programmatic changes
+            }
+            payrollTable.refresh();
             updateTotalAmount();
+            // Update root controller with correct method name
+            Scene scene = rootPane.getScene();
+            if (scene != null) {
+                Parent root = scene.getRoot();
+                if (root != null) {
+                    Object controller = root.getProperties().get("controller");
+                    if (controller instanceof RootController rootController) {
+                        rootController.setSelectedMonth(yearMonthComboBox.getValue());
+                    }
+                }
+            }
         });
 
         // Add export menu item handlers
@@ -254,6 +281,31 @@ public class PayrollController extends FXController {
             System.out.println("Export completed: " + outputPath);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void updateAttendanceMonth(String selectedMonthYear) {
+        try {
+            Scene scene = rootPane.getScene();
+            if (scene == null)
+                return;
+
+            Parent root = scene.getRoot();
+            if (root == null)
+                return;
+
+            // Find AttendanceController in the current scene
+            for (Node node : root.lookupAll("*")) {
+                if (node.getId() != null && node.getId().equals("attendanceRoot")) {
+                    Object controller = node.getProperties().get("controller");
+                    if (controller instanceof AttendanceController attendanceController) {
+                        attendanceController.setSelectedMonth(selectedMonthYear);
+                        return;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Could not sync month selection with Attendance: " + e.getMessage());
         }
     }
 
@@ -303,6 +355,14 @@ public class PayrollController extends FXController {
             else if (!yearMonthComboBox.getItems().isEmpty()) {
                 yearMonthComboBox.setValue(yearMonthComboBox.getItems().get(0));
             }
+        }
+    }
+
+    public void setSelectedMonth(String monthYear) {
+        if (yearMonthComboBox != null && yearMonthComboBox.getItems().contains(monthYear)) {
+            yearMonthComboBox.setValue(monthYear);
+            payrollTable.refresh();
+            updateTotalAmount();
         }
     }
 }

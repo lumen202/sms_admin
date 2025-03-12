@@ -1,37 +1,63 @@
 package sms.admin.app.attendance;
 
+import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.List;
 
+import atlantafx.base.controls.ModalPane;
 import dev.finalproject.models.AttendanceLog;
+import dev.finalproject.models.AttendanceRecord;
+import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
-import javafx.application.Platform;
-import javafx.beans.property.SimpleStringProperty;
+import dev.sol.core.application.loader.FXLoaderFactory;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
-import javafx.scene.control.MenuButton;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
-import sms.admin.util.TableViewTransitions;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.geometry.Pos;
+import javafx.geometry.Side;
+import javafx.scene.control.MenuButton;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import sms.admin.app.RootController;
+import sms.admin.app.attendance.dialog.AttendanceLogDialog;
+import sms.admin.app.payroll.PayrollController;
+import sms.admin.app.student.viewstudent.StudentProfileLoader;
 import sms.admin.util.attendance.AttendanceUtil;
 import sms.admin.util.attendance.WeeklyAttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
 import sms.admin.util.exporter.AttendanceTableExporter;
 import sms.admin.util.mock.DataUtil;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.scene.control.ScrollBar;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.SelectionMode;
+import javafx.scene.control.TablePosition;
 
 public class AttendanceController extends FXController {
+
+    private static final String STUDENT_PROFILE_FXML = "/sms.admin/app/management/viewstudent/STUDENT_PROFILE.fxml";
 
     @FXML
     private ComboBox<String> monthYearComboBox;
@@ -44,9 +70,17 @@ public class AttendanceController extends FXController {
     @FXML
     private TableColumn<Student, String> monthAttendanceColumn;
     @FXML
+    private BorderPane rootPane;
+    @FXML
+    private Label currentDateLabel;
+    @FXML
     private Label selectedStudentsLabel;
     @FXML
     private Label totalStudentsLabel;
+    @FXML
+    private ModalPane modalContainer;
+    @FXML
+    private StackPane dialogContainer;
     @FXML
     private MenuButton exportButton;
     @FXML
@@ -55,56 +89,41 @@ public class AttendanceController extends FXController {
     private MenuItem exportCsv;
     @FXML
     private MenuItem exportPdf;
+    // Remove viewAttendance MenuItem
 
     private ObservableList<Student> studentList;
-    private FilteredList<Student> filteredStudentList;
     private ObservableList<AttendanceLog> attendanceLog;
 
     @Override
-    protected void load_fields() {
-        // Initialize data lists
-        studentList = FXCollections.observableArrayList(DataUtil.createStudentList());
-        filteredStudentList = new FilteredList<>(studentList, p -> true);
-        attendanceLog = FXCollections.observableArrayList(DataUtil.createAttendanceLogList());
+    protected void load_bindings() {
+        // Comment out binding to test if manual visibility works
+        // dialogContainer.visibleProperty().bind(modalContainer.displayProperty());
+    }
 
-        // Setup the table and fixed column widths
+    @Override
+    protected void load_fields() {
+        // Add this line at the start of load_fields
+        rootPane.getProperties().put("controller", this);
+        studentList = FXCollections.observableArrayList(DataUtil.createStudentList());
+        attendanceLog = FXCollections.observableArrayList(
+                DataUtil.createAttendanceLogList().filtered(log -> !isFutureDate(log)) // Filter out future dates
+        );
+
         setupTable();
         setupColumnWidths();
 
-        // Initialize view based on selected academic year
-        initializeWithYear(getSelectedYearOrDefault());
+        String selectedYear = getSelectedYearOrDefault();
+        initializeWithYear(selectedYear);
 
-        // Setup the dynamic month columns and update labels
+        // Get initially selected month from parameters
+        String selectedMonth = (String) getParameter("selectedMonth");
+        if (selectedMonth != null && monthYearComboBox.getItems().contains(selectedMonth)) {
+            monthYearComboBox.setValue(selectedMonth);
+        }
+
         setupMonthColumns();
-        disableColumnReordering(attendanceTable);
         updateStudentCountLabels();
-    }
-
-    @Override
-    protected void load_bindings() {
-        // Place for property bindings if needed.
-    }
-
-    @Override
-    protected void load_listeners() {
-        // Listener for month/year ComboBox changes
-        monthYearComboBox.setOnAction(event -> setupMonthColumns());
-
-        // Handlers for export menu items
-        exportExcel.setOnAction(event -> handleExport("excel"));
-        exportCsv.setOnAction(event -> handleExport("csv"));
-        exportPdf.setOnAction(event -> handleExport("pdf"));
-
-        // Listener to update student count labels on selection changes
-        attendanceTable.getSelectionModel().selectedItemProperty().addListener(
-                (obs, oldSelection, newSelection) -> updateStudentCountLabels());
-
-        // Listener to adjust dynamic column widths when the TableView is resized
-        attendanceTable.widthProperty().addListener((obs, oldWidth, newWidth) -> {
-            if (newWidth.doubleValue() > 0) {
-                Platform.runLater(this::adjustColumnWidths);
-            }
-        });
+        // Remove viewAttendance initialization
     }
 
     private void setupTable() {
@@ -117,28 +136,40 @@ public class AttendanceController extends FXController {
                     student.getMiddleName());
             return new SimpleStringProperty(fullName);
         });
-        attendanceTable.setItems(filteredStudentList);
-        attendanceTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-        // Disable column reordering for the main columns
-        colNo.setReorderable(false);
-        colFullName.setReorderable(false);
-        monthAttendanceColumn.setReorderable(false);
+        attendanceTable.setItems(studentList);
+        attendanceTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+    }
+
+    private TableCell<?, ?> findCell(int row, TableColumn<?, ?> column) {
+        for (Node node : attendanceTable.lookupAll(".table-cell")) {
+            if (node instanceof TableCell) {
+                @SuppressWarnings("unchecked")
+                TableCell<?, ?> cell = (TableCell<?, ?>) node;
+                if (cell.getTableRow() != null
+                        && cell.getTableRow().getIndex() == row
+                        && cell.getTableColumn() == column) {
+                    return cell;
+                }
+            }
+        }
+        return null;
     }
 
     private void setupColumnWidths() {
-        // Fixed columns for "No" and "Full Name"
+        // Fixed width for ID and Name columns
         colNo.setPrefWidth(44);
         colNo.setMinWidth(44);
         colNo.setMaxWidth(44);
         colNo.setResizable(false);
 
-        colFullName.setPrefWidth(148);
-        colFullName.setMinWidth(148);
-        colFullName.setMaxWidth(246);
+        colFullName.setPrefWidth(180);
+        colFullName.setMinWidth(180);
+        colFullName.setMaxWidth(180);
+        colFullName.setResizable(false);
 
-        // Base width for the container of dynamic attendance columns
-        monthAttendanceColumn.setPrefWidth(655);
+        // Make monthly attendance column take remaining space
+        monthAttendanceColumn.setPrefWidth(-1); // Let it calculate automatically
     }
 
     private void setupMonthColumns() {
@@ -149,28 +180,36 @@ public class AttendanceController extends FXController {
             return;
         }
 
-        // Parse month and year from the ComboBox value
         String[] parts = selectedMonthYear.split(" ");
         String monthName = parts[0];
         int yearNumber = Integer.parseInt(parts[1]);
         Month month = Month.valueOf(monthName.toUpperCase());
 
         LocalDate currentDate = LocalDate.of(yearNumber, month.getValue(), 1);
+        LocalDate today = LocalDate.now();
+        LocalDate endDate = (month.equals(today.getMonth()) && yearNumber == today.getYear())
+                ? today // Stop at today if current month
+                : currentDate.withDayOfMonth(currentDate.lengthOfMonth());
+
         TableColumn<Student, String> currentWeekColumn = new TableColumn<>("Week 1");
         currentWeekColumn.setStyle("-fx-alignment: CENTER;");
         monthAttendanceColumn.getColumns().add(currentWeekColumn);
 
         int weekNumber = 1;
-        while (currentDate.getMonth() == month) {
-            if (currentDate.getDayOfWeek() == DayOfWeek.MONDAY && !currentWeekColumn.getColumns().isEmpty()) {
+        while (currentDate.isBefore(endDate.plusDays(1))) {
+            if (currentDate.getDayOfWeek() == DayOfWeek.MONDAY
+                    && !currentWeekColumn.getColumns().isEmpty()) {
                 weekNumber++;
                 currentWeekColumn = createWeekColumn(weekNumber);
                 monthAttendanceColumn.getColumns().add(currentWeekColumn);
             }
+
             if (!AttendanceUtil.isWeekend(currentDate)) {
-                TableColumn<Student, String> dayColumn = createDayColumn(currentDate);
+                final LocalDate cellDate = currentDate;
+                TableColumn<Student, String> dayColumn = createDayColumn(cellDate);
                 currentWeekColumn.getColumns().add(dayColumn);
             }
+
             currentDate = currentDate.plusDays(1);
         }
 
@@ -178,48 +217,136 @@ public class AttendanceController extends FXController {
     }
 
     private void adjustColumnWidths() {
-        double availableWidth = attendanceTable.getWidth() - colNo.getWidth() - colFullName.getWidth() - 20;
+        // Get available width for weekly columns
+        double availableWidth = attendanceTable.getWidth() - colNo.getWidth() - colFullName.getWidth() - 2;
         int weekCount = monthAttendanceColumn.getColumns().size();
+
         if (weekCount > 0) {
-            double baseWeekWidth = availableWidth / weekCount;
-            double extraHeaderSpace = 40; // Extra space to preserve header title
-            for (int i = 0; i < weekCount; i++) {
-                TableColumn<?, ?> weekCol = monthAttendanceColumn.getColumns().get(i);
-                int daysInWeek = weekCol.getColumns().size();
-                double finalWeekWidth = baseWeekWidth;
-                if (daysInWeek < 5) {
-                    // allocate extra space for header
-                    finalWeekWidth += extraHeaderSpace;
-                }
-                weekCol.setMinWidth(finalWeekWidth);
-                weekCol.setPrefWidth(finalWeekWidth);
-                weekCol.setMaxWidth(finalWeekWidth);
+            // Distribute available width evenly among weeks
+            double weekWidth = availableWidth / weekCount;
+
+            monthAttendanceColumn.getColumns().forEach(weekCol -> {
+                TableColumn<?, ?> column = (TableColumn<?, ?>) weekCol;
+                int daysInWeek = column.getColumns().size();
+
+                // Set week column to stretch
+                column.setMinWidth(weekWidth);
+                column.setPrefWidth(weekWidth);
+                column.setMaxWidth(Double.MAX_VALUE);
+
                 if (daysInWeek > 0) {
-                    double availableForDays = (daysInWeek < 5) ? (finalWeekWidth - extraHeaderSpace) : finalWeekWidth;
-                    double dayWidth = availableForDays / daysInWeek;
-                    weekCol.getColumns().forEach(dayCol -> {
-                        dayCol.setMinWidth(dayWidth);
-                        dayCol.setPrefWidth(dayWidth);
-                        dayCol.setMaxWidth(dayWidth);
+                    // Calculate width for each day
+                    double dayWidth = (weekWidth - 4) / daysInWeek;
+
+                    column.getColumns().forEach(dayCol -> {
+                        TableColumn<?, ?> dc = (TableColumn<?, ?>) dayCol;
+                        dc.setMinWidth(dayWidth);
+                        dc.setPrefWidth(dayWidth);
+                        dc.setMaxWidth(dayWidth);
                     });
                 }
+            });
+        }
+
+        // Enable table to resize columns
+        attendanceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    }
+
+    @Override
+    protected void load_listeners() {
+        monthYearComboBox.setOnAction(event -> {
+            if (!monthYearComboBox.isFocused()) {
+                return; // Ignore programmatic changes
             }
+            setupMonthColumns();
+            // Update root controller with correct method name
+            Scene scene = rootPane.getScene();
+            if (scene != null) {
+                Parent root = scene.getRoot();
+                if (root != null) {
+                    Object controller = root.getProperties().get("controller");
+                    if (controller instanceof RootController rootController) {
+                        rootController.setSelectedMonth(monthYearComboBox.getValue());
+                    }
+                }
+            }
+        });
+
+        exportExcel.setOnAction(event -> handleExport("excel"));
+        exportCsv.setOnAction(event -> handleExport("csv"));
+        exportPdf.setOnAction(event -> handleExport("pdf"));
+        // Remove viewAttendance listener
+
+        attendanceTable.getSelectionModel().selectedItemProperty().addListener(
+                (obs, oldSelection, newSelection) -> updateStudentCountLabels());
+
+        attendanceTable.widthProperty().addListener((obs, oldWidth, newWidth) -> {
+            if (newWidth.doubleValue() > 0) {
+                Platform.runLater(this::adjustColumnWidths);
+            }
+        });
+    }
+
+    private void updatePayrollMonth(String selectedMonthYear) {
+        try {
+            // Get root scene's FXML loader
+            Scene scene = rootPane.getScene();
+            if (scene == null)
+                return;
+
+            Parent root = scene.getRoot();
+            if (root == null)
+                return;
+
+            // Find PayrollController in the current scene
+            for (Node node : root.lookupAll("*")) {
+                if (node.getId() != null && node.getId().equals("payrollRoot")) {
+                    Object controller = node.getProperties().get("controller");
+                    if (controller instanceof PayrollController payrollController) {
+                        payrollController.setSelectedMonth(selectedMonthYear);
+                        return;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Could not sync month selection with Payroll: " + e.getMessage());
         }
     }
 
-    private void disableColumnReordering(TableView<?> table) {
-        for (TableColumn<?, ?> column : table.getColumns()) {
-            column.setReorderable(false);
-            disableColumnReorderingRecursive(column);
-        }
-    }
-
-    private void disableColumnReorderingRecursive(TableColumn<?, ?> parent) {
-        if (!parent.getColumns().isEmpty()) {
-            for (TableColumn<?, ?> child : parent.getColumns()) {
-                child.setReorderable(false);
-                disableColumnReorderingRecursive(child);
+    private void handleExport(String type) {
+        try {
+            String selectedMonthYear = monthYearComboBox.getValue();
+            if (selectedMonthYear == null) {
+                return;
             }
+
+            // Parse selected month and year
+            String[] parts = selectedMonthYear.split(" ");
+            String monthName = parts[0];
+            int year = Integer.parseInt(parts[1]);
+            Month month = Month.valueOf(monthName.toUpperCase());
+            YearMonth selectedMonth = YearMonth.of(year, month.getValue());
+
+            String title = "Attendance Report - " + selectedMonthYear;
+            String fileName = String.format("attendance_%s.%s",
+                    selectedMonthYear.replace(" ", "_").toLowerCase(),
+                    type.equals("excel") ? "xlsx" : type.toLowerCase());
+            String outputPath = System.getProperty("user.home") + "/Downloads/" + fileName;
+
+            // Pass selected month to exporter
+            AttendanceTableExporter exporter = new AttendanceTableExporter(selectedMonth);
+            switch (type) {
+                case "excel" ->
+                    exporter.exportToExcel(attendanceTable, title, outputPath);
+                case "pdf" ->
+                    exporter.exportToPdf(attendanceTable, title, outputPath);
+                case "csv" ->
+                    exporter.exportToCsv(attendanceTable, title, outputPath);
+            }
+
+            System.out.println("Export completed: " + outputPath);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -227,7 +354,6 @@ public class AttendanceController extends FXController {
         TableColumn<Student, String> weekColumn = new TableColumn<>("Week " + weekNumber);
         weekColumn.setStyle("-fx-alignment: CENTER;");
         weekColumn.setMinWidth(150);
-        weekColumn.setReorderable(false);  // Disable reordering on week columns
         return weekColumn;
     }
 
@@ -237,16 +363,14 @@ public class AttendanceController extends FXController {
         dayColumn.setPrefWidth(52);
         dayColumn.setMaxWidth(69);
         dayColumn.setResizable(false);
-        dayColumn.setReorderable(false);
 
-        // Add a cell factory to support context menu editing of attendance
         dayColumn.setCellFactory(column -> {
             TableCell<Student, String> cell = new TableCell<>() {
                 @Override
                 protected void updateItem(String item, boolean empty) {
                     super.updateItem(item, empty);
-                    if (empty) {
-                        setText(null);
+                    if (empty || date.isAfter(LocalDate.now())) {
+                        setText(null); // No display for future dates
                         setGraphic(null);
                     } else {
                         setText(item);
@@ -254,66 +378,57 @@ public class AttendanceController extends FXController {
                 }
             };
 
-            ContextMenu contextMenu = new ContextMenu();
-            MenuItem editAttendanceItem = new MenuItem("Edit Attendance");
-            editAttendanceItem.setOnAction(e -> {
-                Student student = cell.getTableRow().getItem();
-                if (student != null) {
-                    String currentStatus = cell.getText();
-                    ComboBox<String> comboBox = new ComboBox<>();
-                    comboBox.getItems().addAll(
-                            AttendanceUtil.PRESENT_MARK,
-                            AttendanceUtil.ABSENT_MARK,
-                            AttendanceUtil.HALF_DAY_MARK,
-                            AttendanceUtil.EXCUSED_MARK
-                    );
-                    comboBox.setValue(currentStatus.isEmpty() ? AttendanceUtil.PRESENT_MARK : currentStatus);
-                    cell.setGraphic(comboBox);
-                    cell.setText(null);
+            if (!date.isAfter(LocalDate.now())) { // Only enable for non-future dates
+                ContextMenu contextMenu = new ContextMenu();
+                MenuItem viewAttendanceItem = new MenuItem("View Attendance Log");
+                MenuItem editAttendanceItem = new MenuItem("Edit Attendance");
 
-                    Platform.runLater(() -> {
-                        comboBox.requestFocus();
-                        comboBox.show();
-                    });
+                viewAttendanceItem.setOnAction(e -> {
+                    Student student = cell.getTableRow().getItem();
+                    if (student != null) {
+                        showAttendanceLogDialog(student, date);
+                    }
+                });
 
-                    // When focus is lost, update attendance, refresh, and apply transition.
-                    comboBox.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-                        if (!isFocused) {
-                            String newValue = comboBox.getValue();
-                            if (newValue != null) {
-                                if (newValue.equals(AttendanceUtil.EXCUSED_MARK)) {
-                                    DataUtil.createExcusedAttendance(student, date);
-                                } else {
-                                    updateAttendanceRecord(student, date, newValue);
-                                }
+                editAttendanceItem.setOnAction(e -> {
+                    Student student = cell.getTableRow().getItem();
+                    if (student != null) {
+                        String currentStatus = cell.getText(); // Get current cell value
+                        ComboBox<String> comboBox = new ComboBox<>();
+                        comboBox.getItems().addAll(
+                                AttendanceUtil.PRESENT_MARK,
+                                AttendanceUtil.ABSENT_MARK,
+                                AttendanceUtil.HALF_DAY_MARK,
+                                AttendanceUtil.EXCUSED_MARK);
+
+                        // Set default value from cell's current text
+                        comboBox.setValue(currentStatus.isEmpty() ? AttendanceUtil.PRESENT_MARK : currentStatus);
+
+                        cell.setGraphic(comboBox);
+                        cell.setText(null);
+
+                        // Request focus after showing
+                        Platform.runLater(() -> {
+                            comboBox.requestFocus();
+                            comboBox.show();
+                        });
+
+                        // Handle focus lost
+                        comboBox.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+                            if (!isFocused) {
+                                updateCellValue(cell, student, date, comboBox.getValue());
                             }
-                            cell.setGraphic(null);
-                            cell.setText(newValue);
-                            attendanceTable.refresh();
-                            TableViewTransitions.applyUpdateTransition(attendanceTable);
-                        }
-                    });
+                        });
 
-                    // Also update attendance on action and then apply transition.
-                    comboBox.setOnAction(event -> {
-                        String newValue = comboBox.getValue();
-                        if (newValue != null) {
-                            if (newValue.equals(AttendanceUtil.EXCUSED_MARK)) {
-                                DataUtil.createExcusedAttendance(student, date);
-                            } else {
-                                updateAttendanceRecord(student, date, newValue);
-                            }
-                            cell.setGraphic(null);
-                            cell.setText(newValue);
-                            setupMonthColumns();
-                            attendanceTable.refresh();
-                            TableViewTransitions.applyUpdateTransition(attendanceTable);
-                        }
-                    });
-                }
-            });
-            contextMenu.getItems().add(editAttendanceItem);
-            cell.setContextMenu(contextMenu);
+                        comboBox.setOnAction(event -> {
+                            updateCellValue(cell, student, date, comboBox.getValue());
+                        });
+                    }
+                });
+
+                contextMenu.getItems().addAll(viewAttendanceItem, editAttendanceItem);
+                cell.setContextMenu(contextMenu);
+            }
 
             return cell;
         });
@@ -321,100 +436,142 @@ public class AttendanceController extends FXController {
         return dayColumn;
     }
 
-    private String getSelectedYearOrDefault() {
-        Object paramYear = getParameter("selectedYear");
-        if (paramYear != null) {
-            return (String) paramYear;
+    private void updateCellValue(TableCell<Student, String> cell, Student student, LocalDate date, String newValue) {
+        if (newValue != null) {
+            if (newValue.equals(AttendanceUtil.EXCUSED_MARK)) {
+                DataUtil.createExcusedAttendance(student, date);
+            } else {
+                updateAttendanceRecord(student, date, newValue);
+            }
+
+            // Remove the ComboBox and update the cell text
+            cell.setGraphic(null);
+            cell.setText(newValue);
+
+            Platform.runLater(() -> {
+                // Clear any selection to prevent phantom highlights
+                attendanceTable.getSelectionModel().clearSelection();
+
+                // Refresh just the cell
+                attendanceTable.refresh();
+
+                // Clear focus to prevent highlight persistence
+                attendanceTable.requestFocus();
+            });
         }
-        LocalDate now = LocalDate.now();
-        int year = now.getMonthValue() >= 6 ? now.getYear() : now.getYear() - 1;
-        return year + "-" + (year + 1);
+    }
+
+    private void showAttendanceLogDialog(Student student, LocalDate date) {
+        new AttendanceLogDialog(student, date, attendanceLog);
+        System.out.println("Attendance Log dialog closed.");
+    }
+
+    private boolean isFutureDate(AttendanceLog log) {
+        if (log == null || log.getRecordID() == null) {
+            return true;
+        }
+        LocalDate logDate = LocalDate.of(log.getRecordID().getYear(), log.getRecordID().getMonth(),
+                log.getRecordID().getDay());
+        return logDate.isAfter(LocalDate.now());
+    }
+
+    public void updateYear(String newYear) {
+        initializeWithYear(newYear);
     }
 
     public void initializeWithYear(String year) {
         if (year == null) {
             return;
         }
-        // Parse academic year (e.g., "2023-2024")
+
         String[] yearRange = year.split("-");
         int startYear = Integer.parseInt(yearRange[0]);
         int endYear = Integer.parseInt(yearRange[1]);
 
-        // Filter the student list based on the academic year
-        filteredStudentList.setPredicate(student -> {
+        studentList = DataUtil.createStudentList().filtered(student -> {
             if (student.getYearID() == null) {
                 return false;
             }
-            return student.getYearID().getYearStart() == startYear
-                    && student.getYearID().getYearEnd() == endYear;
+            SchoolYear schoolYear = student.getYearID();
+            return schoolYear.getYearStart() == startYear
+                    && schoolYear.getYearEnd() == endYear;
         });
 
-        // Update the month/year ComboBox based on the academic year
+        attendanceTable.setItems(studentList);
+
         if (monthYearComboBox != null) {
             DateTimeUtils.updateMonthYearComboBox(monthYearComboBox, year);
+
             YearMonth current = YearMonth.now();
             String currentFormatted = current.format(DateTimeUtils.MONTH_YEAR_FORMATTER);
+
             if (monthYearComboBox.getItems().contains(currentFormatted)) {
                 monthYearComboBox.setValue(currentFormatted);
             } else if (!monthYearComboBox.getItems().isEmpty()) {
                 monthYearComboBox.setValue(monthYearComboBox.getItems().get(0));
             }
+
             setupMonthColumns();
         }
+
         updateStudentCountLabels();
     }
 
-    private void updateStudentCountLabels() {
-        int selectedStudents = attendanceTable.getSelectionModel().getSelectedItems().size();
-        int totalStudents = filteredStudentList.size();
-        selectedStudentsLabel.setText("Selected: " + selectedStudents);
-        totalStudentsLabel.setText("Total: " + totalStudents);
+    @FXML
+    private void handleViewStudentButton() {
+        initializeViewStudent();
     }
 
-    private void handleExport(String type) {
-        String selectedMonthYear = monthYearComboBox.getValue();
-        if (selectedMonthYear == null) {
+    private void initializeViewStudent() {
+        StudentProfileLoader loader = (StudentProfileLoader) FXLoaderFactory
+                .createInstance(StudentProfileLoader.class,
+                        getClass().getResource(STUDENT_PROFILE_FXML))
+                .initialize();
+        loader.load();
+    }
+
+    private String getSelectedYearOrDefault() {
+        String selectedYear = (String) getParameter("selectedYear");
+        if (selectedYear == null) {
+            LocalDate now = LocalDate.now();
+            int year = now.getMonthValue() >= 6 ? now.getYear() : now.getYear() - 1;
+            selectedYear = year + "-" + (year + 1);
+        }
+        return selectedYear;
+    }
+
+    private void updateStudentCountLabels() {
+        if (studentList == null || attendanceTable == null
+                || selectedStudentsLabel == null || totalStudentsLabel == null) {
             return;
         }
 
-        String title = "Attendance Report - " + selectedMonthYear;
-        // Map "excel" to "xlsx" as the file extension; for pdf and csv, use the type directly
-        String ext = type.equalsIgnoreCase("excel") ? "xlsx" : type.toLowerCase();
-        String fileName = String.format("attendance_%s.%s",
-                selectedMonthYear.replace(" ", "_").toLowerCase(),
-                ext);
-        String outputPath = System.getProperty("user.home") + "/Downloads/" + fileName;
+        int totalStudents = studentList.size();
+        int selectedStudents = attendanceTable.getSelectionModel().getSelectedItems().size();
 
-        try {
-            AttendanceTableExporter exporter = new sms.admin.util.exporter.AttendanceTableExporter();
-
-            switch (type.toLowerCase()) {
-                case "excel" ->
-                    exporter.exportToExcel(attendanceTable, title, outputPath);
-                case "pdf" ->
-                    exporter.exportToPdf(attendanceTable, title, outputPath);
-                case "csv" ->
-                    exporter.exportToCsv(attendanceTable, title, outputPath);
-                default -> {
-                    System.out.println("Invalid export type: " + type);
-                    return;
-                }
-            }
-
-            System.out.println("Export completed: " + outputPath);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        selectedStudentsLabel.setText(String.format("Selected: %d", selectedStudents));
+        totalStudentsLabel.setText(String.format("Total: %d", totalStudents));
     }
 
+    // private LocalDate getDayColumnDate(String columnText) {
+    // int day = Integer.parseInt(columnText.replaceAll("[MTWF]", ""));
+    // String monthYear = monthYearComboBox.getValue();
+    // String[] parts = monthYear.split(" ");
+    // Month month = Month.valueOf(parts[0].toUpperCase());
+    // int year = Integer.parseInt(parts[1]);
+    // return LocalDate.of(year, month, day);
+    // }
+
     private void updateAttendanceRecord(Student student, LocalDate date, String attendanceValue) {
-        // Retrieve attendance records and logs (implementation assumed in DataUtil)
-        var records = DataUtil.createAttendanceRecordList();
-        var logs = DataUtil.createAttendanceLogList();
+        if (date.isAfter(LocalDate.now())) {
+            return; // Prevent updates for future dates
+        }
+
+        ObservableList<AttendanceRecord> records = DataUtil.createAttendanceRecordList();
+        ObservableList<AttendanceLog> logs = DataUtil.createAttendanceLogList();
 
         AttendanceLog log = AttendanceUtil.findOrCreateAttendanceLog(student, date, logs, records);
 
-        // Update attendance log based on the provided value
         switch (attendanceValue) {
             case AttendanceUtil.PRESENT_MARK:
                 log.setTimeInAM(AttendanceUtil.TIME_IN_AM);
@@ -445,6 +602,14 @@ public class AttendanceController extends FXController {
         if (!logs.contains(log)) {
             logs.add(log);
         }
-        attendanceLog = logs;
+
+        attendanceLog.setAll(logs.filtered(l -> !isFutureDate(l))); // Update with filtered logs
+    }
+
+    public void setSelectedMonth(String monthYear) {
+        if (monthYearComboBox != null && monthYearComboBox.getItems().contains(monthYear)) {
+            monthYearComboBox.setValue(monthYear);
+            setupMonthColumns();
+        }
     }
 }

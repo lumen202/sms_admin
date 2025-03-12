@@ -82,22 +82,20 @@ public class DateTimeUtils {
 
             comboBox.setItems(monthYears);
             
-            // Set current month if it falls within the academic year
+            // Only set current month if it falls within the academic year
             YearMonth current = YearMonth.now();
             String currentFormatted = current.format(MONTH_YEAR_FORMATTER);
             
-            // If current month is in the list, use it; otherwise use first month
-            if (monthYears.contains(currentFormatted)) {
-                comboBox.setValue(currentFormatted);
-            } else {
-                comboBox.setValue(monthYears.get(0));
+            // Don't automatically set a value - let the controller handle it
+            if (monthYears.isEmpty()) {
+                // If no months available, add current month as fallback
+                comboBox.setItems(FXCollections.observableArrayList(currentFormatted));
             }
 
         } catch (Exception e) {
             e.printStackTrace();
             comboBox.setItems(FXCollections.observableArrayList(
                     YearMonth.now().format(MONTH_YEAR_FORMATTER)));
-            comboBox.setValue(comboBox.getItems().get(0));
         }
     }
 

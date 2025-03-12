@@ -213,7 +213,7 @@
   -fx-padding: 0 0 5 0;
 }
 
-.menu-button {
+menu-button {
   -fx-background-color: maroon;
   -fx-text-fill: white;
   -fx-font-weight: bold;
@@ -221,10 +221,18 @@
   -fx-min-height: 35;
   -fx-max-height: 35;
   -fx-border-radius: 5;
+  -fx-alignment: CENTER;
+  -fx-content-display: CENTER;
 }
 
 .menu-button .label {
   -fx-text-fill: white;
+  -fx-alignment: CENTER;
+  -fx-padding: 0;
+}
+
+.menu-button > .arrow-button {
+  -fx-padding: 0 0 0 5;
 }
 
 .menu-button .menu-item {

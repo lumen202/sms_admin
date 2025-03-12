@@ -18,8 +18,8 @@ import javafx.application.Platform;
 
 public class SceneLoaderUtil {
     private static final double FADE_DURATION = 200;
-    private static final double MIN_WIDTH = 800;  
-    private static final double MIN_HEIGHT = 400; 
+    private static final double MIN_WIDTH = 800;
+    private static final double MIN_HEIGHT = 450;
     private static final Map<String, FXController> controllerCache = new HashMap<>();
 
     @SuppressWarnings("unchecked")
@@ -92,9 +92,59 @@ public class SceneLoaderUtil {
                 contentPane);
     }
 
+    public static <C extends FXController> C loadSceneWithParameters(
+            String fxmlPath,
+            Class<?> resourceBase,
+            Class<? extends FXLoader> loaderClass,
+            Map<String, Object> parameters,
+            StackPane contentPane) {
+
+        try {
+            Map<String, Object> nonNullParams = new HashMap<>();
+            parameters.forEach((key, value) -> {
+                if (value != null) {
+                    nonNullParams.put(key, value);
+                }
+            });
+
+            URL resource = resourceBase.getResource(fxmlPath);
+            if (resource == null) {
+                throw new IllegalArgumentException("FXML resource not found: " + fxmlPath);
+            }
+
+            FXLoader loader = FXLoaderFactory.createInstance(loaderClass, resource);
+            nonNullParams.forEach(loader::addParameter);
+
+            loader.initialize();
+            Parent rootNode = loader.getRoot();
+
+            if (rootNode != null) {
+                // Update bindings immediately
+                if (rootNode instanceof Region) {
+                    Region region = (Region) rootNode;
+                    region.prefWidthProperty().unbind();
+                    region.prefHeightProperty().unbind();
+                    region.prefWidthProperty().bind(contentPane.widthProperty());
+                    region.prefHeightProperty().bind(contentPane.heightProperty());
+                }
+                setContentPane(rootNode, contentPane);
+            }
+
+            loader.load();
+            C controller = getControllerFromLoader(loader);
+            if (controller != null) {
+                controllerCache.put(fxmlPath, controller);
+            }
+
+            return controller;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load scene: " + fxmlPath, e);
+        }
+    }
+
     private static void applyFadeTransition(Parent rootNode) {
         rootNode.setOpacity(0.0); // Ensure starting opacity is 0
-    
+
         Platform.runLater(() -> {
             FadeTransition fadeTransition = new FadeTransition(Duration.millis(FADE_DURATION), rootNode);
             fadeTransition.setFromValue(0.0);
@@ -102,27 +152,26 @@ public class SceneLoaderUtil {
             fadeTransition.play();
         });
     }
-    
 
     private static void setContentPane(Parent rootNode, StackPane contentPane) {
         contentPane.getChildren().clear();
         contentPane.getChildren().add(rootNode);
-        
+
         if (rootNode instanceof Region) {
             Region region = (Region) rootNode;
             // Set minimum size constraints
             region.setMinWidth(MIN_WIDTH);
             region.setMinHeight(MIN_HEIGHT);
-            
+
             // Set preferred size bindings
             region.prefWidthProperty().bind(contentPane.widthProperty());
             region.prefHeightProperty().bind(contentPane.heightProperty());
-            
+
             // Set max size bindings
             region.maxWidthProperty().bind(contentPane.widthProperty());
             region.maxHeightProperty().bind(contentPane.heightProperty());
         }
-        
+
         applyFadeTransition(rootNode);
     }
 

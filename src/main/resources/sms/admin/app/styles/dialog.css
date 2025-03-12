@@ -35,6 +35,19 @@
     -fx-font-weight: bold;
     -fx-text-fill: white;
 }
+.menu-button {
+    -fx-background-color: maroon;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 5 10;
+    -fx-min-height: 35;
+    -fx-max-height: 35;
+    -fx-border-radius: 5;
+  }
+  
+  .menu-button .label {
+    -fx-text-fill: white;
+  }
 
 .close-button {
     -fx-background-color: transparent;

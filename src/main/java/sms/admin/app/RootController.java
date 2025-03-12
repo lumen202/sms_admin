@@ -2,7 +2,9 @@ package sms.admin.app;
 
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
+import java.time.YearMonth;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -27,6 +29,7 @@ import sms.admin.app.schoolyear.SchoolYearDialog;
 import sms.admin.app.student.StudentController;
 import sms.admin.app.student.StudentLoader;
 import sms.admin.util.SchoolYearUtil;
+import sms.admin.util.datetime.DateTimeUtils;
 import sms.admin.util.mock.DataUtil;
 import sms.admin.util.scene.SceneLoaderUtil;
 
@@ -55,17 +58,18 @@ public class RootController extends FXController {
     // Store the active controller (e.g., PayrollController or AttendanceController)
     private FXController currentController;
 
+    private String selectedMonth; // Change field name
+
     @FXML
     private void handleStudentButton() {
         highlightButton(studentButton);
         String selectedYear = yearComboBox.getValue();
         currentController = SceneLoaderUtil.loadScene(
-            "/sms/admin/app/student/STUDENT.fxml",
-            getClass(),
-            StudentLoader.class,
-            Map.of("selectedYear", selectedYear),
-            contentPane
-        );
+                "/sms/admin/app/student/STUDENT.fxml",
+                getClass(),
+                StudentLoader.class,
+                Map.of("selectedYear", selectedYear),
+                contentPane);
         if (currentController instanceof StudentController controller) {
             controller.initializeWithYear(selectedYear);
         }
@@ -75,15 +79,39 @@ public class RootController extends FXController {
     private void handlePayrollButton() {
         highlightButton(payrollButton);
         String selectedYear = yearComboBox.getValue();
+        Map<String, Object> params = new HashMap<>();
+        params.put("selectedYear", selectedYear);
+
+        // Only pass selected month if it's within the academic year range
+        if (selectedMonth != null && isMonthInAcademicYear(selectedMonth, selectedYear)) {
+            params.put("selectedMonth", selectedMonth);
+        }
+
         currentController = SceneLoaderUtil.loadScene(
-            "/sms/admin/app/payroll/PAYROLL.fxml",
-            getClass(),
-            PayrollLoader.class,
-            Map.of("selectedYear", selectedYear),
-            contentPane
-        );
+                "/sms/admin/app/payroll/PAYROLL.fxml",
+                getClass(),
+                PayrollLoader.class,
+                params,
+                contentPane);
         if (currentController instanceof PayrollController controller) {
             controller.initializeWithYear(selectedYear);
+        }
+    }
+
+    private boolean isMonthInAcademicYear(String monthYear, String academicYear) {
+        try {
+            YearMonth ym = DateTimeUtils.parseMonthYear(monthYear);
+            String[] years = academicYear.split("-");
+            int startYear = Integer.parseInt(years[0].trim());
+            int endYear = Integer.parseInt(years[1].trim());
+
+            // Academic year is from July of start year to June of end year
+            YearMonth startMonth = YearMonth.of(startYear, 7); // July of start year
+            YearMonth endMonth = YearMonth.of(endYear, 6); // June of end year
+
+            return !ym.isBefore(startMonth) && !ym.isAfter(endMonth);
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -92,13 +120,18 @@ public class RootController extends FXController {
         highlightButton(attendanceButton);
         String selectedYear = yearComboBox.getValue();
         try {
+            Map<String, Object> params = new HashMap<>();
+            params.put("selectedYear", selectedYear);
+            if (selectedMonth != null) {
+                params.put("selectedMonth", selectedMonth);
+            }
+
             currentController = SceneLoaderUtil.loadScene(
-                "/sms/admin/app/attendance/ATTENDANCE.fxml",
-                getClass(),
-                AttendanceLoader.class,
-                Map.of("selectedYear", selectedYear),
-                contentPane
-            );
+                    "/sms/admin/app/attendance/ATTENDANCE.fxml",
+                    getClass(),
+                    AttendanceLoader.class,
+                    params,
+                    contentPane);
             if (currentController instanceof AttendanceController controller) {
                 controller.initializeWithYear(selectedYear);
             }
@@ -112,12 +145,11 @@ public class RootController extends FXController {
         highlightButton(enrollmentButton);
         String selectedYear = yearComboBox.getValue();
         currentController = SceneLoaderUtil.loadScene(
-            "/sms/admin/app/enrollment/ENROLLMENT.fxml",
-            getClass(),
-            EnrollmentLoader.class,
-            Map.of("selectedYear", selectedYear),
-            contentPane
-        );
+                "/sms/admin/app/enrollment/ENROLLMENT.fxml",
+                getClass(),
+                EnrollmentLoader.class,
+                Map.of("selectedYear", selectedYear),
+                contentPane);
         if (currentController instanceof EnrollmentController controller) {
             controller.initializeWithYear(selectedYear);
         }
@@ -147,7 +179,7 @@ public class RootController extends FXController {
         if (currentYear != null) {
             String yearString = SchoolYearUtil.formatSchoolYear(currentYear);
             yearComboBox.setValue(yearString);
-            
+
             // Load initial scene with selected year
             handleStudentButton();
         }
@@ -176,7 +208,7 @@ public class RootController extends FXController {
         // Reset all buttons first
         String defaultStyle = "-fx-background-color: #800000; -fx-text-fill: white;";
         Arrays.asList(attendanceButton, payrollButton, studentButton, enrollmentButton)
-              .forEach(btn -> btn.setStyle(defaultStyle));
+                .forEach(btn -> btn.setStyle(defaultStyle));
         // Highlight selected button
         button.setStyle("-fx-background-color: #ADD8E6; -fx-text-fill: black;");
     }
@@ -224,9 +256,9 @@ public class RootController extends FXController {
         setOverlayVisible(true);
         String currentYear = yearComboBox.getValue();
         SchoolYear selectedYear = schoolYearList.stream()
-            .filter(sy -> SchoolYearUtil.formatSchoolYear(sy).equals(currentYear))
-            .findFirst()
-            .orElse(null);
+                .filter(sy -> SchoolYearUtil.formatSchoolYear(sy).equals(currentYear))
+                .findFirst()
+                .orElse(null);
 
         if (selectedYear != null) {
             SchoolYearDialog dialog = new SchoolYearDialog(selectedYear);
@@ -254,14 +286,27 @@ public class RootController extends FXController {
     }
 
     private void reloadCurrentScene() {
-        if (currentController == null) return;
+        if (currentController == null)
+            return;
 
         switch (currentController) {
             case StudentController ignored -> handleStudentButton();
             case PayrollController ignored -> handlePayrollButton();
             case AttendanceController ignored -> handleAttendanceButton();
             case EnrollmentController ignored -> handleEnrollmentButton();
-            default -> {}
+            default -> {
+            }
+        }
+    }
+
+    // Add method with correct name to match what's being called
+    public void setSelectedMonth(String monthYear) {
+        this.selectedMonth = monthYear;
+        // Update current controller if it's attendance or payroll
+        if (currentController instanceof AttendanceController controller) {
+            controller.setSelectedMonth(monthYear);
+        } else if (currentController instanceof PayrollController controller) {
+            controller.setSelectedMonth(monthYear);
         }
     }
 
