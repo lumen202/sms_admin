@@ -198,23 +198,25 @@ public class StudentController extends FXController {
                 return;
             }
 
-            // Create new stage for profile
-            Stage profileStage = new Stage(StageStyle.UNDECORATED);
-            profileStage.initOwner(studentTableView.getScene().getWindow());
-
-            // Load the profile with corrected resource path
-            StudentProfileLoader loader = (StudentProfileLoader) FXLoaderFactory
-                    .createInstance(StudentProfileLoader.class,
-                            StudentProfileLoader.class.getResource("STUDENT_PROFILE.fxml"))
-                    .addParameter("OWNER_STAGE", studentTableView.getScene().getWindow())
-                    .addParameter("SELECTED_STUDENT", selectedStudent)
-                    .initialize();
-
-            // Let the loader handle scene creation and showing
-            loader.load();
+            openStudentProfile(selectedStudent);
 
         } catch (Exception ex) {
             ex.printStackTrace();
+        }
+    }
+
+    private void openStudentProfile(Student student) {
+        try {
+            Stage stage = (Stage) contentPane.getScene().getWindow();
+            StudentProfileLoader loader = (StudentProfileLoader) FXLoaderFactory
+                    .createInstance(StudentProfileLoader.class,
+                            getClass().getResource("/sms/admin/app/student/viewstudent/STUDENT_PROFILE.fxml"))
+                    .addParameter("OWNER_STAGE", stage)
+                    .addParameter("SELECTED_STUDENT", student)
+                    .initialize();
+            loader.load();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

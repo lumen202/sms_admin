@@ -12,7 +12,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane fx:id="contentPane" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.attendancelog.AttendanceLogController">
+<StackPane fx:id="contentPane" stylesheets="@../../styles/main.css,@../../styles/dialog.css,@../../styles/attendance.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.attendancelog.AttendanceLogController">
     <BorderPane stylesheets="@../../styles/main.css">
         <padding>
             <Insets bottom="2" left="5" right="5" top="2" />

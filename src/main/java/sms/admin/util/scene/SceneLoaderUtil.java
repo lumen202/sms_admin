@@ -19,7 +19,7 @@ import javafx.application.Platform;
 public class SceneLoaderUtil {
     private static final double FADE_DURATION = 200;
     private static final double MIN_WIDTH = 800;
-    private static final double MIN_HEIGHT = 450;
+    private static final double MIN_HEIGHT = 500;
     private static final Map<String, FXController> controllerCache = new HashMap<>();
 
     @SuppressWarnings("unchecked")

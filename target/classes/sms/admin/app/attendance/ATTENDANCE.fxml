@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.AttendanceController">
+<StackPane prefHeight="600.0" prefWidth="800.0" stylesheets="@../styles/main.css,@../styles/dialog.css,@../styles/attendance.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.AttendanceController">
     <children>
         <BorderPane fx:id="rootPane" stylesheets="@../styles/dialog.css">
             <padding>
@@ -30,13 +30,7 @@
                         <Label styleClass="section-header" text="Select Period" />
                         <ComboBox fx:id="monthYearComboBox" prefWidth="200" promptText="Select Month and Year" />
                         <Region HBox.hgrow="ALWAYS" />
-                        <MenuButton fx:id="exportButton" prefHeight="35.0" prefWidth="95.0" text="Export">
-                            <style>
-                                -fx-background-color: maroon;
-                                -fx-text-fill: white;
-                                -fx-font-weight: bold;
-                                -fx-opacity: 1.0;
-                            </style>
+                        <MenuButton fx:id="exportButton" prefHeight="35.0" prefWidth="95.0" text="Export" styleClass="attendance-export-button">
                             <items>
                                 <MenuItem fx:id="exportExcel" text="Excel" />
                                 <MenuItem fx:id="exportCsv" text="CSV" />

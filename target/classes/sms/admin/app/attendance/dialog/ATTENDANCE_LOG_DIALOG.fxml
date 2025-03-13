@@ -7,7 +7,7 @@
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<VBox styleClass="custom-dialog" spacing="15" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.dialog.AttendanceLogDialogController">
+<VBox styleClass="custom-dialog" spacing="15" stylesheets="@../../styles/dialog.css,@../../styles/attendance.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.dialog.AttendanceLogDialogController">
     <padding>
         <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>

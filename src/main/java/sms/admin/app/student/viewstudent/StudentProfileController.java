@@ -8,7 +8,6 @@ import dev.finalproject.models.Guardian;
 import dev.finalproject.models.Student;
 import dev.finalproject.models.StudentGuardian;
 import dev.sol.core.application.FXController;
-import javafx.animation.FadeTransition;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -22,7 +21,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.util.Duration;
+import sms.admin.util.dialog.DialogManager;
 import sms.admin.util.mock.DataUtil;
 
 public class StudentProfileController extends FXController {
@@ -41,8 +40,6 @@ public class StudentProfileController extends FXController {
     // FXML injected fields - grouped by section
     @FXML
     private ImageView profileImageView;
-    @FXML
-    private Label studentNameLabel, studentIdLabel;
 
     // Buttons
     @FXML
@@ -83,7 +80,8 @@ public class StudentProfileController extends FXController {
 
     private void initializeMasterLists() {
         // addressMasterList = App.COLLECTIONS_REGISTRY.getList("ADDRESS");
-        // studentGuardianMasterList = App.COLLECTIONS_REGISTRY.getList("STUDENT_GUARDIAN");
+        // studentGuardianMasterList =
+        // App.COLLECTIONS_REGISTRY.getList("STUDENT_GUARDIAN");
         // guardianMasterlist = App.COLLECTIONS_REGISTRY.getList("GUARDIAN");
 
         addressMasterList = DataUtil.createAddressList();
@@ -111,10 +109,9 @@ public class StudentProfileController extends FXController {
         editSaveButton.setOnAction(e -> handleEditOrSave());
         backCancelButton.setOnAction(e -> handleBackOrCancel());
         changePhotoButton.setOnAction(e -> handleChangePhoto());
-
-        // Profile image hover effects remain the same
-        profileImageView.setOnMouseEntered(e -> changePhotoButton.setVisible(isEditMode));
-        profileImageView.setOnMouseExited(e -> changePhotoButton.setVisible(false));
+        
+        // Remove the mouse event handlers that were causing the issue
+        // profileImageView.setOnMouseEntered and setOnMouseExited should be removed
     }
 
     // Public setters
@@ -122,7 +119,7 @@ public class StudentProfileController extends FXController {
         this.stage = stage;
     }
 
-    public void setStudent(@SuppressWarnings("exports") Student student) {
+    public void setStudent(Student student) {
         this.student = student;
         if (student != null) {
             loadStudentData();
@@ -133,8 +130,8 @@ public class StudentProfileController extends FXController {
     private void handleKeyPress(KeyEvent event) {
         if (event.getCode() == KeyCode.ESCAPE) {
             if (isEditMode) {
-                handleBackOrCancel(); 
-            }else {
+                handleBackOrCancel();
+            } else {
                 closeDialog();
             }
             event.consume();
@@ -143,13 +140,7 @@ public class StudentProfileController extends FXController {
 
     @FXML
     private void closeDialog() {
-        if (stage != null) {
-            FadeTransition fade = new FadeTransition(Duration.millis(200), stage.getScene().getRoot());
-            fade.setFromValue(1.0);
-            fade.setToValue(0.0);
-            fade.setOnFinished(e -> stage.close());
-            fade.play();
-        }
+        DialogManager.closeWithFade(stage, null);
     }
 
     private void toggleFieldsVisibility(boolean showAll) {
@@ -169,7 +160,7 @@ public class StudentProfileController extends FXController {
             // Handle section header
             section.getChildren().stream()
                     .filter(node -> node instanceof Label
-                    && node.getStyleClass().contains("section-header"))
+                            && node.getStyleClass().contains("section-header"))
                     .forEach(header -> {
                         header.setVisible(shouldShow);
                         header.setManaged(shouldShow);
@@ -178,8 +169,8 @@ public class StudentProfileController extends FXController {
             // Handle field labels
             grid.getChildren().stream()
                     .filter(node -> node instanceof Label
-                    && GridPane.getRowIndex(node) != null
-                    && GridPane.getRowIndex(node) == rowIndex)
+                            && GridPane.getRowIndex(node) != null
+                            && GridPane.getRowIndex(node) == rowIndex)
                     .forEach(label -> {
                         label.setVisible(shouldShow);
                         label.setManaged(shouldShow);
@@ -189,7 +180,7 @@ public class StudentProfileController extends FXController {
 
     private void updateUIForEditMode() {
         editableFields.forEach(field -> field.setEditable(isEditMode));
-        changePhotoButton.setVisible(isEditMode);
+        changePhotoButton.setVisible(isEditMode); // This will now control the button visibility
 
         // Update button text based on mode
         if (isEditMode) {
@@ -218,7 +209,6 @@ public class StudentProfileController extends FXController {
             } else {
                 student.setFare(0.0);
             }
-            studentNameLabel.setText(firstNameField.getText() + " " + lastNameField.getText());
 
             isEditMode = false;
             updateUIForEditMode();
@@ -236,8 +226,6 @@ public class StudentProfileController extends FXController {
             });
 
             // Load basic student info
-            studentNameLabel.setText(student.getFirstName() + " " + student.getLastName());
-            studentIdLabel.setText("ID: " + student.getStudentID());
             firstNameField.setText(student.getFirstName());
             middleNameField.setText(student.getMiddleName());
             lastNameField.setText(student.getLastName());

@@ -20,6 +20,9 @@ import javafx.collections.ObservableList;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.io.InputStream;
+import java.util.List;
+import java.util.ArrayList;
+import java.time.temporal.WeekFields;
 
 public class DetailedPayrollPdfExporter extends PayrollPdfExporter {
 
@@ -46,19 +49,38 @@ public class DetailedPayrollPdfExporter extends PayrollPdfExporter {
 
             document.setFont(font);
 
-            document.add(new Paragraph("GENERAL FORM NO. 7(A)")
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(12));
-            document.add(new Paragraph("TIME BOOK AND PAYROLL")
-                    .setTextAlignment(TextAlignment.CENTER)
-                    .setFontSize(14)
-                    .setBold());
-            document.add(new Paragraph(
-                    "For labor on Baybay Data Center at Baybay Nat'l High School, Baybay City, Leyte, Philippines, for the period")
-                    .add(new Paragraph(period.getMonth().toString().toUpperCase() + " " + period.getYear())
-                            .setFontSize(12)
-                            .setBold())
-                    .setTextAlignment(TextAlignment.CENTER));
+            // Form Number
+            Paragraph formNumber = new Paragraph("GENERAL FORM NO. 7(A)")
+                .setTextAlignment(TextAlignment.CENTER)
+                .setFontSize(14f)  // Increased from 12
+                .setMargin(0)
+                .setMultipliedLeading(1.0f);
+            document.add(formNumber);
+
+            // Title
+            Paragraph title = new Paragraph("TIME BOOK AND PAYROLL")
+                .setTextAlignment(TextAlignment.CENTER)
+                .setFontSize(18f)  // Increased from 14
+                .setBold()
+                .setMargin(0)
+                .setMultipliedLeading(1.2f);  // Changed to float
+            document.add(title);
+
+            // Location and Period text
+            float textWidth = document.getPdfDocument().getDefaultPageSize().getWidth() - 100; // Margins
+            float baseFontSize = 12f;
+            float locationFontSize = Math.min(baseFontSize, (textWidth / 50)); // Adjust divisor as needed
+
+            // Location and Period
+            Paragraph location = new Paragraph()
+                .add("For labor on Baybay Data Center at Baybay Nat'l High School, Baybay City, Leyte, Philippines, for the period ")
+                .add(new Paragraph(period.getMonth().toString().toUpperCase() + " " + period.getYear()).setBold())
+                .setTextAlignment(TextAlignment.CENTER)
+                .setFontSize(locationFontSize)
+                .setMarginTop(10)
+                .setMarginBottom(20);
+            document.add(location);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -66,17 +88,17 @@ public class DetailedPayrollPdfExporter extends PayrollPdfExporter {
 
     @Override
     protected void writeTableContent(Document document, Table table, ObservableList<Student> items) {
-        // Create table with proper column widths
+        // Adjusted column widths with more space for name
         float[] columnWidths = new float[] {
-                20f, // No.
-                80f, // Name
-                20f, 20f, 20f, 20f, 20f, // Week days
-                30f, // Total Days
-                40f, // Transportation
-                40f, // Meal Allowance
-                40f, // Total Amount
-                20f, // No.
-                30f // Signature
+                15f,  // No.
+                120f, // Name (increased)
+                15f, 15f, 15f, 15f, 15f, // Week days
+                25f,  // Total Days
+                35f,  // Transportation
+                35f,  // Meal Allowance
+                35f,  // Total Amount
+                15f,  // No.
+                25f   // Signature
         };
         Table detailedTable = new Table(UnitValue.createPercentArray(columnWidths));
         detailedTable.setWidth(UnitValue.createPercentValue(100));
@@ -131,16 +153,53 @@ public class DetailedPayrollPdfExporter extends PayrollPdfExporter {
     }
 
     private void addTableHeaders(Table table) {
-        // Use super.createHeaderCell instead of local method
-        table.addHeaderCell(super.createHeaderCell("No.", 3, 1));
-        table.addHeaderCell(super.createHeaderCell("Name", 3, 1));
+        List<List<LocalDate>> weeks = getWorkWeeks();
+        int totalWorkDays = weeks.stream().mapToInt(List::size).sum();
 
-        // Week columns
-        for (int i = 1; i <= 5; i++) {
-            table.addHeaderCell(super.createHeaderCell("Week " + i, 1, 1));
+        // Main column headers
+        table.addHeaderCell(super.createHeaderCell("No.", 4, 1));
+        table.addHeaderCell(super.createHeaderCell("Name", 4, 1));
+        table.addHeaderCell(super.createHeaderCell("TIME ROLL", 1, totalWorkDays));
+
+        // Add weeks and their days
+        for (int i = 0; i < weeks.size(); i++) {
+            List<LocalDate> week = weeks.get(i);
+            if (!week.isEmpty()) {
+                // Week header
+                table.addHeaderCell(super.createHeaderCell("Week " + (i + 1), 1, week.size()));
+                
+                // Create array to hold day cells for this week
+                Cell[] dayCells = new Cell[week.size()];
+                Cell[] dateCells = new Cell[week.size()];
+                
+                // First pass: Create day name cells
+                for (int j = 0; j < week.size(); j++) {
+                    LocalDate date = week.get(j);
+                    dayCells[j] = super.createHeaderCell(
+                        date.getDayOfWeek().toString().substring(0, 2), 1, 1);
+                }
+                
+                // Second pass: Create date number cells
+                for (int j = 0; j < week.size(); j++) {
+                    LocalDate date = week.get(j);
+                    dateCells[j] = super.createHeaderCell(
+                        String.valueOf(date.getDayOfMonth()), 1, 1);
+                }
+                
+                // Add all day cells first, then all date cells
+                for (Cell dayCell : dayCells) {
+                    table.addHeaderCell(dayCell);
+                }
+                for (Cell dateCell : dateCells) {
+                    table.addHeaderCell(dateCell);
+                }
+            }
         }
 
-        table.addHeaderCell(super.createHeaderCell("Total Days", 3, 1));
+        // Single column for Total Days
+        table.addHeaderCell(super.createHeaderCell("Total No. of Days", 4, 1));
+
+        // Transportation headers
         table.addHeaderCell(super.createHeaderCell("Transportation", 1, 2));
         table.addHeaderCell(super.createHeaderCell("Meal", 1, 2));
         table.addHeaderCell(super.createHeaderCell("Total Amount", 3, 1));
@@ -152,6 +211,42 @@ public class DetailedPayrollPdfExporter extends PayrollPdfExporter {
         table.addHeaderCell(super.createHeaderCell("Amount", 1, 1));
         table.addHeaderCell(super.createHeaderCell("Rate", 1, 1));
         table.addHeaderCell(super.createHeaderCell("Amount", 1, 1));
+    }
+
+    private List<List<LocalDate>> getWorkWeeks() {
+        List<List<LocalDate>> weeks = new ArrayList<>();
+        List<LocalDate> currentWeek = new ArrayList<>();
+        LocalDate firstDay = period.atDay(1);
+        
+        // Initialize first week
+        int currentWeekNum = firstDay.get(WeekFields.ISO.weekOfWeekBasedYear());
+        
+        for (int day = 1; day <= period.lengthOfMonth(); day++) {
+            LocalDate date = period.atDay(day);
+            
+            // Skip weekends
+            if (AttendanceUtil.isWeekend(date)) {
+                continue;
+            }
+            
+            int weekNum = date.get(WeekFields.ISO.weekOfWeekBasedYear());
+            
+            // If new week starts, save current week and start new one
+            if (weekNum != currentWeekNum && !currentWeek.isEmpty()) {
+                weeks.add(new ArrayList<>(currentWeek));
+                currentWeek.clear();
+                currentWeekNum = weekNum;
+            }
+            
+            currentWeek.add(date);
+        }
+        
+        // Add last week if not empty
+        if (!currentWeek.isEmpty()) {
+            weeks.add(currentWeek);
+        }
+        
+        return weeks;
     }
 
     private double addDataRow(Table table, Student student) {

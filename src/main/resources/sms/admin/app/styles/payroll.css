@@ -1,0 +1,117 @@
+/* Payroll Theme Colors */
+* {
+    -payroll-primary: #003366;
+    -payroll-secondary: #800000;
+    -payroll-accent: #ffd700;
+    -payroll-text: #2c3e50;
+    -payroll-border: #dee2e6;
+    -payroll-bg: #f8f9fa;
+}
+
+/* Header Section */
+.form-section {
+    -fx-background-color: white;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);
+}
+
+/* Export Button Styles */
+.export-button {
+    -fx-background-color: -payroll-secondary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-opacity: 0.9;
+}
+
+.export-button:hover {
+    -fx-opacity: 1;
+}
+
+/* Export Button Styles */
+.payroll-export-button {
+    -fx-background-color: maroon;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.payroll-export-button .label {
+    -fx-text-fill: white;
+}
+
+.payroll-export-button .menu-item {
+    -fx-background-color: white;
+}
+
+.payroll-export-button .menu-item .label {
+    -fx-text-fill: #333333;
+}
+
+.payroll-export-button .menu-item:hover {
+    -fx-background-color: maroon;
+}
+
+.payroll-export-button .menu-item:hover .label {
+    -fx-text-fill: white;
+}
+
+/* Management Button */
+.management-button {
+    -fx-background-color: -payroll-primary;
+    -fx-text-fill: white;
+}
+
+/* Table Styles */
+.payroll-table {
+    -fx-background-color: transparent;
+    -fx-border-color: -payroll-border;
+    -fx-border-radius: 5px;
+}
+
+.payroll-table .column-header {
+    -fx-background-color: -payroll-primary;
+    -fx-text-fill: white;
+}
+
+.payroll-table .table-row-cell:odd {
+    -fx-background-color: derive(-payroll-bg, 5%);
+}
+
+.payroll-table .table-row-cell:even {
+    -fx-background-color: white;
+}
+
+/* Summary Section */
+.summary-section {
+    -fx-background-color: white;
+    -fx-padding: 10px;
+    -fx-background-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);
+}
+
+.summary-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -payroll-text;
+}
+
+.amount-label {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -payroll-text;
+    -fx-background-color: -payroll-bg;
+    -fx-padding: 5 10;
+    -fx-background-radius: 5;
+}
+
+/* Control Buttons */
+.small-button {
+    -fx-background-color: -payroll-primary;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 5 10;
+    -fx-background-radius: 4;
+}
+
+.small-button:hover {
+    -fx-background-color: derive(-payroll-primary, 10%);
+}

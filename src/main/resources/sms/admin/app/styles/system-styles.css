@@ -1,14 +1,15 @@
 /* Base Colors */
 * {
-    -fx-primary-color: #003366;
-    -fx-secondary-color: #800000;
-    -fx-background-light: #f8f9fa;
-    -fx-border-gray: #dee2e6;
+    -sms-primary: #003366;
+    -sms-secondary: #800000;
+    -sms-background: #f8f9fa;
+    -sms-border: #dee2e6;
+    -sms-accent: #ffd700;
 }
 
 /* Header */
 .main-header {
-    -fx-background-color: -fx-primary-color;
+    -fx-background-color: -sms-primary;
     -fx-padding: 10px;
 }
 
@@ -20,7 +21,7 @@
 
 /* Navigation */
 .nav-bar {
-    -fx-background-color: -fx-secondary-color;
+    -fx-background-color: -sms-secondary;
     -fx-padding: 8px;
     -fx-spacing: 10px;
 }
@@ -32,51 +33,20 @@
     -fx-padding: 8 15;
 }
 
-/* Content */
+.nav-button:hover {
+    -fx-background-color: derive(-sms-secondary, 20%);
+}
+
+/* Content Area */
 .content-area {
     -fx-background-color: white;
     -fx-padding: 20px;
 }
 
-/* Table */
-.table-view {
-    -fx-background-color: white;
-    -fx-border-color: -fx-border-gray;
-}
-
-.table-view .column-header {
-    -fx-background-color: -fx-background-light;
-    -fx-font-weight: bold;
-}
-
-/* Buttons */
-.primary-button {
-    -fx-background-color: -fx-primary-color;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-}
-
-.secondary-button {
-    -fx-background-color: -fx-secondary-color;
-    -fx-text-fill: white;
-}
-
 /* Status Bar */
 .status-bar {
-    -fx-background-color: -fx-background-light;
+    -fx-background-color: -sms-background;
     -fx-padding: 8px;
-    -fx-border-color: -fx-border-gray;
+    -fx-border-color: -sms-border;
     -fx-border-width: 1 0 0 0;
-}
-
-/* Section Headers */
-.section-header {
-    -fx-font-size: 18px;
-    -fx-font-weight: bold;
-}
-
-/* Form Fields */
-.text-field, .combo-box {
-    -fx-background-color: white;
-    -fx-border-color: -fx-border-gray;
 }

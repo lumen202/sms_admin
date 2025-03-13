@@ -6,6 +6,7 @@ import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import sms.admin.util.dialog.DialogManager;
 
 public class StudentProfileLoader extends FXLoader {
 
@@ -16,10 +17,16 @@ public class StudentProfileLoader extends FXLoader {
             Scene scene = createAndConfigureScene();
             stage.setScene(scene);
 
+            Stage ownerStage = (Stage) getParameter("OWNER_STAGE");
+            DialogManager.setOverlayEffect(ownerStage, true);
+
             initializeController(stage);
 
             stage.centerOnScreen();
             stage.show();
+
+            stage.setOnHiding(e -> DialogManager.setOverlayEffect(ownerStage, false));
+
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to load student profile", e);
@@ -27,14 +34,25 @@ public class StudentProfileLoader extends FXLoader {
     }
 
     private Stage createAndConfigureStage() {
-        Stage stage = new Stage(StageStyle.UNDECORATED);
+        Stage ownerStage = (Stage) getParameter("OWNER_STAGE");
+        Stage stage = new Stage(StageStyle.TRANSPARENT);
         stage.initModality(Modality.APPLICATION_MODAL);
-        stage.initOwner((Stage) getParameter("OWNER_STAGE"));
+        stage.initOwner(ownerStage);
+       
+        stage.setHeight(ownerStage.getHeight() * 0.9);
+
+        
+            
+        ownerStage.heightProperty().addListener((obs, oldVal, newVal) -> 
+            stage.setHeight(newVal.doubleValue() * 0.9));
+        
         return stage;
     }
 
     private Scene createAndConfigureScene() {
         Scene scene = new Scene(root);
+        scene.setFill(null);
+        root.getStyleClass().addAll("custom-dialog", "modal-dialog");
         scene.getStylesheets().addAll(
                 getClass().getResource("/sms/admin/app/styles/main.css").toExternalForm(),
                 getClass().getResource("/sms/admin/app/styles/dialog.css").toExternalForm());
@@ -44,7 +62,7 @@ public class StudentProfileLoader extends FXLoader {
     private void initializeController(Stage stage) {
         StudentProfileController controller = loader.getController();
         controller.setStage(stage);
-        controller.load();
+        controller.load(); // Call load() before setStudent()
         controller.setStudent((Student) getParameter("SELECTED_STUDENT"));
     }
 }
