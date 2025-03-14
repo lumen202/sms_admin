@@ -140,7 +140,7 @@
                   </GridPane>
                   
                   <HBox alignment="CENTER_RIGHT" spacing="10">
-                     <Button fx:id="clearButton" onAction="#handleClear" styleClass="secondary-button" text="Clear" />
+                     <Button fx:id="clearButton" styleClass="secondary-button" text="Clear" />
                      <Button fx:id="submitButton" defaultButton="true" onAction="#handleSubmit" styleClass="primary-button" text="Submit" />
                   </HBox>
                </children>

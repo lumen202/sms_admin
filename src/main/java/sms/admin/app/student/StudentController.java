@@ -20,12 +20,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import sms.admin.app.student.viewstudent.StudentProfileLoader;
 import sms.admin.util.exporter.StudentTableExporter;
 import sms.admin.util.YearData;
-import sms.admin.util.mock.DataUtil;
+import dev.finalproject.App;
+import javafx.scene.control.Alert;
 
 import java.time.LocalDate;
 
@@ -80,27 +79,36 @@ public class StudentController extends FXController {
 
     @Override
     protected void load_fields() {
-        // Initialize data
-        originalMasterList = DataUtil.createStudentList();
-        yearFilteredList = new FilteredList<>(originalMasterList);
-        searchFilteredList = new FilteredList<>(yearFilteredList);
+        try {
+            // Initialize data from database
+            originalMasterList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+            yearFilteredList = new FilteredList<>(originalMasterList);
+            searchFilteredList = new FilteredList<>(yearFilteredList);
 
-        // Set filtered items to table
-        studentTableView.setItems(searchFilteredList);
+            // Set filtered items to table
+            studentTableView.setItems(searchFilteredList);
 
-        // Get selected year
-        String selectedYear = (String) getParameter("selectedYear");
-        if (selectedYear == null) {
-            selectedYear = YearData.getCurrentAcademicYear();
+            // Get selected year
+            String selectedYear = (String) getParameter("selectedYear");
+            if (selectedYear == null) {
+                selectedYear = YearData.getCurrentAcademicYear();
+            }
+
+            // Apply initial filter
+            initializeWithYear(selectedYear);
+
+            // Configure modal panes
+            formodal.setAlignment(Pos.TOP_CENTER);
+            formodal.usePredefinedTransitionFactories(Side.TOP);
+            formodal.setPersistent(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Database Error");
+            alert.setHeaderText("Failed to load student data");
+            alert.setContentText("An error occurred while loading student data from the database.");
+            alert.showAndWait();
         }
-
-        // Apply initial filter
-        initializeWithYear(selectedYear);
-
-        // Configure modal panes
-        formodal.setAlignment(Pos.TOP_CENTER);
-        formodal.usePredefinedTransitionFactories(Side.TOP);
-        formodal.setPersistent(true);
     }
 
     @Override
@@ -207,16 +215,17 @@ public class StudentController extends FXController {
 
     private void openStudentProfile(Student student) {
         try {
-            Stage stage = (Stage) contentPane.getScene().getWindow();
-            StudentProfileLoader loader = (StudentProfileLoader) FXLoaderFactory
-                    .createInstance(StudentProfileLoader.class,
-                            getClass().getResource("/sms/admin/app/student/viewstudent/STUDENT_PROFILE.fxml"))
-                    .addParameter("OWNER_STAGE", stage)
-                    .addParameter("SELECTED_STUDENT", student)
-                    .initialize();
+            StudentProfileLoader loader = new StudentProfileLoader();
+            loader.addParameter("SELECTED_STUDENT", student);
+            loader.addParameter("OWNER_STAGE", studentTableView.getScene().getWindow());
             loader.load();
         } catch (Exception e) {
             e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Failed to open student profile");
+            alert.setContentText(e.getMessage());
+            alert.showAndWait();
         }
     }
 

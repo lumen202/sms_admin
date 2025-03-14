@@ -1,7 +1,7 @@
 package sms.admin.app.student.viewstudent;
 
-import dev.sol.core.application.loader.FXLoader;
 import dev.finalproject.models.Student;
+import dev.sol.core.application.loader.FXLoader;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -9,6 +9,12 @@ import javafx.stage.StageStyle;
 import sms.admin.util.dialog.DialogManager;
 
 public class StudentProfileLoader extends FXLoader {
+
+    public StudentProfileLoader() {
+        String fxmlPath = "/sms/admin/app/student/viewstudent/STUDENT_PROFILE.fxml";
+        createInstance(getClass().getResource(fxmlPath));
+        initialize();
+    }
 
     @Override
     public void load() {
@@ -38,11 +44,8 @@ public class StudentProfileLoader extends FXLoader {
         Stage stage = new Stage(StageStyle.TRANSPARENT);
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.initOwner(ownerStage);
-       
         stage.setHeight(ownerStage.getHeight() * 0.9);
-
         
-            
         ownerStage.heightProperty().addListener((obs, oldVal, newVal) -> 
             stage.setHeight(newVal.doubleValue() * 0.9));
         
@@ -62,7 +65,7 @@ public class StudentProfileLoader extends FXLoader {
     private void initializeController(Stage stage) {
         StudentProfileController controller = loader.getController();
         controller.setStage(stage);
-        controller.load(); // Call load() before setStudent()
+        controller.load();
         controller.setStudent((Student) getParameter("SELECTED_STUDENT"));
     }
 }

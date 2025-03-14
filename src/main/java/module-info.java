@@ -33,14 +33,14 @@ module sms.admin {
     opens sms.admin.app.student to core.fx, javafx.fxml;
     opens sms.admin.app.enrollment to core.fx, javafx.fxml;
     opens sms.admin.app.schoolyear to core.fx, javafx.fxml;
-    opens sms.admin.app.attendance.attendancelog to core.fx, javafx.fxml;
     opens sms.admin.app.attendance.dialog to core.fx, javafx.fxml;
     opens sms.admin.util.exporter to core.fx, javafx.fxml;
+    opens sms.admin.util to javafx.base;
 
     exports sms.admin;
     exports sms.admin.app;
     exports sms.admin.app.student;
     exports sms.admin.app.student.viewstudent;
     exports sms.admin.app.schoolyear;
-    exports sms.admin.app.attendance.dialog to javafx.fxml, core.fx;
+    exports sms.admin.app.attendance.dialog;
 }

@@ -7,42 +7,57 @@
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<VBox styleClass="custom-dialog" spacing="15" stylesheets="@../../styles/dialog.css,@../../styles/attendance.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.dialog.AttendanceLogDialogController">
+
+<VBox fx:id="contentBox" styleClass="attendance-log-dialog" spacing="20" 
+      stylesheets="@attendance-log-dialog.css" 
+      xmlns="http://javafx.com/javafx/21.0.5" 
+      xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="sms.admin.app.attendance.dialog.AttendanceLogDialogController">
     <padding>
-        <Insets top="20" right="20" bottom="20" left="20"/>
+        <Insets top="25" right="25" bottom="25" left="25"/>
     </padding>
     
-    <Label fx:id="headerLabel" text="Attendance Log Details" styleClass="dialog-header"/>
-    
-    <HBox spacing="15">
-        <Label text="Student:"/>
-        <Label fx:id="studentNameLabel" styleClass="section-header"/>
-        <Label text="Date:"/>
-        <Label fx:id="dateLabel" styleClass="section-header"/>
-    </HBox>
+    <VBox spacing="15">
+        <Label text="Attendance Log Details" styleClass="dialog-header"/>
+        
+        <HBox spacing="15" alignment="CENTER_LEFT">
+            <Label text="Student:" styleClass="label-caption"/>
+            <Label fx:id="studentNameLabel" styleClass="section-header"/>
+            <Label text="Date:" styleClass="label-caption">
+                <padding>
+                    <Insets left="20"/>
+                </padding>
+            </Label>
+            <Label fx:id="dateLabel" styleClass="section-header"/>
+        </HBox>
+    </VBox>
     
     <TitledPane text="Morning (AM)" expanded="true">
-        <TableView fx:id="amLogTable" prefHeight="100">
-            <columns>
-                <TableColumn fx:id="timeInAMColumn" text="Time-In" prefWidth="150"/>
-                <TableColumn fx:id="timeOutAMColumn" text="Time-Out" prefWidth="150"/>
-            </columns>
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-            </columnResizePolicy>
-        </TableView>
+        <VBox>
+            <TableView fx:id="amLogTable" prefHeight="60" VBox.vgrow="NEVER">
+                <columns>
+                    <TableColumn fx:id="timeInAMColumn" text="Time-In" prefWidth="150"/>
+                    <TableColumn fx:id="timeOutAMColumn" text="Time-Out" prefWidth="150"/>
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+            </TableView>
+        </VBox>
     </TitledPane>
     
     <TitledPane text="Afternoon (PM)" expanded="true">
-        <TableView fx:id="pmLogTable" prefHeight="100">
-            <columns>
-                <TableColumn fx:id="timeInPMColumn" text="Time-In" prefWidth="150"/>
-                <TableColumn fx:id="timeOutPMColumn" text="Time-Out" prefWidth="150"/>
-            </columns>
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-            </columnResizePolicy>
-        </TableView>
+        <VBox>
+            <TableView fx:id="pmLogTable" prefHeight="60" VBox.vgrow="NEVER">
+                <columns>
+                    <TableColumn fx:id="timeInPMColumn" text="Time-In" prefWidth="150"/>
+                    <TableColumn fx:id="timeOutPMColumn" text="Time-Out" prefWidth="150"/>
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+            </TableView>
+        </VBox>
     </TitledPane>
     
     <HBox spacing="10" alignment="CENTER_RIGHT">

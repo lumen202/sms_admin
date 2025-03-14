@@ -15,8 +15,9 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane fx:id="dialogRoot" style="-fx-background-color: transparent;" stylesheets="@../../styles/main.css,@../../styles/dialog.css,@../../styles/profile.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.student.viewstudent.StudentProfileController">
+<StackPane fx:id="dialogRoot" style="-fx-background-color: transparent;" stylesheets="@../../styles/main.css,@../../styles/dialog.css,@profile.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.student.viewstudent.StudentProfileController">
    <children>
+      <StackPane fx:id="backgroundOverlay" styleClass="dialog-overlay"/>
       <BorderPane fx:id="profilePane" styleClass="profile-container" HBox.hgrow="ALWAYS">
 
          <center>
@@ -28,10 +29,7 @@
                      </padding>
                      <VBox alignment="CENTER" spacing="5">
                         <children>
-                           <ImageView fx:id="profileImageView" fitHeight="150.0" fitWidth="150.0" pickOnBounds="true" preserveRatio="true">
-                              <image>
-                                 <Image url="@../../../../../assets/img/default-profile.png" />
-                              </image>
+                           <ImageView fx:id="profileImageView" fitHeight="150.0" fitWidth="150.0" pickOnBounds="true" preserveRatio="true" styleClass="profile-image">
                            </ImageView>
                            <Button fx:id="changePhotoButton" styleClass="action-button" text="Change Photo" />
                         </children>

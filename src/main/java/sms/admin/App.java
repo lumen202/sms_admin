@@ -37,8 +37,8 @@ public class App extends FXApplication {
     public void initialize() throws Exception {
         try {
             configureApplication();
-            // initializeDatabase();
-            // initialize_dataset();
+            initializeDatabase();
+            initialize_dataset();
             initialize_application();
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to initialize application", e);

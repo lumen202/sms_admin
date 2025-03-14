@@ -1,16 +1,25 @@
 package sms.admin.app.enrollment;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 import dev.sol.core.application.FXController;
 import javafx.fxml.FXML;
+import javafx.stage.FileChooser;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.stage.FileChooser;
+import dev.finalproject.App;
+import dev.finalproject.models.*;
+import sms.admin.util.CsvImporter;
+import sms.admin.util.CsvStudent;
 import sms.admin.util.ValidationUtils;
+import sms.admin.util.DialogUtils;
+import sms.admin.util.EnrollmentUtils;
+
 public class EnrollmentController extends FXController {
 
     @FXML
@@ -52,12 +61,13 @@ public class EnrollmentController extends FXController {
     @FXML
     private Label importStatusLabel;
 
+    private SchoolYear currentSchoolYear;
+
     @Override
     protected void load_fields() {
         System.out.println("Enrollment is called");
         // Initialize status options
         statusComboBox.getItems().addAll("Active", "Inactive", "Graduate");
-
         // Add listeners for real-time validation
         addValidationListeners();
     }
@@ -111,8 +121,37 @@ public class EnrollmentController extends FXController {
     @FXML
     private void handleSubmit() {
         if (validateFields()) {
-            // TODO: Implement save logic
-            System.out.println("All fields are valid!");
+            try {
+                if (currentSchoolYear == null) {
+                    showErrorMessage("No school year selected");
+                    return;
+                }
+
+                Student student = EnrollmentUtils.enrollStudent(
+                        firstNameField.getText(),
+                        middleNameField.getText(),
+                        lastNameField.getText(),
+                        nameExtField.getText(),
+                        emailField.getText(),
+                        statusComboBox.getValue(),
+                        contactNumberField.getText(),
+                        java.sql.Date.valueOf(dateOfBirthPicker.getValue()),
+                        Double.parseDouble(fareField.getText()),
+                        streetField.getText(),
+                        cityField.getText(),
+                        municipalityField.getText(),
+                        postalCodeField.getText(),
+                        guardianNameField.getText(),
+                        guardianContactField.getText(),
+                        currentSchoolYear);
+
+                handleClear();
+                showSuccessMessage("Student enrolled successfully!");
+
+            } catch (Exception e) {
+                showErrorMessage("Failed to enroll student: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
@@ -185,7 +224,6 @@ public class EnrollmentController extends FXController {
         return isValid;
     }
 
-    @FXML
     private void handleClear() {
         // Clear all fields
         firstNameField.clear();
@@ -242,7 +280,30 @@ public class EnrollmentController extends FXController {
         File selectedFile = fileChooser.showOpenDialog(importCsvButton.getScene().getWindow());
         if (selectedFile != null) {
             importStatusLabel.setText("Processing: " + selectedFile.getName());
-            // TODO: Add CSV processing logic here
+            try {
+                List<CsvStudent> students = CsvImporter.importCsv(selectedFile);
+                int successCount = 0;
+
+                if (currentSchoolYear == null) {
+                    importStatusLabel.setText("Error: No school year selected");
+                    return;
+                }
+
+                for (CsvStudent csvStudent : students) {
+                    try {
+                        EnrollmentUtils.enrollStudentFromCsv(csvStudent, currentSchoolYear);
+                        successCount++;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                importStatusLabel.setText("Successfully imported " + successCount + " students");
+
+            } catch (IOException e) {
+                importStatusLabel.setText("Error: Failed to read CSV file");
+                e.printStackTrace();
+            }
         }
     }
 
@@ -251,8 +312,34 @@ public class EnrollmentController extends FXController {
     }
 
     public void initializeWithYear(String year) {
-        // Update enrollment data based on selected year
         System.out.println("Initializing enrollment data for year: " + year);
-        // Add your year-specific enrollment initialization logic here
+        // Parse the year string to get start and end years
+        String[] years = year.split("-");
+        if (years.length == 2) {
+            try {
+                int startYear = Integer.parseInt(years[0].trim());
+                int endYear = Integer.parseInt(years[1].trim());
+                
+                // Find the school year from the collection
+                this.currentSchoolYear = App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR").stream()
+                    .filter(sy -> sy instanceof SchoolYear)
+                    .map(sy -> (SchoolYear) sy)
+                    .filter(sy -> sy.getYearStart() == startYear && sy.getYearEnd() == endYear)
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("School year not found: " + year));
+
+                System.out.println("Selected school year: " + startYear + "-" + endYear);
+            } catch (NumberFormatException e) {
+                showErrorMessage("Invalid year format: " + year);
+            }
+        }
+    }
+
+    private void showSuccessMessage(String message) {
+        DialogUtils.showSuccess(message);
+    }
+
+    private void showErrorMessage(String message) {
+        DialogUtils.showError(message);
     }
 }

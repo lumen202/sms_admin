@@ -1,14 +1,17 @@
 package sms.admin.app.attendance;
 
 import java.io.IOException;
+import java.time.DateTimeException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import atlantafx.base.controls.ModalPane;
+import dev.finalproject.App;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
 import dev.finalproject.models.SchoolYear;
@@ -26,34 +29,23 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.Region;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.geometry.Pos;
-import javafx.geometry.Side;
 import javafx.scene.control.MenuButton;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import sms.admin.app.RootController;
 import sms.admin.app.attendance.dialog.AttendanceLogDialog;
-import sms.admin.app.payroll.PayrollController;
 import sms.admin.app.student.viewstudent.StudentProfileLoader;
 import sms.admin.util.attendance.AttendanceUtil;
-import sms.admin.util.attendance.WeeklyAttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
 import sms.admin.util.exporter.AttendanceTableExporter;
-import sms.admin.util.mock.DataUtil;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.scene.control.ScrollBar;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TablePosition;
+import dev.finalproject.data.AttendanceLogDAO;
+import dev.finalproject.data.AttendanceRecordDAO;
+import dev.finalproject.data.StudentDAO; // Add this import
 
 public class AttendanceController extends FXController {
 
@@ -102,12 +94,27 @@ public class AttendanceController extends FXController {
 
     @Override
     protected void load_fields() {
-        // Add this line at the start of load_fields
         rootPane.getProperties().put("controller", this);
-        studentList = FXCollections.observableArrayList(DataUtil.createStudentList());
-        attendanceLog = FXCollections.observableArrayList(
-                DataUtil.createAttendanceLogList().filtered(log -> !isFutureDate(log)) // Filter out future dates
-        );
+        studentList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+
+        try {
+            // Get attendance logs directly from DAO with validation
+            List<AttendanceLog> dbLogs = AttendanceLogDAO.getAttendanceLogList().stream()
+                    .filter(log -> {
+                        if (log == null || log.getRecordID() == null) {
+                            return false;
+                        }
+                        AttendanceRecord record = log.getRecordID();
+                        return record.getMonth() >= 1 && record.getMonth() <= 12;
+                    })
+                    .collect(Collectors.toList());
+
+            ObservableList<AttendanceLog> allLogs = FXCollections.observableArrayList(dbLogs);
+            attendanceLog = allLogs.filtered(log -> !isFutureDate(log));
+        } catch (Exception e) {
+            System.err.println("Error loading attendance logs: " + e.getMessage());
+            attendanceLog = FXCollections.observableArrayList();
+        }
 
         setupTable();
         setupColumnWidths();
@@ -141,20 +148,20 @@ public class AttendanceController extends FXController {
         attendanceTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
-    private TableCell<?, ?> findCell(int row, TableColumn<?, ?> column) {
-        for (Node node : attendanceTable.lookupAll(".table-cell")) {
-            if (node instanceof TableCell) {
-                @SuppressWarnings("unchecked")
-                TableCell<?, ?> cell = (TableCell<?, ?>) node;
-                if (cell.getTableRow() != null
-                        && cell.getTableRow().getIndex() == row
-                        && cell.getTableColumn() == column) {
-                    return cell;
-                }
-            }
-        }
-        return null;
-    }
+    // private TableCell<?, ?> findCell(int row, TableColumn<?, ?> column) {
+    // for (Node node : attendanceTable.lookupAll(".table-cell")) {
+    // if (node instanceof TableCell) {
+    // @SuppressWarnings("unchecked")
+    // TableCell<?, ?> cell = (TableCell<?, ?>) node;
+    // if (cell.getTableRow() != null
+    // && cell.getTableRow().getIndex() == row
+    // && cell.getTableColumn() == column) {
+    // return cell;
+    // }
+    // }
+    // }
+    // return null;
+    // }
 
     private void setupColumnWidths() {
         // Fixed width for ID and Name columns
@@ -248,8 +255,8 @@ public class AttendanceController extends FXController {
             });
         }
 
-        // Enable table to resize columns
-        attendanceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        // // Enable table to resize columns
+        // attendanceTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
     @Override
@@ -287,31 +294,32 @@ public class AttendanceController extends FXController {
         });
     }
 
-    private void updatePayrollMonth(String selectedMonthYear) {
-        try {
-            // Get root scene's FXML loader
-            Scene scene = rootPane.getScene();
-            if (scene == null)
-                return;
+    // private void updatePayrollMonth(String selectedMonthYear) {
+    // try {
+    // // Get root scene's FXML loader
+    // Scene scene = rootPane.getScene();
+    // if (scene == null)
+    // return;
 
-            Parent root = scene.getRoot();
-            if (root == null)
-                return;
+    // Parent root = scene.getRoot();
+    // if (root == null)
+    // return;
 
-            // Find PayrollController in the current scene
-            for (Node node : root.lookupAll("*")) {
-                if (node.getId() != null && node.getId().equals("payrollRoot")) {
-                    Object controller = node.getProperties().get("controller");
-                    if (controller instanceof PayrollController payrollController) {
-                        payrollController.setSelectedMonth(selectedMonthYear);
-                        return;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Could not sync month selection with Payroll: " + e.getMessage());
-        }
-    }
+    // // Find PayrollController in the current scene
+    // for (Node node : root.lookupAll("*")) {
+    // if (node.getId() != null && node.getId().equals("payrollRoot")) {
+    // Object controller = node.getProperties().get("controller");
+    // if (controller instanceof PayrollController payrollController) {
+    // payrollController.setSelectedMonth(selectedMonthYear);
+    // return;
+    // }
+    // }
+    // }
+    // } catch (Exception e) {
+    // System.err.println("Could not sync month selection with Payroll: " +
+    // e.getMessage());
+    // }
+    // }
 
     private void handleExport(String type) {
         try {
@@ -358,11 +366,18 @@ public class AttendanceController extends FXController {
     }
 
     private TableColumn<Student, String> createDayColumn(LocalDate date) {
-        TableColumn<Student, String> dayColumn = WeeklyAttendanceUtil.createDayColumn(date, attendanceLog);
+        TableColumn<Student, String> dayColumn = new TableColumn<>(date.getDayOfMonth() + "");
         dayColumn.setMinWidth(52);
         dayColumn.setPrefWidth(52);
         dayColumn.setMaxWidth(69);
         dayColumn.setResizable(false);
+        dayColumn.setStyle("-fx-alignment: CENTER;");
+
+        dayColumn.setCellValueFactory(data -> {
+            Student student = data.getValue();
+            String status = AttendanceUtil.getAttendanceStatus(student, date, attendanceLog);
+            return new SimpleStringProperty(status);
+        });
 
         dayColumn.setCellFactory(column -> {
             TableCell<Student, String> cell = new TableCell<>() {
@@ -393,7 +408,7 @@ public class AttendanceController extends FXController {
                 editAttendanceItem.setOnAction(e -> {
                     Student student = cell.getTableRow().getItem();
                     if (student != null) {
-                        String currentStatus = cell.getText(); // Get current cell value
+                        String currentStatus = cell.getText();
                         ComboBox<String> comboBox = new ComboBox<>();
                         comboBox.getItems().addAll(
                                 AttendanceUtil.PRESENT_MARK,
@@ -401,28 +416,16 @@ public class AttendanceController extends FXController {
                                 AttendanceUtil.HALF_DAY_MARK,
                                 AttendanceUtil.EXCUSED_MARK);
 
-                        // Set default value from cell's current text
                         comboBox.setValue(currentStatus.isEmpty() ? AttendanceUtil.PRESENT_MARK : currentStatus);
-
                         cell.setGraphic(comboBox);
                         cell.setText(null);
-
-                        // Request focus after showing
-                        Platform.runLater(() -> {
-                            comboBox.requestFocus();
-                            comboBox.show();
-                        });
-
-                        // Handle focus lost
-                        comboBox.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
-                            if (!isFocused) {
-                                updateCellValue(cell, student, date, comboBox.getValue());
-                            }
-                        });
 
                         comboBox.setOnAction(event -> {
                             updateCellValue(cell, student, date, comboBox.getValue());
                         });
+
+                        // Show combobox immediately
+                        comboBox.show();
                     }
                 });
 
@@ -439,7 +442,17 @@ public class AttendanceController extends FXController {
     private void updateCellValue(TableCell<Student, String> cell, Student student, LocalDate date, String newValue) {
         if (newValue != null) {
             if (newValue.equals(AttendanceUtil.EXCUSED_MARK)) {
-                DataUtil.createExcusedAttendance(student, date);
+                // Create excused attendance directly in database
+                AttendanceRecord record = AttendanceRecordDAO.findOrCreateRecord(
+                        date.getYear(), date.getMonthValue(), date.getDayOfMonth());
+
+                AttendanceLog log = AttendanceLogDAO.findOrCreateLog(student, record);
+                log.setTimeInAM(AttendanceUtil.TIME_EXCUSED);
+                log.setTimeOutAM(AttendanceUtil.TIME_EXCUSED);
+                log.setTimeInPM(AttendanceUtil.TIME_EXCUSED);
+                log.setTimeOutPM(AttendanceUtil.TIME_EXCUSED);
+
+                AttendanceLogDAO.update(log);
             } else {
                 updateAttendanceRecord(student, date, newValue);
             }
@@ -462,17 +475,40 @@ public class AttendanceController extends FXController {
     }
 
     private void showAttendanceLogDialog(Student student, LocalDate date) {
-        new AttendanceLogDialog(student, date, attendanceLog);
-        System.out.println("Attendance Log dialog closed.");
+        try {
+            // Create a new modifiable list for the dialog
+            List<AttendanceLog> dialogLogs = new ArrayList<>(App.COLLECTIONS_REGISTRY.getList("ATTENDANCE_LOG"));
+            AttendanceLogDialog dialog = new AttendanceLogDialog(student, date, dialogLogs);
+            // Rest of the dialog setup...
+        } catch (Exception e) {
+            System.err.println("Error showing attendance log dialog: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private boolean isFutureDate(AttendanceLog log) {
-        if (log == null || log.getRecordID() == null) {
+        try {
+            if (log == null || log.getRecordID() == null) {
+                return true;
+            }
+
+            AttendanceRecord record = log.getRecordID();
+            int year = record.getYear();
+            int month = record.getMonth();
+            int day = record.getDay();
+
+            // Validate date components
+            if (month < 1 || month > 12 || day < 1 || day > 31) {
+                System.out.println("Invalid date components: year=" + year + ", month=" + month + ", day=" + day);
+                return true;
+            }
+
+            LocalDate logDate = LocalDate.of(year, month, day);
+            return logDate.isAfter(LocalDate.now());
+        } catch (DateTimeException e) {
+            System.err.println("Invalid date in attendance log: " + e.getMessage());
             return true;
         }
-        LocalDate logDate = LocalDate.of(log.getRecordID().getYear(), log.getRecordID().getMonth(),
-                log.getRecordID().getDay());
-        return logDate.isAfter(LocalDate.now());
     }
 
     public void updateYear(String newYear) {
@@ -488,15 +524,19 @@ public class AttendanceController extends FXController {
         int startYear = Integer.parseInt(yearRange[0]);
         int endYear = Integer.parseInt(yearRange[1]);
 
-        studentList = DataUtil.createStudentList().filtered(student -> {
-            if (student.getYearID() == null) {
-                return false;
-            }
-            SchoolYear schoolYear = student.getYearID();
-            return schoolYear.getYearStart() == startYear
-                    && schoolYear.getYearEnd() == endYear;
-        });
+        // Replace DataUtil with direct database query
+        List<Student> students = StudentDAO.getStudentList().stream()
+                .filter(student -> {
+                    if (student.getYearID() == null) {
+                        return false;
+                    }
+                    SchoolYear schoolYear = student.getYearID();
+                    return schoolYear.getYearStart() == startYear
+                            && schoolYear.getYearEnd() == endYear;
+                })
+                .collect(Collectors.toList());
 
+        studentList = FXCollections.observableArrayList(students);
         attendanceTable.setItems(studentList);
 
         if (monthYearComboBox != null) {
@@ -567,11 +607,24 @@ public class AttendanceController extends FXController {
             return; // Prevent updates for future dates
         }
 
-        ObservableList<AttendanceRecord> records = DataUtil.createAttendanceRecordList();
-        ObservableList<AttendanceLog> logs = DataUtil.createAttendanceLogList();
+        // Create or get existing record
+        AttendanceRecord record = AttendanceRecordDAO.findOrCreateRecord(date.getYear(),
+                date.getMonthValue(), date.getDayOfMonth());
 
-        AttendanceLog log = AttendanceUtil.findOrCreateAttendanceLog(student, date, logs, records);
+        // Create or get existing log
+        AttendanceLog log = AttendanceLogDAO.findOrCreateLog(student, record);
 
+        // Update log times based on attendance value
+        updateLogTimes(log, attendanceValue);
+
+        // Save to database
+        AttendanceLogDAO.update(log);
+
+        // Refresh local list
+        refreshAttendanceLogs();
+    }
+
+    private void updateLogTimes(AttendanceLog log, String attendanceValue) {
         switch (attendanceValue) {
             case AttendanceUtil.PRESENT_MARK:
                 log.setTimeInAM(AttendanceUtil.TIME_IN_AM);
@@ -598,12 +651,33 @@ public class AttendanceController extends FXController {
                 log.setTimeOutPM(AttendanceUtil.TIME_EXCUSED);
                 break;
         }
+    }
 
-        if (!logs.contains(log)) {
-            logs.add(log);
+    private void refreshAttendanceLogs() {
+        try {
+            // Refresh the attendance logs from the database
+            List<AttendanceLog> dbLogs = AttendanceLogDAO.getAttendanceLogList().stream()
+                    .filter(log -> {
+                        if (log == null || log.getRecordID() == null) {
+                            return false;
+                        }
+                        AttendanceRecord record = log.getRecordID();
+                        return record.getMonth() >= 1 && record.getMonth() <= 12;
+                    })
+                    .collect(Collectors.toList());
+
+            // Update the attendanceLog observable list
+            attendanceLog = FXCollections.observableArrayList(dbLogs)
+                    .filtered(log -> !isFutureDate(log));
+
+            // Refresh the main attendance table to show updated data
+            Platform.runLater(() -> {
+                attendanceTable.refresh();
+            });
+        } catch (Exception e) {
+            System.err.println("Error refreshing attendance logs: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        attendanceLog.setAll(logs.filtered(l -> !isFutureDate(l))); // Update with filtered logs
     }
 
     public void setSelectedMonth(String monthYear) {

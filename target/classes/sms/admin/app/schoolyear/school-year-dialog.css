@@ -1,0 +1,68 @@
+.dialog-pane {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.5, 0.0, 0.0);
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+}
+
+.dialog-header {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2C3E50;
+    -fx-padding: 0 0 15 0;
+}
+
+.dialog-content {
+    -fx-padding: 10px;
+}
+
+.date-picker {
+    -fx-pref-width: 200px;
+}
+
+.date-picker .text-field {
+    -fx-background-color: white;
+    -fx-border-color: #E0E0E0;
+    -fx-border-radius: 3px;
+}
+
+.date-picker:focused {
+    -fx-border-color: #2196F3;
+}
+
+.cancel-button {
+    -fx-background-color: #E0E0E0;
+    -fx-text-fill: #333333;
+    -fx-padding: 8 15 8 15;
+    -fx-background-radius: 3;
+}
+
+.primary-button {
+    -fx-background-color: #2196F3;
+    -fx-text-fill: white;
+    -fx-padding: 8 20 8 20;
+    -fx-background-radius: 3;
+}
+
+.primary-button:hover {
+    -fx-background-color: #1976D2;
+}
+
+.cancel-button:hover {
+    -fx-background-color: #D0D0D0;
+}
+
+.combo-box {
+    -fx-pref-width: 200px;
+    -fx-background-color: white;
+    -fx-border-color: #E0E0E0;
+    -fx-border-radius: 3px;
+}
+
+.combo-box:focused {
+    -fx-border-color: #2196F3;
+}
+
+.combo-box .list-cell {
+    -fx-padding: 5 10 5 10;
+}

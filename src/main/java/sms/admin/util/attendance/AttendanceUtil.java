@@ -130,34 +130,35 @@ public class AttendanceUtil {
         }
 
         AttendanceLog log = attendanceLogs.stream()
-                .filter(l -> l != null && l.getStudentID() != null &&
-                        l.getRecordID() != null &&
-                        l.getStudentID().equals(student) &&
-                        recordMatchesDate(l.getRecordID(), date))
-                .findFirst()
-                .orElse(null);
+            .filter(l -> l != null && 
+                   l.getStudentID() != null && 
+                   l.getRecordID() != null &&
+                   l.getStudentID().getStudentID() == student.getStudentID() &&
+                   l.getRecordID().getYear() == date.getYear() &&
+                   l.getRecordID().getMonth() == date.getMonthValue() &&
+                   l.getRecordID().getDay() == date.getDayOfMonth())
+            .findFirst()
+            .orElse(null);
 
         if (log == null) {
             return ABSENT_MARK;
         }
 
-        // Check for excused absence first
-        if (isExcused(log)) {
+        // Check excused first
+        if (log.getTimeInAM() == TIME_EXCUSED) {
             return EXCUSED_MARK;
         }
 
-        // Check for complete absence
-        if (isAbsent(log)) {
-            return ABSENT_MARK;
-        }
+        // Check attendance status
+        boolean hasAM = log.getTimeInAM() > 0 && log.getTimeInAM() != TIME_ABSENT && 
+                       log.getTimeOutAM() > 0 && log.getTimeOutAM() != TIME_ABSENT;
+                       
+        boolean hasPM = log.getTimeInPM() > 0 && log.getTimeInPM() != TIME_ABSENT &&
+                       log.getTimeOutPM() > 0 && log.getTimeOutPM() != TIME_ABSENT;
 
-        // Check for full day presence
-        if (isFullDayPresent(log)) {
+        if (hasAM && hasPM) {
             return PRESENT_MARK;
-        }
-
-        // If not full day but has some times recorded, it's half day
-        if (hasAnyTimeRecord(log)) {
+        } else if (hasAM || hasPM) {
             return HALF_DAY_MARK;
         }
 

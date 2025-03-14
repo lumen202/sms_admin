@@ -8,7 +8,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import sms.admin.util.dialog.DialogManager;
 
 public class SchoolYearDialog extends Dialog<SchoolYear> {
 
@@ -22,6 +24,7 @@ public class SchoolYearDialog extends Dialog<SchoolYear> {
             
             SchoolYearDialogController controller = loader.getController();
             controller.setDialog(this);
+            controller.setDialogStage((Stage)getDialogPane().getScene().getWindow());
             controller.setExistingSchoolYear(schoolYear);
 
             getDialogPane().getStylesheets().add(
@@ -46,6 +49,12 @@ public class SchoolYearDialog extends Dialog<SchoolYear> {
             Button cancelButton = (Button) getDialogPane().lookupButton(ButtonType.CANCEL);
             okButton.setVisible(false);
             cancelButton.setVisible(false);
+
+            // Hook into the dialog's show event to ensure window is available
+            setOnShowing(event -> {
+                Stage stage = (Stage) getDialogPane().getScene().getWindow();
+                controller.setDialogStage(stage);
+            });
 
         } catch (IOException e) {
             e.printStackTrace();
