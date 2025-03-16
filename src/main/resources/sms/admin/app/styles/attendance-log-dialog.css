@@ -1,0 +1,109 @@
+.custom-dialog {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.custom-dialog > *.content.dialog-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.custom-dialog:header *.header-panel {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.dialog-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.attendance-log-dialog {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 0);
+    -fx-padding: 15;
+}
+
+.header-section {
+    -fx-background-color: linear-gradient(to right, #f8f9fa, #ffffff);
+    -fx-background-radius: 5;
+    -fx-padding: 12;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 5;
+}
+
+.titled-pane {
+    -fx-background-color: transparent;
+}
+
+.titled-pane > .title {
+    -fx-background-color: #003366;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 8;
+}
+
+.titled-pane > *.content {
+    -fx-background-color: transparent;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 0 0 5 5;
+}
+
+.table-view {
+    -fx-fixed-cell-size: 30;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.table-view .column-header {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #dee2e6;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #f1f3f5 transparent;
+}
+
+.table-view .table-row-cell:hover {
+    -fx-background-color: #f8f9fa;
+}
+
+.dialog-button {
+    -fx-background-color: #003366;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 8 20;
+    -fx-background-radius: 5;
+}
+
+.dialog-button:hover {
+    -fx-background-color: #004080;
+}
+
+.secondary-button {
+    -fx-background-color: linear-gradient(to bottom, #800000, #600000);
+    -fx-text-fill: white;
+    -fx-background-radius: 100;
+    -fx-min-width: 70;
+    -fx-min-height: 28;
+    -fx-pref-height: 28;
+    -fx-max-height: 28;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);
+    -fx-padding: 0 15;
+}
+
+.secondary-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #900000, #700000);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 3);
+}
+
+.secondary-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #600000, #400000);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 4, 0, 0, 1);
+}

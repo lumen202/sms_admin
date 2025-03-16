@@ -7,20 +7,14 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 
 public class DialogManager {
-    private static final double BLUR_AMOUNT = 10.0; // Increased blur
-    private static final double DARKEN_AMOUNT = 0.4; // Adjusted darkness
+    private static final double BLUR_AMOUNT = 5.0; // Reduced blur amount
     
     public static void setOverlayEffect(Window owner, boolean enable) {
         if (owner instanceof Stage ownerStage && ownerStage.getScene() != null) {
             if (enable) {
                 ownerStage.getScene().getRoot().setEffect(new GaussianBlur(BLUR_AMOUNT));
-                ownerStage.getScene().getRoot().setStyle(
-                    String.format("-fx-opacity: %.1f; -fx-background-color: rgba(0, 0, 0, %.1f);", 
-                    DARKEN_AMOUNT, 0.5)
-                );
             } else {
                 ownerStage.getScene().getRoot().setEffect(null);
-                ownerStage.getScene().getRoot().setStyle("");
             }
         }
     }

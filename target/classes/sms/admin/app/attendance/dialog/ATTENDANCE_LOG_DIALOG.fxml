@@ -3,46 +3,47 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox fx:id="contentBox" styleClass="attendance-log-dialog" spacing="10"
+<DialogPane styleClass="custom-dialog"
       xmlns="http://javafx.com/javafx/22" 
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="sms.admin.app.attendance.dialog.AttendanceLogDialogController">
+    <content>
+        <VBox fx:id="contentBox" styleClass="attendance-log-dialog" spacing="10"
+              prefWidth="360" prefHeight="450">
     
-    <padding>
-        <Insets top="12" right="12" bottom="12" left="12"/>
-    </padding>
-    
-    <HBox spacing="10">
-        <Label text="Student:" styleClass="label-caption"/>
-        <Label fx:id="studentNameLabel"/>
-        <Label text="Date:" styleClass="label-caption">
-            <HBox.margin>
-                <Insets left="20"/>
-            </HBox.margin>
-        </Label>
-        <Label fx:id="dateLabel"/>
-    </HBox>
-    
-    <TitledPane text="Morning (AM)" expanded="true">
-        <TableView fx:id="amLogTable">
-            <columns>
-                <TableColumn fx:id="timeInAMColumn" text="Time-In" prefWidth="120"/>
-                <TableColumn fx:id="timeOutAMColumn" text="Time-Out" prefWidth="120"/>
-            </columns>
-        </TableView>
-    </TitledPane>
-    
-    <TitledPane text="Afternoon (PM)" expanded="true">
-        <TableView fx:id="pmLogTable">
-            <columns>
-                <TableColumn fx:id="timeInPMColumn" text="Time-In" prefWidth="120"/>
-                <TableColumn fx:id="timeOutPMColumn" text="Time-Out" prefWidth="120"/>
-            </columns>
-        </TableView>
-    </TitledPane>
-    
-    <HBox alignment="CENTER_RIGHT">
-        <Button fx:id="closeButton" text="Close" onAction="#handleClose" 
-                styleClass="secondary-button"/>
-    </HBox>
-</VBox>
+            <padding>
+                <Insets top="15" right="15" bottom="15" left="15"/>
+            </padding>
+            
+            <HBox spacing="15" styleClass="header-section">
+                <Label text="Student:" styleClass="label-caption"/>
+                <Label fx:id="studentNameLabel" styleClass="label-value"/>
+                <Label text="Date:" styleClass="label-caption"/>
+                <Label fx:id="dateLabel" styleClass="label-value"/>
+            </HBox>
+            
+            <TitledPane text="Morning (AM)" expanded="true" styleClass="section-pane">
+                <TableView fx:id="amLogTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="timeInAMColumn" text="Time-In" prefWidth="160"/>
+                        <TableColumn fx:id="timeOutAMColumn" text="Time-Out" prefWidth="160"/>
+                    </columns>
+                </TableView>
+            </TitledPane>
+            
+            <TitledPane text="Afternoon (PM)" expanded="true" styleClass="section-pane">
+                <TableView fx:id="pmLogTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="timeInPMColumn" text="Time-In" prefWidth="160"/>
+                        <TableColumn fx:id="timeOutPMColumn" text="Time-Out" prefWidth="160"/>
+                    </columns>
+                </TableView>
+            </TitledPane>
+            
+            <HBox alignment="CENTER_RIGHT" spacing="10">
+                <Button fx:id="closeButton" text="Close" onAction="#handleClose" 
+                        styleClass="secondary-button"/>
+            </HBox>
+        </VBox>
+    </content>
+</DialogPane>

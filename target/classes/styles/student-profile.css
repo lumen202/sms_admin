@@ -1,0 +1,8 @@
+.label-caption {
+    -fx-font-weight: bold;
+    -fx-text-fill: #666666;
+}
+
+.label-value {
+    -fx-text-fill: #333333;
+}
