@@ -27,17 +27,23 @@ import sms.admin.app.RootLoader;
 public class App extends FXApplication {
 
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "admin";
+    public static final String remoteHost = "jdbc:mysql://192.168.254.108:3306/student_management_system_db"
+            + "?user=" + DB_USER + "&password=" + DB_PASSWORD + "&allowPublicKeyRetrieval=true&useSSL=false";
+    public static final String LOCALHOST
+            ="jdbc:mysql://localhost:3306/student_management_system_db?user=root&password=admin&allowPublicKeyRetrieval=true&useSSL=false";
+
 
     public static final FXControllerRegister CONTROLLER_REGISTRY = FXControllerRegister.INSTANCE;
     public static final FXCollectionsRegister COLLECTIONS_REGISTRY = FXCollectionsRegister.INSTANCE;
     public static final FXNodeRegister NODE_REGISTER = FXNodeRegister.INSTANCE;
-    public static final DBService DB_SMS = DBService.INSTANCE;
+    public static final DBService DB_SMS = DBService.INSTANCE.initialize(LOCALHOST);
 
     @Override
     public void initialize() throws Exception {
         try {
             configureApplication();
-            initializeDatabase();
             initialize_dataset();
             initialize_application();
         } catch (Exception e) {
@@ -52,38 +58,16 @@ public class App extends FXApplication {
         getApplicationStage().getIcons().add(
                 new Image(getClass().getResource("/sms/admin/assets/img/logo.png").toExternalForm()));
 
-        // Set initial window size
         applicationStage.setWidth(900);
         applicationStage.setHeight(700);
-
-        // Add proper cleanup on window close
         applicationStage.setOnCloseRequest(this::handleApplicationClose);
-    }
-
-    private void initializeDatabase() {
-        try {
-            // Ensure the connection string is correct
-            DB_SMS.initialize("jdbc:mysql://127.0.0.1:3306/student_management_system_db?user=root&password=&useSSL=false&serverTimezone=UTC&connectTimeout=10000"
-
-);
-            LOGGER.info("Database connection established successfully");
-        } catch (Exception e) { 
-            LOGGER.log(Level.SEVERE, "Failed to initialize database", e);
-            throw new RuntimeException("Database initialization failed", e);
-        }
     }
 
     public void initialize_dataset() {
         try {
-            // Initialize base data first
             initializeBaseCollections();
-
-            // Initialize dependent data
             initializeDependentCollections();
-
-            // Initialize related data last
             initializeRelatedCollections();
-
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to initialize dataset", e);
             throw new RuntimeException("Dataset initialization failed", e);
@@ -98,14 +82,11 @@ public class App extends FXApplication {
     }
 
     private void initializeDependentCollections() {
-        // Initialize Student related collections
         StudentDAO.initialize(
                 COLLECTIONS_REGISTRY.getList("CLUSTER"),
                 COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR"));
         COLLECTIONS_REGISTRY.register("STUDENT",
                 FXCollections.observableArrayList(StudentDAO.getStudentList()));
-
-        // Initialize Guardian related collections
         COLLECTIONS_REGISTRY.register("GUARDIAN",
                 FXCollections.observableArrayList(GuardianDAO.getGuardianList()));
         COLLECTIONS_REGISTRY.register("STUDENT_GUARDIAN",
@@ -113,21 +94,16 @@ public class App extends FXApplication {
     }
 
     private void initializeRelatedCollections() {
-        // Initialize Address
         AddressDAO.initialize(COLLECTIONS_REGISTRY.getList("STUDENT"));
         COLLECTIONS_REGISTRY.register("ADDRESS",
                 FXCollections.observableArrayList(AddressDAO.getAddressesList()));
 
-        // Initialize Attendance Records first
         COLLECTIONS_REGISTRY.register("ATTENDANCE_RECORD",
                 FXCollections.observableArrayList(AttendanceRecordDAO.getRecordList()));
 
-        // Initialize AttendanceLogDAO before getting logs
         AttendanceLogDAO.initialize(
                 COLLECTIONS_REGISTRY.getList("STUDENT"),
                 COLLECTIONS_REGISTRY.getList("ATTENDANCE_RECORD"));
-
-        // Now get the logs after initialization
         COLLECTIONS_REGISTRY.register("ATTENDANCE_LOG",
                 FXCollections.observableArrayList(AttendanceLogDAO.getAttendanceLogList()));
     }
@@ -153,9 +129,7 @@ public class App extends FXApplication {
 
     private void handleApplicationClose(@SuppressWarnings("unused") WindowEvent event) {
         try {
-            // Clear specific known collections
             clearCollections();
-            // Exit the application
             Platform.exit();
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Error during application cleanup", e);
@@ -163,7 +137,6 @@ public class App extends FXApplication {
     }
 
     private void clearCollections() {
-        // Clear known collections by registering empty lists
         String[] knownCollections = {
             "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
             "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD",
