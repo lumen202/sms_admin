@@ -12,18 +12,22 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import javafx.scene.layout.VBox;
 import javafx.geometry.Insets;
 import sms.admin.util.attendance.AttendanceUtil;
 import sms.admin.util.dialog.DialogManager;
 
 public class AttendanceLogDialogController extends FXController {
+    private Stage stage;
+
+    public void setStage(Stage stage) {
+        this.stage = stage;
+    }
+
     @FXML
     private Label studentNameLabel;
     @FXML
@@ -50,40 +54,41 @@ public class AttendanceLogDialogController extends FXController {
     }
 
     public void initData(Student student, LocalDate date, List<AttendanceLog> allLogs) {
-        // Set header information
-        studentNameLabel.setText(String.format("%s, %s", student.getLastName(), student.getFirstName()));
-        dateLabel.setText(date.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")));
+        if (student != null) {
+            String studentName = String.format("%s, %s %s", 
+                student.getLastName(),
+                student.getFirstName(),
+                student.getMiddleName() != null ? student.getMiddleName() : "");
+            studentNameLabel.setText(studentName.trim());
+        }
 
-        // Filter logs more accurately
-        List<AttendanceLog> matchingLogs = allLogs.stream()
-                .filter(l -> l != null && l.getStudentID() != null && l.getRecordID() != null)
-                .filter(l -> l.getStudentID().getStudentID() == student.getStudentID())
-                .filter(l -> {
-                    AttendanceRecord record = l.getRecordID();
-                    return record.getYear() == date.getYear() 
-                        && record.getMonth() == date.getMonthValue() 
-                        && record.getDay() == date.getDayOfMonth();
-                })
-                .toList();
+        if (date != null) {
+            dateLabel.setText(date.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")));
+        }
+
+        // Find matching log
+        AttendanceLog matchingLog = allLogs.stream()
+            .filter(l -> l != null && l.getRecordID() != null && l.getStudentID() != null)
+            .filter(l -> l.getStudentID().getStudentID() == student.getStudentID())
+            .filter(l -> {
+                AttendanceRecord record = l.getRecordID();
+                return record.getYear() == date.getYear() 
+                    && record.getMonth() == date.getMonthValue() 
+                    && record.getDay() == date.getDayOfMonth();
+            })
+            .findFirst()
+            .orElse(null);
 
         setupTableColumns();
 
-        // Update tables with logs
-        ObservableList<AttendanceLog> logList = FXCollections.observableArrayList(matchingLogs);
-        amLogTable.setItems(logList);
-        pmLogTable.setItems(logList);
-
-        // Move styling to CSS
-        if (contentBox != null) {
-            contentBox.getStyleClass().add("dialog-content");
-        }
-        
-        if (amLogTable != null) {
-            amLogTable.getStyleClass().add("attendance-table");
-        }
-        
-        if (pmLogTable != null) {
-            pmLogTable.getStyleClass().add("attendance-table");
+        // Update tables with single log if found
+        if (matchingLog != null) {
+            ObservableList<AttendanceLog> logList = FXCollections.observableArrayList(matchingLog);
+            amLogTable.setItems(logList);
+            pmLogTable.setItems(logList);
+        } else {
+            amLogTable.setItems(FXCollections.emptyObservableList());
+            pmLogTable.setItems(FXCollections.emptyObservableList());
         }
     }
 
@@ -96,41 +101,41 @@ public class AttendanceLogDialogController extends FXController {
         }
     }
 
-    private void setupTableColumns() {
-        // AM columns
-        timeInAMColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeInAM())));
-        timeOutAMColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeOutAM())));
-
-        // PM columns
-        timeInPMColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeInPM())));
-        timeOutPMColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeOutPM())));
-
-        // Set equal column widths
-        timeInAMColumn.setPrefWidth(150);
-        timeOutAMColumn.setPrefWidth(150);
-        timeInPMColumn.setPrefWidth(150);
-        timeOutPMColumn.setPrefWidth(150);
-    }
-
-    @FXML
-    private void handleClose() {
-        // Get the window and find the parent Dialog
-        Window window = closeButton.getScene().getWindow();
-        if (window instanceof Stage stage) {
-            stage.close();
-        }
-    }
-
     @Override
     protected void load_bindings() {
-        // Remove console logging
+        // No bindings needed
     }
 
     @Override
     protected void load_listeners() {
+        // Add button listener
+        if (closeButton != null) {
+            closeButton.setOnAction(e -> handleClose());
+        }
+    }
+
+    private void setupTableColumns() {
+        // AM columns
+        timeInAMColumn.setCellValueFactory(data -> 
+            new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeInAM())));
+        timeOutAMColumn.setCellValueFactory(data -> 
+            new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeOutAM())));
+
+        // PM columns
+        timeInPMColumn.setCellValueFactory(data -> 
+            new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeInPM())));
+        timeOutPMColumn.setCellValueFactory(data -> 
+            new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeOutPM())));
+
+        // Set column widths
+        timeInAMColumn.setPrefWidth(160);
+        timeOutAMColumn.setPrefWidth(160);
+        timeInPMColumn.setPrefWidth(160);
+        timeOutPMColumn.setPrefWidth(160);
+    }
+
+    @FXML
+    private void handleClose() {
+        DialogManager.closeWithFade(stage, null);
     }
 }

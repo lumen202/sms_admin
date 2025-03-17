@@ -3,6 +3,11 @@ package sms.admin.util.attendance;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.Student;
@@ -15,6 +20,9 @@ public class WeeklyAttendanceUtil {
     private static final String WEEK_RANGE_SEPARATOR = " - ";
     private static final double DEFAULT_DAY_COLUMN_WIDTH = 120.0;
     private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormatter.ofPattern("dd");
+    private static final Map<Integer, String> DAY_INITIALS = Map.of(
+        1, "M", 2, "T", 3, "W", 4, "Th", 5, "F", 6, "Sa", 7, "Su"
+    );
 
     public static LocalDate getFirstDayOfMonth(String selectedMonthYear) {
         String[] parts = selectedMonthYear.split(" ");
@@ -45,35 +53,24 @@ public class WeeklyAttendanceUtil {
     public static TableColumn<Student, String> createDayColumn(
             LocalDate date,
             ObservableList<AttendanceLog> attendanceLogs) {
-            
-        // More compact format: {day}{initial}
-        String columnHeader = String.format("%d%s", 
-            date.getDayOfMonth(),
-            getDayInitial(date.getDayOfWeek().getValue())
+        if (date == null || attendanceLogs == null) {
+            return null;
+        }
+        
+        TableColumn<Student, String> dayColumn = new TableColumn<>(
+            String.format("%d%s", date.getDayOfMonth(), getDayInitial(date.getDayOfWeek().getValue()))
         );
         
-        TableColumn<Student, String> dayColumn = new TableColumn<>(columnHeader);
-        dayColumn.setCellValueFactory(cellData -> {
-            Student student = cellData.getValue();
-            String attendanceStatus = AttendanceUtil.getAttendanceStatus(student, date, attendanceLogs);
-            return new SimpleStringProperty(attendanceStatus);
-        });
+        dayColumn.setCellValueFactory(cellData -> 
+            new SimpleStringProperty(AttendanceUtil.getAttendanceStatus(cellData.getValue(), date, attendanceLogs))
+        );
         
-        dayColumn.setStyle("-fx-alignment: CENTER; -fx-font-size: 11px;"); // Smaller font
+        dayColumn.setStyle("-fx-alignment: CENTER; -fx-font-size: 11px;");
         return dayColumn;
     }
     
     private static String getDayInitial(int dayOfWeek) {
-        switch (dayOfWeek) {
-            case 1: return "M";
-            case 2: return "T";
-            case 3: return "W";
-            case 4: return "Th";
-            case 5: return "F";
-            case 6: return "Sa";
-            case 7: return "Su";
-            default: return "";
-        }
+        return DAY_INITIALS.getOrDefault(dayOfWeek, "");
     }
 
     public static void updateWeeklyColumns(
@@ -164,5 +161,59 @@ public class WeeklyAttendanceUtil {
 
         // If not current month or week not found, select first week
         weekComboBox.setValue(weekComboBox.getItems().get(0));
+    }
+
+    public static List<WeekDates> splitIntoWeeks(LocalDate startDate, LocalDate endDate) {
+        List<WeekDates> weeks = new ArrayList<>();
+        WeekFields weekFields = WeekFields.of(Locale.getDefault());
+        
+        LocalDate current = startDate;
+        LocalDate weekStart = current;
+        int currentWeek = current.get(weekFields.weekOfWeekBasedYear());
+        
+        while (!current.isAfter(endDate)) {
+            if (current.get(weekFields.weekOfWeekBasedYear()) != currentWeek) {
+                weeks.add(new WeekDates(weekStart, current.minusDays(1)));
+                weekStart = current;
+                currentWeek = current.get(weekFields.weekOfWeekBasedYear());
+            }
+            current = current.plusDays(1);
+        }
+        
+        // Add the last week
+        if (!weekStart.isAfter(endDate)) {
+            weeks.add(new WeekDates(weekStart, endDate));
+        }
+        
+        return weeks;
+    }
+    
+    public static class WeekDates {
+        private final LocalDate start;
+        private final LocalDate end;
+        
+        public WeekDates(LocalDate start, LocalDate end) {
+            this.start = start;
+            this.end = end;
+        }
+        
+        public LocalDate getStart() { return start; }
+        public LocalDate getEnd() { return end; }
+        
+        public List<LocalDate> getDates() {
+            List<LocalDate> dates = new ArrayList<>();
+            LocalDate current = start;
+            while (!current.isAfter(end)) {
+                if (!AttendanceDateUtil.isWeekend(current)) {
+                    dates.add(current);
+                }
+                current = current.plusDays(1);
+            }
+            return dates;
+        }
+        
+        public boolean hasWorkingDays() {
+            return getDates().stream().anyMatch(date -> !AttendanceDateUtil.isWeekend(date));
+        }
     }
 }

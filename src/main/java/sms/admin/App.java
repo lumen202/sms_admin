@@ -27,25 +27,34 @@ import sms.admin.app.RootLoader;
 public class App extends FXApplication {
 
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "admin";
-    public static final String remoteHost = "jdbc:mysql://192.168.254.108:3306/student_management_system_db"
-            + "?user=" + DB_USER + "&password=" + DB_PASSWORD + "&allowPublicKeyRetrieval=true&useSSL=false";
-    public static final String LOCALHOST
-            ="jdbc:mysql://localhost:3306/student_management_system_db?user=root&password=admin&allowPublicKeyRetrieval=true&useSSL=false";
 
+    /**
+     * Helper method that builds the JDBC URL using connection details defined locally.
+     */
+    private static String buildJdbcUrl(String host) {
+        final String DB_USER = "root";
+        final String DB_PASSWORD = "admin";
+        final String DB_NAME = "student_management_system_db";
+        final int DB_PORT = 3306;
+        final String CONNECTION_OPTIONS = "?allowPublicKeyRetrieval=true&useSSL=false";
+        return String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s%s",
+                host, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, CONNECTION_OPTIONS);
+    }
+
+    public static final String REMOTE_HOST = buildJdbcUrl("192.168.254.108");
+    public static final String LOCAL_HOST = buildJdbcUrl("localhost");
 
     public static final FXControllerRegister CONTROLLER_REGISTRY = FXControllerRegister.INSTANCE;
     public static final FXCollectionsRegister COLLECTIONS_REGISTRY = FXCollectionsRegister.INSTANCE;
     public static final FXNodeRegister NODE_REGISTER = FXNodeRegister.INSTANCE;
-    public static final DBService DB_SMS = DBService.INSTANCE.initialize(LOCALHOST);
+    public static final DBService DB_SMS = DBService.INSTANCE.initialize(LOCAL_HOST);
 
     @Override
     public void initialize() throws Exception {
         try {
             configureApplication();
-            initialize_dataset();
-            initialize_application();
+            initializeDataset();
+            initializeApplication();
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to initialize application", e);
             throw e;
@@ -55,15 +64,16 @@ public class App extends FXApplication {
     private void configureApplication() {
         setTitle("Student Management System - Admin");
         setSkin(FXSkin.PRIMER_LIGHT);
+        // Set application icon
         getApplicationStage().getIcons().add(
-                new Image(getClass().getResource("/sms/admin/assets/img/logo.png").toExternalForm()));
-
+                new Image(getClass().getResource("/sms/admin/assets/img/logo.png").toExternalForm())
+        );
         applicationStage.setWidth(900);
         applicationStage.setHeight(700);
         applicationStage.setOnCloseRequest(this::handleApplicationClose);
     }
 
-    public void initialize_dataset() {
+    public void initializeDataset() {
         try {
             initializeBaseCollections();
             initializeDependentCollections();
@@ -108,7 +118,7 @@ public class App extends FXApplication {
                 FXCollections.observableArrayList(AttendanceLogDAO.getAttendanceLogList()));
     }
 
-    private void initialize_application() {
+    private void initializeApplication() {
         try {
             RootLoader rootLoader = (RootLoader) FXLoaderFactory
                     .createInstance(RootLoader.class,
@@ -127,7 +137,7 @@ public class App extends FXApplication {
         }
     }
 
-    private void handleApplicationClose(@SuppressWarnings("unused") WindowEvent event) {
+    private void handleApplicationClose(WindowEvent event) {
         try {
             clearCollections();
             Platform.exit();
