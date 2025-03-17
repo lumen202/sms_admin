@@ -64,4 +64,18 @@ public class ProfileDataManager {
                 .orElse(0) + 1;
         return new Cluster(newId, name);
     }
+
+    public static void updateBasicStudentInfo(Student student,
+            TextField firstNameField, TextField middleNameField, TextField lastNameField,
+            TextField nameExtField, TextField contactField, TextField emailField,
+            TextField fareField) {
+        student.setFirstName(firstNameField.getText());
+        student.setMiddleName(middleNameField.getText());
+        student.setLastName(lastNameField.getText());
+        student.setNameExtension(nameExtField.getText());
+        student.setContact(contactField.getText());
+        student.setEmail(emailField.getText());
+        String fareText = fareField.getText().trim();
+        student.setFare(!fareText.isEmpty() ? Double.valueOf(fareText) : 0.0);
+    }
 }

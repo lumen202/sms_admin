@@ -28,19 +28,6 @@ public class App extends FXApplication {
 
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 
-    /**
-     * Helper method that builds the JDBC URL using connection details defined locally.
-     */
-    private static String buildJdbcUrl(String host) {
-        final String DB_USER = "root";
-        final String DB_PASSWORD = "admin";
-        final String DB_NAME = "student_management_system_db";
-        final int DB_PORT = 3306;
-        final String CONNECTION_OPTIONS = "?allowPublicKeyRetrieval=true&useSSL=false";
-        return String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s%s",
-                host, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, CONNECTION_OPTIONS);
-    }
-
     public static final String REMOTE_HOST = buildJdbcUrl("192.168.254.108");
     public static final String LOCAL_HOST = buildJdbcUrl("localhost");
 
@@ -160,5 +147,15 @@ public class App extends FXApplication {
                 LOGGER.log(Level.WARNING, "Failed to clear collection: " + key, e);
             }
         }
+    }
+
+    private static String buildJdbcUrl(String host) {
+        final String DB_USER = "root";
+        final String DB_PASSWORD = "admin";
+        final String DB_NAME = "student_management_system_db";
+        final int DB_PORT = 3306;
+        final String CONNECTION_OPTIONS = "?allowPublicKeyRetrieval=true&useSSL=false";
+        return String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s%s",
+                host, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, CONNECTION_OPTIONS);
     }
 }
