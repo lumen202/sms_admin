@@ -1,5 +1,6 @@
 package sms.admin.util.profile;
 
+import dev.finalproject.data.GuardianDAO;
 import dev.finalproject.models.*;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TextField;
@@ -14,6 +15,48 @@ public class ProfileDataManager {
         guardian.setLastName(lastNameField.getText());
         guardian.setContact(contactField.getText());
         guardian.setRelationship(relationshipField.getText());
+    }
+
+    public static Guardian createOrUpdateGuardian(String viewName, String viewContact,
+            TextField firstNameField, TextField middleNameField, TextField lastNameField,
+            TextField relationshipField, TextField contactField, Guardian existingGuardian,
+            ObservableList<Guardian> guardianList) {
+        
+        Guardian guardian = existingGuardian != null ? existingGuardian : createNewGuardian(guardianList);
+        updateGuardianFields(guardian, firstNameField, middleNameField, lastNameField, 
+                           relationshipField, contactField);
+
+        try {
+            if (existingGuardian == null) {
+                GuardianDAO.insert(guardian);
+                guardianList.add(guardian); // Add to master list
+            } else {
+                GuardianDAO.update(guardian);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to save guardian information");
+        }
+
+        return guardian;
+    }
+
+    private static Guardian createNewGuardian(ObservableList<Guardian> guardianList) {
+        int newId = guardianList.stream()
+                .mapToInt(Guardian::getGuardianID)
+                .max()
+                .orElse(0) + 1;
+        return new Guardian(newId, "", "", "", "", "");
+    }
+
+    private static void updateGuardianFields(Guardian guardian, 
+            TextField firstNameField, TextField middleNameField, TextField lastNameField,
+            TextField relationshipField, TextField contactField) {
+        guardian.setFirstName(firstNameField.getText().trim());
+        guardian.setMiddleName(middleNameField.getText().trim());
+        guardian.setLastName(lastNameField.getText().trim());
+        guardian.setContact(contactField.getText().trim());
+        guardian.setRelationship(relationshipField.getText().trim());
     }
 
     public static void updateAddressInfo(Address address, Student student,

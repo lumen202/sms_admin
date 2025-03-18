@@ -2,7 +2,10 @@ package sms.admin.app.enrollment;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.OptionalInt;
+import java.sql.Date;
 
 import dev.sol.core.application.FXController;
 import javafx.fxml.FXML;
@@ -14,11 +17,11 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import dev.finalproject.App;
 import dev.finalproject.models.*;
-import sms.admin.util.CsvImporter;
-import sms.admin.util.CsvStudent;
 import sms.admin.util.ValidationUtils;
+import sms.admin.util.enrollment.CsvStudent;
+import sms.admin.util.enrollment.EnrollmentUtils;
 import sms.admin.util.DialogUtils;
-import sms.admin.util.EnrollmentUtils;
+import sms.admin.util.enrollment.CsvImporter;
 
 public class EnrollmentController extends FXController {
 
@@ -60,6 +63,8 @@ public class EnrollmentController extends FXController {
     private Button importCsvButton;
     @FXML
     private Label importStatusLabel;
+    @FXML
+    private TextField barangayField;
 
     private SchoolYear currentSchoolYear;
 
@@ -118,6 +123,15 @@ public class EnrollmentController extends FXController {
         });
     }
 
+    private String generateNextStudentId() {
+        OptionalInt maxId = App.COLLECTIONS_REGISTRY.getList("STUDENT").stream()
+                .filter(s -> s instanceof Student)
+                .map(s -> ((Student) s).getStudentID())
+                .mapToInt(id -> id)
+                .max();
+        return String.valueOf(maxId.isPresent() ? maxId.getAsInt() + 1 : 1);
+    }
+
     @FXML
     private void handleSubmit() {
         if (validateFields()) {
@@ -127,7 +141,15 @@ public class EnrollmentController extends FXController {
                     return;
                 }
 
+                String nextStudentId = generateNextStudentId();
+                
+                // Convert LocalDate to java.sql.Date
+                Date dateOfBirth = dateOfBirthPicker.getValue() != null ?
+                    Date.valueOf(dateOfBirthPicker.getValue()) :
+                    null;
+
                 Student student = EnrollmentUtils.enrollStudent(
+                        nextStudentId,
                         firstNameField.getText(),
                         middleNameField.getText(),
                         lastNameField.getText(),
@@ -135,14 +157,16 @@ public class EnrollmentController extends FXController {
                         emailField.getText(),
                         statusComboBox.getValue(),
                         contactNumberField.getText(),
-                        java.sql.Date.valueOf(dateOfBirthPicker.getValue()),
+                        dateOfBirth,  // Use the converted date
                         Double.parseDouble(fareField.getText()),
                         streetField.getText(),
+                        barangayField.getText(),
                         cityField.getText(),
                         municipalityField.getText(),
                         postalCodeField.getText(),
                         guardianNameField.getText(),
                         guardianContactField.getText(),
+                        null, // cluster name - using default
                         currentSchoolYear);
 
                 handleClear();
@@ -181,6 +205,10 @@ public class EnrollmentController extends FXController {
         }
         if (ValidationUtils.isTextFieldEmpty(guardianNameField)) {
             ValidationUtils.setErrorStyle(guardianNameField);
+            isValid = false;
+        }
+        if (ValidationUtils.isTextFieldEmpty(barangayField)) {
+            ValidationUtils.setErrorStyle(barangayField);
             isValid = false;
         }
 
@@ -241,6 +269,7 @@ public class EnrollmentController extends FXController {
         dateOfBirthPicker.setValue(null);
         statusComboBox.setValue(null);
         fareField.clear();
+        barangayField.clear();
 
         // Reset all styles
         ValidationUtils.resetStyle(firstNameField);
@@ -258,6 +287,7 @@ public class EnrollmentController extends FXController {
         ValidationUtils.resetStyle(dateOfBirthPicker);
         ValidationUtils.resetStyle(statusComboBox);
         ValidationUtils.resetStyle(fareField);
+        ValidationUtils.resetStyle(barangayField);
     }
 
     @Override

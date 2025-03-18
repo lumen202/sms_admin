@@ -55,22 +55,37 @@ public class AttendanceController extends FXController {
 
     private static final String STUDENT_PROFILE_FXML = "/sms.admin/app/management/viewstudent/STUDENT_PROFILE.fxml";
 
-    @FXML private ComboBox<String> monthYearComboBox;
-    @FXML private TableView<Student> attendanceTable;
-    @FXML private TableColumn<Student, Integer> colNo;
-    @FXML private TableColumn<Student, String> colFullName;
-    @FXML private TableColumn<Student, String> monthAttendanceColumn;
-    @FXML private BorderPane rootPane;
-    @FXML private Label currentDateLabel;
-    @FXML private Label selectedStudentsLabel;
-    @FXML private Label totalStudentsLabel;
-    @FXML private ModalPane modalContainer;
-    @FXML private StackPane dialogContainer;
-    @FXML private MenuButton exportButton;
-    @FXML private MenuItem exportExcel;
-    @FXML private MenuItem exportCsv;
-    @FXML private MenuItem exportPdf;
-    
+    @FXML
+    private ComboBox<String> monthYearComboBox;
+    @FXML
+    private TableView<Student> attendanceTable;
+    @FXML
+    private TableColumn<Student, Integer> colNo;
+    @FXML
+    private TableColumn<Student, String> colFullName;
+    @FXML
+    private TableColumn<Student, String> monthAttendanceColumn;
+    @FXML
+    private BorderPane rootPane;
+    @FXML
+    private Label currentDateLabel;
+    @FXML
+    private Label selectedStudentsLabel;
+    @FXML
+    private Label totalStudentsLabel;
+    @FXML
+    private ModalPane modalContainer;
+    @FXML
+    private StackPane dialogContainer;
+    @FXML
+    private MenuButton exportButton;
+    @FXML
+    private MenuItem exportExcel;
+    @FXML
+    private MenuItem exportCsv;
+    @FXML
+    private MenuItem exportPdf;
+
     private ObservableList<Student> studentList;
     private ObservableList<AttendanceLog> attendanceLog;
 
@@ -79,39 +94,33 @@ public class AttendanceController extends FXController {
 
     @Override
     protected void load_bindings() {
-        // Optionally, you can bind dialogContainer's visibility to modalContainer's display property.
-        // dialogContainer.visibleProperty().bind(modalContainer.displayProperty());
     }
 
     @Override
     protected void load_fields() {
+        System.out.println("load_fields: All parameters = " + getParameters());
+        System.out.println("load_fields: selectedMonth = " + getParameter("selectedMonth"));
         rootPane.getProperties().put("controller", this);
         studentList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
         loadAttendanceLogs();
-
+    
         setupTable();
         setupColumnWidths();
-
+    
         String selectedYear = getSelectedYearOrDefault();
         initializeWithYear(selectedYear);
-
-        // Set the initially selected month if provided in parameters.
-        String selectedMonth = (String) getParameter("selectedMonth");
-        if (selectedMonth != null && monthYearComboBox.getItems().contains(selectedMonth)) {
-            monthYearComboBox.setValue(selectedMonth);
-        }
-
+    
         setupMonthColumns();
         updateStudentCountLabels();
     }
-
+    
     private void loadAttendanceLogs() {
         try {
             List<AttendanceLog> dbLogs = AttendanceLogDAO.getAttendanceLogList().stream()
-                .filter(log -> log != null && log.getRecordID() != null &&
-                               log.getRecordID().getMonth() >= 1 &&
-                               log.getRecordID().getMonth() <= 12)
-                .collect(Collectors.toList());
+                    .filter(log -> log != null && log.getRecordID() != null
+                    && log.getRecordID().getMonth() >= 1
+                    && log.getRecordID().getMonth() <= 12)
+                    .collect(Collectors.toList());
 
             ObservableList<AttendanceLog> allLogs = FXCollections.observableArrayList(dbLogs);
             attendanceLog = allLogs.filtered(log -> !isFutureDate(log));
@@ -156,12 +165,14 @@ public class AttendanceController extends FXController {
         monthAttendanceColumn.getColumns().clear();
 
         String selectedMonthYear = monthYearComboBox.getValue();
-        if (selectedMonthYear == null) return;
+        if (selectedMonthYear == null) {
+            return;
+        }
 
         LocalDate today = LocalDate.now();
         LocalDate startDate = WeeklyAttendanceUtil.getFirstDayOfMonth(selectedMonthYear);
-        LocalDate endDate = (startDate.getMonth() == today.getMonth() &&
-                             startDate.getYear() == today.getYear())
+        LocalDate endDate = (startDate.getMonth() == today.getMonth()
+                && startDate.getYear() == today.getYear())
                 ? today
                 : startDate.withDayOfMonth(startDate.lengthOfMonth());
 
@@ -169,27 +180,27 @@ public class AttendanceController extends FXController {
         AtomicInteger weekCounter = new AtomicInteger(1);
 
         weeks.stream()
-             .filter(WeeklyAttendanceUtil.WeekDates::hasWorkingDays)
-             .forEach(week -> {
-                 TableColumn<Student, String> weekColumn = createWeekColumn("Week " + weekCounter.getAndIncrement());
-                 monthAttendanceColumn.getColumns().add(weekColumn);
+                .filter(WeeklyAttendanceUtil.WeekDates::hasWorkingDays)
+                .forEach(week -> {
+                    TableColumn<Student, String> weekColumn = createWeekColumn("Week " + weekCounter.getAndIncrement());
+                    monthAttendanceColumn.getColumns().add(weekColumn);
 
-                 Map<DayOfWeek, TableColumn<Student, String>> dayColumns = 
-                         AttendanceDateUtil.createDayNameColumns(true, week.getDates());
-                 addDayColumns(weekColumn, dayColumns, week.getDates());
-             });
+                    Map<DayOfWeek, TableColumn<Student, String>> dayColumns
+                            = AttendanceDateUtil.createDayNameColumns(true, week.getDates());
+                    addDayColumns(weekColumn, dayColumns, week.getDates());
+                });
 
         Platform.runLater(this::adjustColumnWidths);
     }
 
     private void addDayColumns(TableColumn<Student, String> weekColumn,
-                               Map<DayOfWeek, TableColumn<Student, String>> dayColumns,
-                               List<LocalDate> dates) {
+            Map<DayOfWeek, TableColumn<Student, String>> dayColumns,
+            List<LocalDate> dates) {
         dayColumns.values().forEach(dayCol -> {
             weekColumn.getColumns().add(dayCol);
             dates.stream()
-                 .filter(date -> date.getDayOfWeek() == dayCol.getUserData())
-                 .forEach(date -> dayCol.getColumns().add(createDayColumn(date)));
+                    .filter(date -> date.getDayOfWeek() == dayCol.getUserData())
+                    .forEach(date -> dayCol.getColumns().add(createDayColumn(date)));
         });
     }
 
@@ -200,9 +211,12 @@ public class AttendanceController extends FXController {
     @Override
     protected void load_listeners() {
         monthYearComboBox.setOnAction(event -> {
-            if (!monthYearComboBox.isFocused()) return;
+            if (!monthYearComboBox.isFocused()) {
+                return;
+            }
+            String newValue = monthYearComboBox.getValue();
             setupMonthColumns();
-            updateRootControllerMonth();
+            updateRootController(newValue);
         });
 
         exportExcel.setOnAction(event -> handleExport("excel"));
@@ -210,7 +224,7 @@ public class AttendanceController extends FXController {
         exportPdf.setOnAction(event -> handleExport("pdf"));
 
         attendanceTable.getSelectionModel().selectedItemProperty().addListener(
-            (obs, oldSelection, newSelection) -> updateStudentCountLabels());
+                (obs, oldSelection, newSelection) -> updateStudentCountLabels());
 
         attendanceTable.widthProperty().addListener((obs, oldWidth, newWidth) -> {
             if (newWidth.doubleValue() > 0) {
@@ -219,14 +233,14 @@ public class AttendanceController extends FXController {
         });
     }
 
-    private void updateRootControllerMonth() {
+    private void updateRootController(String monthYear) {
         Scene scene = rootPane.getScene();
         if (scene != null) {
             Parent root = scene.getRoot();
             if (root != null) {
                 Object controller = root.getProperties().get("controller");
                 if (controller instanceof RootController rootController) {
-                    rootController.setSelectedMonth(monthYearComboBox.getValue());
+                    rootController.setSelectedMonth(monthYear);
                 }
             }
         }
@@ -235,7 +249,9 @@ public class AttendanceController extends FXController {
     private void handleExport(String type) {
         try {
             String selectedMonthYear = monthYearComboBox.getValue();
-            if (selectedMonthYear == null) return;
+            if (selectedMonthYear == null) {
+                return;
+            }
 
             String[] parts = selectedMonthYear.split(" ");
             String monthName = parts[0];
@@ -251,9 +267,12 @@ public class AttendanceController extends FXController {
 
             AttendanceTableExporter exporter = new AttendanceTableExporter(selectedMonth);
             switch (type) {
-                case "excel" -> exporter.exportToExcel(attendanceTable, title, outputPath);
-                case "pdf" -> exporter.exportToPdf(attendanceTable, title, outputPath);
-                case "csv" -> exporter.exportToCsv(attendanceTable, title, outputPath);
+                case "excel" ->
+                    exporter.exportToExcel(attendanceTable, title, outputPath);
+                case "pdf" ->
+                    exporter.exportToPdf(attendanceTable, title, outputPath);
+                case "csv" ->
+                    exporter.exportToCsv(attendanceTable, title, outputPath);
             }
             System.out.println("Export completed: " + outputPath);
         } catch (Exception e) {
@@ -345,15 +364,15 @@ public class AttendanceController extends FXController {
         if (logCache.containsKey(key)) {
             return logCache.get(key);
         }
-        
+
         AttendanceLog log = AttendanceLogDAO.getAttendanceLogList().stream()
-            .filter(l -> l.getRecordID() != null && 
-                        l.getStudentID() != null &&
-                        l.getRecordID().getRecordID() == record.getRecordID() &&
-                        l.getStudentID().getStudentID() == student.getStudentID())
-            .findFirst()
-            .orElse(null);
-            
+                .filter(l -> l.getRecordID() != null
+                && l.getStudentID() != null
+                && l.getRecordID().getRecordID() == record.getRecordID()
+                && l.getStudentID().getStudentID() == student.getStudentID())
+                .findFirst()
+                .orElse(null);
+
         if (log != null) {
             logCache.put(key, log);
         }
@@ -378,22 +397,24 @@ public class AttendanceController extends FXController {
         }
 
         AttendanceRecord record = AttendanceRecordDAO.getRecordList().stream()
-            .filter(r -> r.getYear() == date.getYear() && 
-                        r.getMonth() == date.getMonthValue() && 
-                        r.getDay() == date.getDayOfMonth())
-            .findFirst()
-            .orElseGet(() -> {
-                AttendanceRecord newRecord = createAttendanceRecord(date);
-                AttendanceRecordDAO.insert(newRecord);
-                return newRecord;
-            });
+                .filter(r -> r.getYear() == date.getYear()
+                && r.getMonth() == date.getMonthValue()
+                && r.getDay() == date.getDayOfMonth())
+                .findFirst()
+                .orElseGet(() -> {
+                    AttendanceRecord newRecord = createAttendanceRecord(date);
+                    AttendanceRecordDAO.insert(newRecord);
+                    return newRecord;
+                });
 
         recordCache.put(date, record);
         return record;
     }
 
     private void updateCellValue(TableCell<Student, String> cell, Student student, LocalDate date, String newValue) {
-        if (newValue == null) return;
+        if (newValue == null) {
+            return;
+        }
 
         try {
             AttendanceRecord record = findOrCreateRecord(date);
@@ -411,7 +432,7 @@ public class AttendanceController extends FXController {
 
             cell.setGraphic(null);
             cell.setText(newValue);
-            
+
             refreshDisplay();
         } catch (Exception e) {
             System.err.println("Error updating cell value: " + e.getMessage());
@@ -444,7 +465,9 @@ public class AttendanceController extends FXController {
 
     private boolean isFutureDate(AttendanceLog log) {
         try {
-            if (log == null || log.getRecordID() == null) return true;
+            if (log == null || log.getRecordID() == null) {
+                return true;
+            }
             AttendanceRecord record = log.getRecordID();
             int year = record.getYear();
             int month = record.getMonth();
@@ -498,14 +521,14 @@ public class AttendanceController extends FXController {
         try {
             clearCaches();
             List<AttendanceLog> dbLogs = AttendanceLogDAO.getAttendanceLogList().stream()
-                .filter(log -> log != null && 
-                             log.getRecordID() != null &&
-                             log.getRecordID().getMonth() >= 1 &&
-                             log.getRecordID().getMonth() <= 12)
-                .collect(Collectors.toList());
+                    .filter(log -> log != null
+                    && log.getRecordID() != null
+                    && log.getRecordID().getMonth() >= 1
+                    && log.getRecordID().getMonth() <= 12)
+                    .collect(Collectors.toList());
 
             attendanceLog = FXCollections.observableArrayList(dbLogs)
-                .filtered(log -> !isFutureDate(log));
+                    .filtered(log -> !isFutureDate(log));
 
             // Pre-populate caches
             dbLogs.forEach(log -> {
@@ -513,7 +536,7 @@ public class AttendanceController extends FXController {
                     logCache.put(generateLogKey(log.getStudentID(), log.getRecordID()), log);
                 }
             });
-                
+
             refreshDisplay();
         } catch (Exception e) {
             System.err.println("Error refreshing attendance logs: " + e.getMessage());
@@ -540,29 +563,46 @@ public class AttendanceController extends FXController {
 
     public void initializeWithYear(String year) {
         if (year == null) return;
-
+    
         String[] yearRange = year.split("-");
         int startYear = Integer.parseInt(yearRange[0]);
         int endYear = Integer.parseInt(yearRange[1]);
-
+    
         List<Student> students = StudentDAO.getStudentList().stream()
             .filter(student -> student.getYearID() != null &&
                                student.getYearID().getYearStart() == startYear &&
                                student.getYearID().getYearEnd() == endYear)
             .collect(Collectors.toList());
-
+    
         studentList = FXCollections.observableArrayList(students);
         attendanceTable.setItems(studentList);
-
+    
         if (monthYearComboBox != null) {
+            String prevValue = monthYearComboBox.getValue();
             DateTimeUtils.updateMonthYearComboBox(monthYearComboBox, year);
-            YearMonth current = YearMonth.now();
-            String currentFormatted = current.format(DateTimeUtils.MONTH_YEAR_FORMATTER);
-            if (monthYearComboBox.getItems().contains(currentFormatted)) {
-                monthYearComboBox.setValue(currentFormatted);
-            } else if (!monthYearComboBox.getItems().isEmpty()) {
-                monthYearComboBox.setValue(monthYearComboBox.getItems().get(0));
+            
+            String selectedMonth = (String) getParameter("selectedMonth");
+            System.out.println("initializeWithYear: selectedMonth parameter = " + selectedMonth);
+            
+            // First try to keep the previous selection if it exists in the new items
+            if (prevValue != null && monthYearComboBox.getItems().contains(prevValue)) {
+                monthYearComboBox.setValue(prevValue);
             }
+            // Then try to use the selectedMonth parameter
+            else if (selectedMonth != null && monthYearComboBox.getItems().contains(selectedMonth)) {
+                monthYearComboBox.setValue(selectedMonth);
+            }
+            // Finally default to current month only if no other value was set
+            else if (monthYearComboBox.getValue() == null) {
+                YearMonth current = YearMonth.now();
+                String currentFormatted = current.format(DateTimeUtils.MONTH_YEAR_FORMATTER);
+                if (monthYearComboBox.getItems().contains(currentFormatted)) {
+                    monthYearComboBox.setValue(currentFormatted);
+                } else if (!monthYearComboBox.getItems().isEmpty()) {
+                    monthYearComboBox.setValue(monthYearComboBox.getItems().get(0));
+                }
+            }
+            
             setupMonthColumns();
         }
         updateStudentCountLabels();
@@ -591,8 +631,10 @@ public class AttendanceController extends FXController {
     }
 
     private void updateStudentCountLabels() {
-        if (studentList == null || attendanceTable == null ||
-            selectedStudentsLabel == null || totalStudentsLabel == null) return;
+        if (studentList == null || attendanceTable == null
+                || selectedStudentsLabel == null || totalStudentsLabel == null) {
+            return;
+        }
 
         int totalStudents = studentList.size();
         int selectedStudents = attendanceTable.getSelectionModel().getSelectedItems().size();
@@ -605,5 +647,9 @@ public class AttendanceController extends FXController {
             monthYearComboBox.setValue(monthYear);
             setupMonthColumns();
         }
+    }
+
+    public String getSelectedMonth() {
+        return monthYearComboBox != null ? monthYearComboBox.getValue() : null;
     }
 }

@@ -11,6 +11,10 @@
     -fx-min-width: 550;
     -fx-min-height: 750;
     -fx-max-width: 550;
+    -fx-border-color: #003366;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
 }
 
 /* Header */
@@ -35,8 +39,10 @@
 
 /* Content */
 .profile-content {
-    -fx-padding: 20;
+    -fx-padding: 15;
     -fx-spacing: 15;
+    -fx-fit-to-width: true;
+    -fx-fit-to-height: true;
 }
 
 .profile-section {

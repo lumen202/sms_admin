@@ -38,7 +38,6 @@ public class SceneLoaderUtil {
             StackPane contentPane) {
 
         try {
-            // Clear cache to force refresh
             clearCache();
 
             URL resource = resourceBase.getResource(fxmlPath);
@@ -47,33 +46,42 @@ public class SceneLoaderUtil {
             }
 
             FXLoader loader = FXLoaderFactory.createInstance(loaderClass, resource);
+            
+            // Add parameters before initialization
             if (parameters != null) {
-                parameters.forEach(loader::addParameter);
+                Map<String, Object> filteredParams = new HashMap<>();
+                parameters.forEach((key, value) -> {
+                    if (value != null) {
+                        System.out.println("Setting parameter: " + key + " = " + value); // Debug log
+                        filteredParams.put(key, value);
+                    }
+                });
+                filteredParams.forEach(loader::addParameter);
             }
 
             loader.initialize();
             Parent rootNode = loader.getRoot();
 
-            if (rootNode != null) {
-                // Update bindings immediately
-                if (rootNode instanceof Region) {
-                    Region region = (Region) rootNode;
-                    region.prefWidthProperty().unbind();
-                    region.prefHeightProperty().unbind();
-                    region.prefWidthProperty().bind(contentPane.widthProperty());
-                    region.prefHeightProperty().bind(contentPane.heightProperty());
-                }
-                setContentPane(rootNode, contentPane);
+            if (rootNode instanceof Region) {
+                Region region = (Region) rootNode;
+                region.prefWidthProperty().unbind();
+                region.prefHeightProperty().unbind();
+                region.prefWidthProperty().bind(contentPane.widthProperty());
+                region.prefHeightProperty().bind(contentPane.heightProperty());
             }
 
+            setContentPane(rootNode, contentPane);
             loader.load();
+
             C controller = getControllerFromLoader(loader);
             if (controller != null) {
                 controllerCache.put(fxmlPath, controller);
             }
 
             return controller;
+
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("Failed to load scene: " + fxmlPath, e);
         }
     }

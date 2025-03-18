@@ -9,6 +9,7 @@ import java.time.YearMonth;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
+import dev.finalproject.App;
 import dev.finalproject.models.SchoolYear;
 import dev.sol.core.application.FXController;
 import javafx.collections.ObservableList;
@@ -75,17 +76,21 @@ public class RootController extends FXController {
         }
     }
 
+    private String getCurrentControllerMonth() {
+        if (currentController instanceof AttendanceController controller) {
+            return controller.getSelectedMonth();
+        } else if (currentController instanceof PayrollController controller) {
+            return controller.getSelectedMonth();
+        }
+        return selectedMonth;
+    }
+
     @FXML
     private void handlePayrollButton() {
         highlightButton(payrollButton);
-        String selectedYear = yearComboBox.getValue();
         Map<String, Object> params = new HashMap<>();
-        params.put("selectedYear", selectedYear);
-
-        // Only pass selected month if it's within the academic year range
-        if (selectedMonth != null && isMonthInAcademicYear(selectedMonth, selectedYear)) {
-            params.put("selectedMonth", selectedMonth);
-        }
+        params.put("selectedYear", yearComboBox.getValue());
+        params.put("selectedMonth", getCurrentControllerMonth());
 
         currentController = SceneLoaderUtil.loadScene(
                 "/sms/admin/app/payroll/PAYROLL.fxml",
@@ -93,47 +98,33 @@ public class RootController extends FXController {
                 PayrollLoader.class,
                 params,
                 contentPane);
+                
         if (currentController instanceof PayrollController controller) {
-            controller.initializeWithYear(selectedYear);
-        }
-    }
-
-    private boolean isMonthInAcademicYear(String monthYear, String academicYear) {
-        try {
-            YearMonth ym = DateTimeUtils.parseMonthYear(monthYear);
-            String[] years = academicYear.split("-");
-            int startYear = Integer.parseInt(years[0].trim());
-            int endYear = Integer.parseInt(years[1].trim());
-
-            // Academic year is from July of start year to June of end year
-            YearMonth startMonth = YearMonth.of(startYear, 7); // July of start year
-            YearMonth endMonth = YearMonth.of(endYear, 6); // June of end year
-
-            return !ym.isBefore(startMonth) && !ym.isAfter(endMonth);
-        } catch (Exception e) {
-            return false;
+            controller.initializeWithYear(yearComboBox.getValue());
         }
     }
 
     @FXML
     private void handleAttendanceButton() {
         highlightButton(attendanceButton);
-        String selectedYear = yearComboBox.getValue();
-        try {
-            Map<String, Object> params = new HashMap<>();
-            params.put("selectedYear", selectedYear);
-            if (selectedMonth != null) {
-                params.put("selectedMonth", selectedMonth);
-            }
+        Map<String, Object> params = new HashMap<>();
+        String currentMonth = getCurrentControllerMonth();
+        params.put("selectedYear", yearComboBox.getValue());
+        params.put("selectedMonth", currentMonth != null ? currentMonth : selectedMonth);
 
+        try {
             currentController = SceneLoaderUtil.loadScene(
                     "/sms/admin/app/attendance/ATTENDANCE.fxml",
                     getClass(),
                     AttendanceLoader.class,
                     params,
                     contentPane);
+                    
             if (currentController instanceof AttendanceController controller) {
-                controller.initializeWithYear(selectedYear);
+                controller.initializeWithYear(yearComboBox.getValue());
+                if (currentMonth != null) {
+                    controller.setSelectedMonth(currentMonth);
+                }
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -171,8 +162,14 @@ public class RootController extends FXController {
     @Override
     protected void load_fields() {
         // Initialize school year list
-        schoolYearList = DataUtil.createSchoolYearList();
+        schoolYearList =App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR");
         yearComboBox.setItems(SchoolYearUtil.convertToStringList(schoolYearList));
+
+        // Set initial selected month
+        selectedMonth = (String) getParameter("selectedMonth");
+        if (selectedMonth == null) {
+            selectedMonth = YearMonth.now().format(DateTimeUtils.MONTH_YEAR_FORMATTER);
+        }
 
         // Set current year as default
         SchoolYear currentYear = SchoolYearUtil.findCurrentYear(schoolYearList);

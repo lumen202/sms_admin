@@ -25,7 +25,7 @@
         <content>
             <VBox spacing="15">
                 <padding>
-                    <Insets bottom="20.0" left="20.0" right="20.0" top="10.0" />
+                    <Insets bottom="15.0" left="20.0" right="20.0" top="10.0" />
                 </padding>
                 <VBox alignment="CENTER" spacing="5">
                     <children>
@@ -164,9 +164,13 @@
                             <ColumnConstraints hgrow="ALWAYS" />
                         </columnConstraints>
                         <Label text="Guardian:" GridPane.rowIndex="0" />
-                        <TextField fx:id="guardianNameField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="guardianNameField" editable="false" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
                         <Label text="Contact Number:" GridPane.rowIndex="1" />
-                        <TextField fx:id="guardianContactField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <TextField fx:id="guardianContactField" editable="false" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <rowConstraints>
+                            <RowConstraints />
+                            <RowConstraints />
+                        </rowConstraints>
                     </GridPane>
                     <!-- Edit Mode Fields -->
                     <GridPane fx:id="guardianEditGrid" hgap="15" vgap="10" visible="false" managed="false">
@@ -175,15 +179,22 @@
                             <ColumnConstraints hgrow="ALWAYS" />
                         </columnConstraints>
                         <Label text="First Name:" GridPane.rowIndex="0" />
-                        <TextField fx:id="guardianFirstNameField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="guardianFirstNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
                         <Label text="Middle Name:" GridPane.rowIndex="1" />
-                        <TextField fx:id="guardianMiddleNameField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <TextField fx:id="guardianMiddleNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                         <Label text="Last Name:" GridPane.rowIndex="2" />
-                        <TextField fx:id="guardianLastNameField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <TextField fx:id="guardianLastNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                         <Label text="Relationship:" GridPane.rowIndex="3" />
-                        <TextField fx:id="guardianRelationshipField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <TextField fx:id="guardianRelationshipField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                         <Label text="Contact Info:" GridPane.rowIndex="4" />
-                        <TextField fx:id="guardianContactInfoField" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                        <TextField fx:id="guardianContactInfoField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                        <rowConstraints>
+                            <RowConstraints />
+                            <RowConstraints />
+                            <RowConstraints />
+                            <RowConstraints />
+                            <RowConstraints />
+                        </rowConstraints>
                     </GridPane>
                 </VBox>
             </VBox>

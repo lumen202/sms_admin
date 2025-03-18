@@ -1,3 +1,4 @@
 2025-03-12 15:19:27.613 [JavaFX Application Thread] WARN  com.itextpdf.layout.renderer.TableWidths - Table width is more than expected due to min width of cell(s).
 2025-03-12 16:26:01.725 [JavaFX Application Thread] WARN  com.itextpdf.layout.renderer.TableWidths - Sum of table columns is greater than 100%.
 2025-03-12 16:26:01.728 [JavaFX Application Thread] WARN  com.itextpdf.layout.renderer.TableRenderer - Last row is not completed. Table bottom border may collapse as you do not expect it
+2025-03-18 00:56:20.135 [JavaFX Application Thread] WARN  com.itextpdf.layout.renderer.TableWidths - Table width is more than expected due to min width of cell(s).

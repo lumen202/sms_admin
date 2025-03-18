@@ -25,6 +25,7 @@ import sms.admin.util.exporter.StudentTableExporter;
 import sms.admin.util.YearData;
 import dev.finalproject.App;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 
 import java.time.LocalDate;
 
@@ -71,6 +72,8 @@ public class StudentController extends FXController {
     private Label totalLabel;
     @FXML
     private Label statusLabel;
+    @FXML
+    private Button editButton;
 
     private ObservableList<Student> originalMasterList; // Add this field to store original list
     private FilteredList<Student> yearFilteredList;
@@ -126,9 +129,9 @@ public class StudentController extends FXController {
 
         studentTableView.setItems(searchFilteredList);
         studentMenu = new ContextMenu();
-        MenuItem editMenu = new MenuItem("Edit Student Profile");
-        editMenu.setOnAction(e -> openStudentProfile());
-        studentMenu.getItems().add(editMenu);
+        MenuItem viewMenu = new MenuItem("View Student Profile");
+        viewMenu.setOnAction(e -> openStudentProfile());
+        studentMenu.getItems().add(viewMenu);
         studentTableView.setContextMenu(studentMenu);
 
         // Configure the ModalPane (its content will be set when opening the form).
@@ -138,12 +141,21 @@ public class StudentController extends FXController {
 
     @Override
     protected void load_listeners() {
-        // When testButton is clicked, open the student form modal.
-
         // Add export menu item handlers
         exportExcel.setOnAction(event -> handleExport("excel"));
         exportCsv.setOnAction(event -> handleExport("csv"));
         exportPdf.setOnAction(event -> handleExport("pdf"));
+
+        // Add edit button handler
+        editButton.setOnAction(e -> {
+            Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
+            if (selectedStudent != null) {
+                openStudentProfileInEditMode();
+            }
+        });
+        editButton.disableProperty().bind(
+            studentTableView.getSelectionModel().selectedItemProperty().isNull()
+        );
 
         // Modified search field listener
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -218,6 +230,28 @@ public class StudentController extends FXController {
             StudentProfileLoader loader = new StudentProfileLoader();
             loader.addParameter("SELECTED_STUDENT", student);
             loader.addParameter("OWNER_STAGE", studentTableView.getScene().getWindow());
+            loader.load();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Failed to open student profile");
+            alert.setContentText(e.getMessage());
+            alert.showAndWait();
+        }
+    }
+
+    private void openStudentProfileInEditMode() {
+        try {
+            Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
+            if (selectedStudent == null) {
+                return;
+            }
+
+            StudentProfileLoader loader = new StudentProfileLoader();
+            loader.addParameter("SELECTED_STUDENT", selectedStudent);
+            loader.addParameter("OWNER_STAGE", studentTableView.getScene().getWindow());
+            loader.addParameter("EDIT_MODE", true);
             loader.load();
         } catch (Exception e) {
             e.printStackTrace();
