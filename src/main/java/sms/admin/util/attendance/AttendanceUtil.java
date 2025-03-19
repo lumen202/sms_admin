@@ -62,7 +62,7 @@ public class AttendanceUtil {
                     student.getNameExtension() != null ? student.getNameExtension() : "");
             return new SimpleStringProperty(fullName.trim());
         });
-        colFullName.setStyle("-fx-alignment: CENTER-LEFT;"); // Fix missing quote
+        colFullName.setStyle("-fx-alignment: CENTER-LEFT;"); // Fixed missing quote
     }
 
     public static boolean isWeekend(LocalDate date) {
@@ -126,14 +126,20 @@ public class AttendanceUtil {
             ObservableList<AttendanceLog> attendanceLogs) {
 
         if (student == null || date == null || attendanceLogs == null) {
+            System.out.println("Null parameters in getAttendanceStatus");
             return ABSENT_MARK;
         }
+
+        // Debug print
+        System.out.println("Checking attendance for Student ID: " + student.getStudentID() + 
+                          " on date: " + date + 
+                          " (Logs available: " + attendanceLogs.size() + ")");
 
         AttendanceLog log = attendanceLogs.stream()
             .filter(l -> l != null && 
                    l.getStudentID() != null && 
                    l.getRecordID() != null &&
-                   l.getStudentID().getStudentID() == student.getStudentID() &&
+                   l.getStudentID().getStudentID() == student.getStudentID() &&  // Compare IDs instead of objects
                    l.getRecordID().getYear() == date.getYear() &&
                    l.getRecordID().getMonth() == date.getMonthValue() &&
                    l.getRecordID().getDay() == date.getDayOfMonth())
@@ -141,15 +147,19 @@ public class AttendanceUtil {
             .orElse(null);
 
         if (log == null) {
+            System.out.println("No log found for student " + student.getStudentID() + " on " + date);
             return ABSENT_MARK;
         }
 
-        // Check excused first
-        if (log.getTimeInAM() == TIME_EXCUSED) {
+        System.out.println("Found log: AM(" + log.getTimeInAM() + "," + log.getTimeOutAM() + 
+                          ") PM(" + log.getTimeInPM() + "," + log.getTimeOutPM() + ")");
+
+        // Check excused status using the helper method
+        if (isExcused(log)) {
             return EXCUSED_MARK;
         }
 
-        // Check attendance status
+        // Check attendance status for full or half day
         boolean hasAM = log.getTimeInAM() > 0 && log.getTimeInAM() != TIME_ABSENT && 
                        log.getTimeOutAM() > 0 && log.getTimeOutAM() != TIME_ABSENT;
                        
@@ -167,9 +177,9 @@ public class AttendanceUtil {
 
     public static boolean isExcused(AttendanceLog log) {
         return log.getTimeInAM() == TIME_EXCUSED &&
-                log.getTimeOutAM() == TIME_EXCUSED &&
-                log.getTimeInPM() == TIME_EXCUSED &&
-                log.getTimeOutPM() == TIME_EXCUSED;
+               log.getTimeOutAM() == TIME_EXCUSED &&
+               log.getTimeInPM() == TIME_EXCUSED &&
+               log.getTimeOutPM() == TIME_EXCUSED;
     }
 
     public static boolean isAbsent(AttendanceLog log) {

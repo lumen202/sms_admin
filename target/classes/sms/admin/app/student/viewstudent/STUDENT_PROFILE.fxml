@@ -85,10 +85,10 @@
                         <Label text="Barangay:" GridPane.rowIndex="1" />
                         <TextField fx:id="barangayField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                        <Label text="City:" GridPane.rowIndex="2" />
+                        <Label text="Municipality:" GridPane.rowIndex="2" />
                         <TextField fx:id="cityField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                        <Label text="Municipality:" GridPane.rowIndex="3" />
+                        <Label text="Province:" GridPane.rowIndex="3" />
                         <TextField fx:id="municipalityField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                         <Label text="ZIP Code:" GridPane.rowIndex="4" />

@@ -34,7 +34,10 @@ public class App extends FXApplication {
     public static final FXControllerRegister CONTROLLER_REGISTRY = FXControllerRegister.INSTANCE;
     public static final FXCollectionsRegister COLLECTIONS_REGISTRY = FXCollectionsRegister.INSTANCE;
     public static final FXNodeRegister NODE_REGISTER = FXNodeRegister.INSTANCE;
-    public static final DBService DB_SMS = DBService.INSTANCE.initialize(LOCAL_HOST);
+    public static final DBService DB_SMS = DBService.INSTANCE
+    .initialize("jdbc:mysql://192.168.254.108:3306/student_management_system_db?user=remote_user&allowPublicKeyRetrieval=true&useSSL=false");
+
+
 
     @Override
     public void initialize() throws Exception {

@@ -5,6 +5,7 @@ import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -23,6 +24,13 @@ public class WeeklyAttendanceUtil {
     private static final Map<Integer, String> DAY_INITIALS = Map.of(
         1, "M", 2, "T", 3, "W", 4, "Th", 5, "F", 6, "Sa", 7, "Su"
     );
+
+    private static final Map<String, Integer> workingDaysCache = new HashMap<>();
+    private static final Map<String, Double> weekWidthCache = new HashMap<>();
+    
+    private static String generateWeekKey(WeekDates week) {
+        return week.getStart().toString() + "_" + week.getEnd().toString();
+    }
 
     public static LocalDate getFirstDayOfMonth(String selectedMonthYear) {
         String[] parts = selectedMonthYear.split(" ");
@@ -188,6 +196,27 @@ public class WeeklyAttendanceUtil {
         return weeks;
     }
     
+    public static int calculateWorkingDays(WeekDates week) {
+        String key = generateWeekKey(week);
+        return workingDaysCache.computeIfAbsent(key, k -> 
+            (int) week.getDates().stream()
+                .filter(date -> !AttendanceDateUtil.isWeekend(date))
+                .count()
+        );
+    }
+
+    public static double calculateWeekWidth(int workingDaysInWeek, double totalWidth, int totalWorkingDays) {
+        String key = workingDaysInWeek + "_" + totalWidth + "_" + totalWorkingDays;
+        return weekWidthCache.computeIfAbsent(key, k ->
+            workingDaysInWeek * totalWidth / Math.max(totalWorkingDays, 1)
+        );
+    }
+    
+    public static void clearCaches() {
+        workingDaysCache.clear();
+        weekWidthCache.clear();
+    }
+
     public static class WeekDates {
         private final LocalDate start;
         private final LocalDate end;

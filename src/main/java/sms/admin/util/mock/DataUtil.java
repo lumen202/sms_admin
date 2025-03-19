@@ -2,6 +2,8 @@ package sms.admin.util.mock;
 
 import java.util.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import dev.finalproject.models.Address;
 import dev.finalproject.models.AttendanceLog;
@@ -35,10 +37,10 @@ public class DataUtil {
             schoolYearList.clear();
             schoolYearList.addAll(year2023, year2024);
 
-            studentList.add(new Student(1, "John", "A.", "Doe", "Jr.", "john.doe@example.com", "Active", "1234567890", new Date(), 100.0, new Cluster(1, "Science"), year2023));
-            studentList.add(new Student(2, "Jane", "B.", "Smith", "", "jane.smith@example.com", "Active", "0987654321", new Date(), 150.0, new Cluster(2, "Arts"), year2023));
-            studentList.add(new Student(3, "Mike", "C.", "Johnson", "", "mike.j@example.com", "Active", "5555555555", new Date(), 120.0, new Cluster(1, "Science"), year2024));
-            studentList.add(new Student(4, "Sarah", "D.", "Williams", "", "sarah.w@example.com", "Active", "6666666666", new Date(), 130.0, new Cluster(2, "Arts"), year2024));
+            studentList.add(new Student(1, "John", "A.", "Doe", "Jr.", "john.doe@example.com", "Active", "1234567890", new Date(), 100.0, new Cluster(1, "Science"), year2023, 0));
+            studentList.add(new Student(2, "Jane", "B.", "Smith", "", "jane.smith@example.com", "Active", "0987654321", new Date(), 150.0, new Cluster(2, "Arts"), year2023, 0));
+            studentList.add(new Student(3, "Mike", "C.", "Johnson", "", "mike.j@example.com", "Active", "5555555555", new Date(), 120.0, new Cluster(1, "Science"), year2024, 0));
+            studentList.add(new Student(4, "Sarah", "D.", "Williams", "", "sarah.w@example.com", "Active", "6666666666", new Date(), 130.0, new Cluster(2, "Arts"), year2024, 0));
         }
         return studentList;
     }
@@ -243,4 +245,17 @@ public class DataUtil {
 
         return false;
     }
+
+    // public static List<Student> createMockStudents(List<SchoolYear> years) {
+    //     List<Student> students = new ArrayList<>();
+    //     // List<Cluster> clusters = createMockClusters();
+    //     Date birthDate = new Date();
+
+    //     students.add(new Student(1, "John", "Doe", "Smith", "", "123-456-7890", "john@example.com", "123 Main St", birthDate, 50.0, clusters.get(0), years.get(0), false));
+    //     students.add(new Student(2, "Jane", "Marie", "Johnson", "", "098-765-4321", "jane@example.com", "456 Oak Ave", birthDate, 45.0, clusters.get(1), years.get(0), false));
+    //     students.add(new Student(3, "Bob", "Alan", "Brown", "", "555-123-4567", "bob@example.com", "789 Pine Rd", birthDate, 55.0, clusters.get(2), years.get(0), false));
+    //     students.add(new Student(4, "Alice", "Grace", "Williams", "", "777-888-9999", "alice@example.com", "321 Elm St", birthDate, 40.0, clusters.get(0), years.get(0), false));
+
+    //     return students;
+    // }
 }

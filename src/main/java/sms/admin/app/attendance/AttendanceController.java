@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import atlantafx.base.controls.ModalPane;
-import dev.finalproject.App;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
 import dev.finalproject.models.Student;
@@ -39,6 +38,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import sms.admin.app.RootController;
@@ -92,17 +92,28 @@ public class AttendanceController extends FXController {
     private Map<String, AttendanceLog> logCache = new HashMap<>();
     private Map<LocalDate, AttendanceRecord> recordCache = new HashMap<>();
 
+    private boolean isInitialSetup = true;
+
     @Override
     protected void load_bindings() {
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected void load_fields() {
         System.out.println("load_fields: All parameters = " + getParameters());
-        System.out.println("load_fields: selectedMonth = " + getParameter("selectedMonth"));
         rootPane.getProperties().put("controller", this);
-        studentList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
-        loadAttendanceLogs();
+        
+        // Get lists from parameters
+        studentList = (ObservableList<Student>) getParameter("studentList");
+        attendanceLog = (ObservableList<AttendanceLog>) getParameter("attendanceLogList");
+        
+        System.out.println("Loaded attendance logs: " + (attendanceLog != null ? attendanceLog.size() : "null"));
+        
+        // Load attendance logs if not provided
+        if (attendanceLog == null || attendanceLog.isEmpty()) {
+            loadAttendanceLogs();
+        }
     
         setupTable();
         setupColumnWidths();
@@ -110,20 +121,37 @@ public class AttendanceController extends FXController {
         String selectedYear = getSelectedYearOrDefault();
         initializeWithYear(selectedYear);
     
-        setupMonthColumns();
+        // Remove setupMonthColumns() call from here since it's called in initializeWithYear
         updateStudentCountLabels();
+
+        // Move the layout adjustment to after everything is initialized
+        Platform.runLater(this::handleInitialLayout);
     }
     
     private void loadAttendanceLogs() {
         try {
             List<AttendanceLog> dbLogs = AttendanceLogDAO.getAttendanceLogList().stream()
-                    .filter(log -> log != null && log.getRecordID() != null
-                    && log.getRecordID().getMonth() >= 1
-                    && log.getRecordID().getMonth() <= 12)
-                    .collect(Collectors.toList());
+                .filter(log -> {
+                    if (log == null || log.getRecordID() == null) {
+                        return false;
+                    }
+                    AttendanceRecord record = log.getRecordID();
+                    // Validate record date components
+                    try {
+                        LocalDate.of(record.getYear(), record.getMonth(), record.getDay());
+                        return true;
+                    } catch (DateTimeException e) {
+                        System.err.println(String.format(
+                            "Invalid date in record %d: year=%d, month=%d, day=%d", 
+                            record.getRecordID(), record.getYear(), record.getMonth(), record.getDay()));
+                        return false;
+                    }
+                })
+                .collect(Collectors.toList());
 
-            ObservableList<AttendanceLog> allLogs = FXCollections.observableArrayList(dbLogs);
-            attendanceLog = allLogs.filtered(log -> !isFutureDate(log));
+            attendanceLog = FXCollections.observableArrayList(dbLogs)
+                .filtered(log -> !isFutureDate(log));
+                
         } catch (Exception e) {
             System.err.println("Error loading attendance logs: " + e.getMessage());
             attendanceLog = FXCollections.observableArrayList();
@@ -141,8 +169,38 @@ public class AttendanceController extends FXController {
             return new SimpleStringProperty(fullName);
         });
 
+        // Add scrollbar configuration
         attendanceTable.setItems(studentList);
         attendanceTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        attendanceTable.setTableMenuButtonVisible(true); // Enable column controls
+        
+        // Enable table scrolling
+        attendanceTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+        
+        // Enable horizontal scrollbar
+        ScrollBar horizontalScrollBar = findScrollBar(attendanceTable, true);
+        if (horizontalScrollBar != null) {
+            horizontalScrollBar.setVisible(true);
+            horizontalScrollBar.setStyle("-fx-opacity: 1.0;");
+        }
+        
+        // Make table fit viewport
+        attendanceTable.prefHeightProperty().bind(rootPane.heightProperty());
+        attendanceTable.prefWidthProperty().bind(rootPane.widthProperty());
+        
+        // Enable horizontal scrolling
+        attendanceTable.setStyle("-fx-table-cell-border-color: transparent;");
+    }
+
+    private ScrollBar findScrollBar(TableView<?> table, boolean horizontal) {
+        return (ScrollBar) table.lookupAll(".scroll-bar").stream()
+            .filter(node -> node instanceof ScrollBar)
+            .map(node -> (ScrollBar) node)
+            .filter(bar -> horizontal ? 
+                bar.getOrientation() == javafx.geometry.Orientation.HORIZONTAL :
+                bar.getOrientation() == javafx.geometry.Orientation.VERTICAL)
+            .findFirst()
+            .orElse(null);
     }
 
     private void setupColumnWidths() {
@@ -152,60 +210,159 @@ public class AttendanceController extends FXController {
         colNo.setMaxWidth(44);
         colNo.setResizable(false);
 
-        colFullName.setPrefWidth(180);
-        colFullName.setMinWidth(180);
-        colFullName.setMaxWidth(180);
-        colFullName.setResizable(false);
+        colFullName.setPrefWidth(300);  // Increased from 250
+        colFullName.setMinWidth(300);   // Increased from 250
+        colFullName.setMaxWidth(400);   // Increased from 300
+        colFullName.setResizable(true);
 
         // Let the monthly attendance column auto-calculate its width.
         monthAttendanceColumn.setPrefWidth(-1);
+        monthAttendanceColumn.setMinWidth(400);  // Set minimum width
     }
 
     private void setupMonthColumns() {
         monthAttendanceColumn.getColumns().clear();
+        WeeklyAttendanceUtil.clearCaches();
 
         String selectedMonthYear = monthYearComboBox.getValue();
         if (selectedMonthYear == null) {
             return;
         }
 
+        // Batch calculate dimensions
+        double availableWidth = (attendanceTable.getWidth() - colNo.getWidth() - colFullName.getWidth()) * 1.01;
+        double minDayWidth = 52;
+        
         LocalDate today = LocalDate.now();
         LocalDate startDate = WeeklyAttendanceUtil.getFirstDayOfMonth(selectedMonthYear);
-        LocalDate endDate = (startDate.getMonth() == today.getMonth()
-                && startDate.getYear() == today.getYear())
+        LocalDate endDate = (startDate.getMonth() == today.getMonth() && startDate.getYear() == today.getYear())
                 ? today
                 : startDate.withDayOfMonth(startDate.lengthOfMonth());
 
+        // Pre-calculate all weeks and dimensions
         List<WeeklyAttendanceUtil.WeekDates> weeks = WeeklyAttendanceUtil.splitIntoWeeks(startDate, endDate);
+        int totalDays = weeks.stream()
+                .mapToInt(WeeklyAttendanceUtil::calculateWorkingDays)
+                .sum();
+
+        double optimalDayWidth = Math.max(minDayWidth, (availableWidth / Math.max(totalDays, 1)) - 5);
+        double totalWidth = Math.max(availableWidth + 20, optimalDayWidth * totalDays) * 1.01;
+
+        // Batch create columns
+        List<TableColumn<Student, ?>> newColumns = new ArrayList<>();
         AtomicInteger weekCounter = new AtomicInteger(1);
 
         weeks.stream()
                 .filter(WeeklyAttendanceUtil.WeekDates::hasWorkingDays)
                 .forEach(week -> {
                     TableColumn<Student, String> weekColumn = createWeekColumn("Week " + weekCounter.getAndIncrement());
-                    monthAttendanceColumn.getColumns().add(weekColumn);
-
-                    Map<DayOfWeek, TableColumn<Student, String>> dayColumns
-                            = AttendanceDateUtil.createDayNameColumns(true, week.getDates());
-                    addDayColumns(weekColumn, dayColumns, week.getDates());
+                    int workingDaysInWeek = WeeklyAttendanceUtil.calculateWorkingDays(week);
+                    double weekWidth = WeeklyAttendanceUtil.calculateWeekWidth(workingDaysInWeek, totalWidth, totalDays);
+                    
+                    configureWeekColumn(weekColumn, weekWidth, week, workingDaysInWeek);
+                    newColumns.add(weekColumn);
                 });
 
-        Platform.runLater(this::adjustColumnWidths);
+        // Batch add columns
+        Platform.runLater(() -> {
+            monthAttendanceColumn.getColumns().addAll(newColumns);
+            monthAttendanceColumn.setMinWidth(totalWidth);
+            
+            // Force layout pass
+            attendanceTable.applyCss();
+            attendanceTable.layout();
+            
+            adjustColumnWidths();
+            
+            // Add resize listener to handle window/table size changes
+            monthAttendanceColumn.widthProperty().addListener((obs, oldWidth, newWidth) -> {
+                if (newWidth.doubleValue() > 0) {
+                    adjustColumnWidths();
+                }
+            });
+        });
+    }
+
+    private void configureWeekColumn(TableColumn<Student, String> weekColumn, double weekWidth, 
+            WeeklyAttendanceUtil.WeekDates week, int workingDaysInWeek) {
+        weekColumn.setPrefWidth(weekWidth);
+        weekColumn.setMinWidth(weekWidth * 0.8);
+
+        Map<DayOfWeek, TableColumn<Student, String>> dayColumns = 
+            AttendanceDateUtil.createDayNameColumns(true, week.getDates());
+        addDayColumns(weekColumn, dayColumns, week.getDates(), weekWidth / workingDaysInWeek);
     }
 
     private void addDayColumns(TableColumn<Student, String> weekColumn,
             Map<DayOfWeek, TableColumn<Student, String>> dayColumns,
-            List<LocalDate> dates) {
-        dayColumns.values().forEach(dayCol -> {
+            List<LocalDate> dates,
+            double dayWidth) {
+        dayColumns.forEach((dayOfWeek, dayCol) -> {
             weekColumn.getColumns().add(dayCol);
-            dates.stream()
-                    .filter(date -> date.getDayOfWeek() == dayCol.getUserData())
-                    .forEach(date -> dayCol.getColumns().add(createDayColumn(date)));
+            List<TableColumn<Student, String>> daySubColumns = dates.stream()
+                    .filter(date -> date.getDayOfWeek() == dayOfWeek)
+                    .map(date -> {
+                        TableColumn<Student, String> dayColumn = createDayColumn(date);
+                        // Set equal widths for all day columns within the week
+                        dayColumn.setPrefWidth(dayWidth);
+                        dayColumn.setMinWidth(dayWidth * 0.8);
+                        dayColumn.setMaxWidth(dayWidth * 1.2);
+                        return dayColumn;
+                    })
+                    .collect(Collectors.toList());
+            dayCol.getColumns().addAll(daySubColumns);
+            
+            // Set day name column width
+            if (!daySubColumns.isEmpty()) {
+                dayCol.setPrefWidth(dayWidth);
+                dayCol.setMinWidth(dayWidth * 0.8);
+            }
         });
     }
 
     private void adjustColumnWidths() {
-        TableColumnUtil.adjustColumnWidths(attendanceTable, colNo, colFullName, monthAttendanceColumn);
+        // Add width validation at start
+        if (attendanceTable.getWidth() <= 0 || monthAttendanceColumn.getWidth() <= 0) {
+            return;
+        }
+        
+        // Calculate available width with 1% increase
+        double availableWidth = (attendanceTable.getWidth() - colNo.getWidth() - colFullName.getWidth()) * 1.01;
+        
+        // Get total number of visible days
+        int totalDays = getTotalDays();
+        if (totalDays == 0) return;
+        
+        // Calculate width per day with increased space
+        double widthPerDay = Math.max(52, (availableWidth / totalDays) - 2);
+        double totalNeededWidth = widthPerDay * totalDays * 1.01;
+        
+        // Ensure the monthly attendance column fills available space
+        monthAttendanceColumn.setPrefWidth(Math.max(totalNeededWidth, availableWidth));
+        
+        // Adjust week column widths proportionally
+        monthAttendanceColumn.getColumns().forEach(weekCol -> {
+            int daysInWeek = weekCol.getColumns().stream()
+                    .mapToInt(dayNameCol -> dayNameCol.getColumns().size())
+                    .sum();
+            if (daysInWeek > 0) {
+                double weekWidth = widthPerDay * daysInWeek;
+                weekCol.setPrefWidth(weekWidth);
+                weekCol.setMinWidth(weekWidth * 0.8);
+                
+                // Adjust day columns within the week
+                weekCol.getColumns().forEach(dayNameCol -> {
+                    double dayWidth = weekWidth / daysInWeek;
+                    dayNameCol.setPrefWidth(dayWidth);
+                    dayNameCol.setMinWidth(dayWidth * 0.8);
+                    
+                    dayNameCol.getColumns().forEach(dayCol -> {
+                        dayCol.setPrefWidth(dayWidth);
+                        dayCol.setMinWidth(dayWidth * 0.8);
+                    });
+                });
+            }
+        });
     }
 
     @Override
@@ -229,6 +386,18 @@ public class AttendanceController extends FXController {
         attendanceTable.widthProperty().addListener((obs, oldWidth, newWidth) -> {
             if (newWidth.doubleValue() > 0) {
                 Platform.runLater(this::adjustColumnWidths);
+            }
+        });
+
+        // Add scroll synchronization for nested columns
+        attendanceTable.setOnScroll(event -> {
+            if (event.isShiftDown()) {
+                ScrollBar horizontalScrollBar = findScrollBar(attendanceTable, true);
+                if (horizontalScrollBar != null) {
+                    double deltaX = event.getDeltaY() / attendanceTable.getWidth();
+                    horizontalScrollBar.setValue(horizontalScrollBar.getValue() - deltaX);
+                }
+                event.consume();
             }
         });
     }
@@ -283,15 +452,31 @@ public class AttendanceController extends FXController {
     private TableColumn<Student, String> createWeekColumn(String weekLabel) {
         TableColumn<Student, String> weekColumn = new TableColumn<>(weekLabel);
         weekColumn.setStyle("-fx-alignment: CENTER;");
-        weekColumn.setMinWidth(150);
+        // Let week column width be determined by its children
         return weekColumn;
     }
 
     private TableColumn<Student, String> createDayColumn(LocalDate date) {
         TableColumn<Student, String> dayColumn = new TableColumn<>(String.valueOf(date.getDayOfMonth()));
-        dayColumn.setMinWidth(52);
-        dayColumn.setPrefWidth(52);
-        dayColumn.setMaxWidth(69);
+        
+        // Calculate optimal width based on possible content
+        double maxContentWidth = Math.max(
+            AttendanceUtil.PRESENT_MARK.length(),
+            Math.max(
+                AttendanceUtil.ABSENT_MARK.length(),
+                Math.max(
+                    AttendanceUtil.HALF_DAY_MARK.length(),
+                    AttendanceUtil.EXCUSED_MARK.length()
+                )
+            )
+        ) * 12; // Approximate width per character
+
+        // Add padding for better appearance
+        double columnWidth = Math.max(maxContentWidth + 20, 52);
+        
+        dayColumn.setMinWidth(columnWidth);
+        dayColumn.setPrefWidth(columnWidth);
+        dayColumn.setMaxWidth(columnWidth * 1.5);
         dayColumn.setResizable(false);
         dayColumn.setStyle("-fx-alignment: CENTER;");
 
@@ -315,9 +500,29 @@ public class AttendanceController extends FXController {
                     setGraphic(null);
                 } else {
                     setText(item);
+                    // Adjust font size based on column width
+                    double columnWidth = getTableColumn().getWidth();
+                    if (columnWidth > 0) {
+                        // Calculate font size based on column width
+                        // Base size is 12px, adjust between 8px and 14px
+                        double fontSize = Math.min(14, Math.max(8, columnWidth / 4));
+                        setStyle(String.format("-fx-font-size: %.1fpx; -fx-alignment: CENTER;", fontSize));
+                    }
                 }
             }
         };
+
+        // Add listener to adjust font when column width changes
+        cell.tableColumnProperty().addListener((obs, oldCol, newCol) -> {
+            if (newCol != null) {
+                newCol.widthProperty().addListener((obs2, oldWidth, newWidth) -> {
+                    if (!cell.isEmpty() && newWidth.doubleValue() > 0) {
+                        double fontSize = Math.min(14, Math.max(8, newWidth.doubleValue() / 4));
+                        cell.setStyle(String.format("-fx-font-size: %.1fpx; -fx-alignment: CENTER;", fontSize));
+                    }
+                });
+            }
+        });
 
         if (!date.isAfter(LocalDate.now())) {
             ContextMenu contextMenu = new ContextMenu();
@@ -361,22 +566,22 @@ public class AttendanceController extends FXController {
 
     private AttendanceLog findExistingLog(Student student, AttendanceRecord record) {
         String key = generateLogKey(student, record);
-        if (logCache.containsKey(key)) {
-            return logCache.get(key);
+        
+        // First check cache
+        AttendanceLog cachedLog = logCache.get(key);
+        if (cachedLog != null) {
+            return cachedLog;
         }
 
-        AttendanceLog log = AttendanceLogDAO.getAttendanceLogList().stream()
-                .filter(l -> l.getRecordID() != null
-                && l.getStudentID() != null
-                && l.getRecordID().getRecordID() == record.getRecordID()
-                && l.getStudentID().getStudentID() == student.getStudentID())
-                .findFirst()
-                .orElse(null);
-
-        if (log != null) {
-            logCache.put(key, log);
-        }
-        return log;
+        // Then check database
+        return AttendanceLogDAO.getAttendanceLogList().stream()
+            .filter(log -> log != null 
+                && log.getRecordID() != null 
+                && log.getStudentID() != null
+                && log.getRecordID().getRecordID() == record.getRecordID()
+                && log.getStudentID().getStudentID() == student.getStudentID())
+            .findFirst()
+            .orElse(null);
     }
 
     private int getNextLogId() {
@@ -412,31 +617,46 @@ public class AttendanceController extends FXController {
     }
 
     private void updateCellValue(TableCell<Student, String> cell, Student student, LocalDate date, String newValue) {
-        if (newValue == null) {
-            return;
-        }
+        if (newValue == null) return;
 
         try {
             AttendanceRecord record = findOrCreateRecord(date);
             AttendanceLog existingLog = findExistingLog(student, record);
+            AttendanceLog updatedLog;
 
             if (existingLog != null) {
-                updateLogTimes(existingLog, newValue);
-                AttendanceLogDAO.update(existingLog);
+                updatedLog = existingLog;
+                updateLogTimes(updatedLog, newValue);
+                AttendanceLogDAO.update(updatedLog);
             } else {
-                AttendanceLog newLog = createNewLog(student, record);
-                updateLogTimes(newLog, newValue);
-                AttendanceLogDAO.insert(newLog);
-                logCache.put(generateLogKey(student, record), newLog);
+                updatedLog = createNewLog(student, record);
+                updateLogTimes(updatedLog, newValue);  // Fixed: Added missing newValue parameter
+                AttendanceLogDAO.insert(updatedLog);
             }
 
-            cell.setGraphic(null);
-            cell.setText(newValue);
+            // Update cache
+            logCache.put(generateLogKey(student, record), updatedLog);
+            recordCache.put(date, record);
 
-            refreshDisplay();
+            // Update UI
+            Platform.runLater(() -> {
+                cell.setGraphic(null);
+                cell.setText(newValue);
+                // Force a refresh of all related cells
+                attendanceTable.refresh();
+            });
+
+            // Reload logs to ensure consistency
+            refreshAttendanceLogs();
+            
         } catch (Exception e) {
-            System.err.println("Error updating cell value: " + e.getMessage());
+            System.err.println("Error updating attendance: " + e.getMessage());
             e.printStackTrace();
+            // Revert UI on error
+            Platform.runLater(() -> {
+                cell.setGraphic(null);
+                cell.setText(AttendanceUtil.ABSENT_MARK);
+            });
         }
     }
 
@@ -448,8 +668,24 @@ public class AttendanceController extends FXController {
     }
 
     private AttendanceRecord createAttendanceRecord(LocalDate date) {
-        int nextId = getNextRecordId();
-        return new AttendanceRecord(nextId, date.getMonthValue(), date.getDayOfMonth(), date.getYear());
+        try {
+            int nextId = getNextRecordId();
+            int month = date.getMonthValue();
+            int day = date.getDayOfMonth();
+            int year = date.getYear();
+            
+            // Validate date components before creating record
+            if (month < 1 || month > 12 || day < 1 || day > 31) {
+                throw new IllegalArgumentException(
+                    String.format("Invalid date components: year=%d, month=%d, day=%d", 
+                    year, month, day));
+            }
+            
+            return new AttendanceRecord(nextId, month, day, year);
+        } catch (Exception e) {
+            System.err.println("Error creating attendance record: " + e.getMessage());
+            throw e;
+        }
     }
 
     private void showAttendanceLogDialog(Student student, LocalDate date) {
@@ -472,14 +708,24 @@ public class AttendanceController extends FXController {
             int year = record.getYear();
             int month = record.getMonth();
             int day = record.getDay();
-            if (month < 1 || month > 12 || day < 1 || day > 31) {
-                System.out.println("Invalid date components: year=" + year + ", month=" + month + ", day=" + day);
+            
+            // Validate date components
+            if (month < 1 || month > 12) {
+                System.err.println("Invalid month in record: year=" + year + 
+                    ", month=" + month + ", day=" + day);
                 return true;
             }
-            LocalDate logDate = LocalDate.of(year, month, day);
-            return logDate.isAfter(LocalDate.now());
-        } catch (DateTimeException e) {
-            System.err.println("Invalid date in attendance log: " + e.getMessage());
+            
+            try {
+                LocalDate logDate = LocalDate.of(year, month, day);
+                return logDate.isAfter(LocalDate.now());
+            } catch (DateTimeException e) {
+                System.err.println("Invalid date components: year=" + year + 
+                    ", month=" + month + ", day=" + day);
+                return true;
+            }
+        } catch (Exception e) {
+            System.err.println("Error checking future date: " + e.getMessage());
             return true;
         }
     }
@@ -520,24 +766,41 @@ public class AttendanceController extends FXController {
     private void refreshAttendanceLogs() {
         try {
             clearCaches();
-            List<AttendanceLog> dbLogs = AttendanceLogDAO.getAttendanceLogList().stream()
-                    .filter(log -> log != null
-                    && log.getRecordID() != null
-                    && log.getRecordID().getMonth() >= 1
-                    && log.getRecordID().getMonth() <= 12)
-                    .collect(Collectors.toList());
+            // Use a local variable to avoid race conditions
+            List<AttendanceLog> dbLogs = new ArrayList<>(AttendanceLogDAO.getAttendanceLogList());
+            
+            // Filter and validate logs
+            List<AttendanceLog> validLogs = dbLogs.stream()
+                .filter(log -> {
+                    if (log == null || log.getRecordID() == null || log.getStudentID() == null) {
+                        return false;
+                    }
+                    int month = log.getRecordID().getMonth();
+                    return month >= 1 && month <= 12;
+                })
+                .collect(Collectors.toList());
 
-            attendanceLog = FXCollections.observableArrayList(dbLogs)
+            // Update observable list
+            Platform.runLater(() -> {
+                attendanceLog = FXCollections.observableArrayList(validLogs)
                     .filtered(log -> !isFutureDate(log));
-
-            // Pre-populate caches
-            dbLogs.forEach(log -> {
-                if (log.getStudentID() != null && log.getRecordID() != null) {
-                    logCache.put(generateLogKey(log.getStudentID(), log.getRecordID()), log);
-                }
+                
+                // Pre-populate caches with valid logs
+                validLogs.forEach(log -> {
+                    String key = generateLogKey(log.getStudentID(), log.getRecordID());
+                    logCache.put(key, log);
+                    LocalDate logDate = LocalDate.of(
+                        log.getRecordID().getYear(),
+                        log.getRecordID().getMonth(),
+                        log.getRecordID().getDay()
+                    );
+                    recordCache.put(logDate, log.getRecordID());
+                });
+                
+                setupMonthColumns();
+                attendanceTable.refresh();
             });
 
-            refreshDisplay();
         } catch (Exception e) {
             System.err.println("Error refreshing attendance logs: " + e.getMessage());
             e.printStackTrace();
@@ -603,7 +866,10 @@ public class AttendanceController extends FXController {
                 }
             }
             
-            setupMonthColumns();
+            // Only setup columns once
+            if (isInitialSetup) {
+                setupMonthColumns();
+            }
         }
         updateStudentCountLabels();
     }
@@ -651,5 +917,39 @@ public class AttendanceController extends FXController {
 
     public String getSelectedMonth() {
         return monthYearComboBox != null ? monthYearComboBox.getValue() : null;
+    }
+
+    private int getTotalDays() {
+        return monthAttendanceColumn.getColumns().stream()
+                .mapToInt(weekCol -> weekCol.getColumns().stream()
+                        .mapToInt(dayNameCol -> dayNameCol.getColumns().size())
+                        .sum())
+                .sum();
+    }
+
+    private void handleInitialLayout() {
+        if (!isInitialSetup) return;
+        
+        attendanceTable.applyCss();
+        attendanceTable.layout();
+        
+        double tableWidth = attendanceTable.getWidth();
+        if (tableWidth > 0) {
+            adjustColumnWidths();
+            isInitialSetup = false;
+        } else {
+            // Add one-time listener for initial width
+            attendanceTable.widthProperty().addListener(new javafx.beans.value.ChangeListener<Number>() {
+                @Override
+                public void changed(javafx.beans.value.ObservableValue<? extends Number> obs, 
+                        Number oldVal, Number newVal) {
+                    if (newVal.doubleValue() > 0 && isInitialSetup) {
+                        adjustColumnWidths();
+                        isInitialSetup = false;
+                        attendanceTable.widthProperty().removeListener(this);
+                    }
+                }
+            });
+        }
     }
 }

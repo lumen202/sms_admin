@@ -45,22 +45,27 @@
 /* Navigation Icons Color Styles */
 .nav-button .ikonli-font-icon {
   -fx-fill: white;
+  -fx-icon-color: white;
 }
 
 #studentButton .ikonli-font-icon {
   -fx-fill: #4caf50; /* Green */
+  -fx-icon-color: #4caf50 !important;
 }
 
 #enrollmentButton .ikonli-font-icon {
   -fx-fill: #2196f3; /* Blue */
+  -fx-icon-color: #2196f3 !important;
 }
 
 #payrollButton .ikonli-font-icon {
   -fx-fill: #ffc107; /* Amber */
+  -fx-icon-color: #ffc107 !important;
 }
 
 #attendanceButton .ikonli-font-icon {
   -fx-fill: #ff5722; /* Deep Orange */
+  -fx-icon-color: #ff5722 !important;
 }
 
 /* Hover effects */
@@ -354,15 +359,6 @@ menu-button {
   -fx-shape: "";
 }
 
-.icon-menu-button .menu-item:hover {
-  -fx-background-color: derive(-sms-primary, 90%);
-}
-
-.menu-icon {
-  -fx-fill: white !important;
-  -fx-icon-color: white !important;
-}
-
 .icon-menu-button {
   -fx-background-color: transparent;
   -fx-padding: 0;
@@ -381,15 +377,21 @@ menu-button {
 
 .icon-menu-button > .arrow-button {
   -fx-padding: 0;
+  -fx-background-color: transparent;
+  visibility: hidden;  /* Hide the arrow */
 }
 
 .icon-menu-button > .arrow-button > .arrow {
   -fx-padding: 0;
   -fx-shape: "";
+  visibility: hidden;  /* Hide the arrow */
 }
 
 .menu-icon {
   -fx-fill: white;
+  -fx-icon-color: white !important;
+  -fx-fill: white !important;
+  -fx-text-fill: white !important;
 }
 
 /* Attendance Table */

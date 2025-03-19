@@ -10,9 +10,12 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
 import dev.finalproject.App;
+import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.SchoolYear;
+import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -31,7 +34,6 @@ import sms.admin.app.student.StudentController;
 import sms.admin.app.student.StudentLoader;
 import sms.admin.util.SchoolYearUtil;
 import sms.admin.util.datetime.DateTimeUtils;
-import sms.admin.util.mock.DataUtil;
 import sms.admin.util.scene.SceneLoaderUtil;
 
 public class RootController extends FXController {
@@ -55,6 +57,9 @@ public class RootController extends FXController {
     private Scene scene;
 
     private ObservableList<SchoolYear> schoolYearList;
+    private ObservableList<Student> studentList;
+    private ObservableList<AttendanceLog> attendanceLogList;
+    private FilteredList<Student> yearFilteredStudentList;
 
     // Store the active controller (e.g., PayrollController or AttendanceController)
     private FXController currentController;
@@ -64,15 +69,18 @@ public class RootController extends FXController {
     @FXML
     private void handleStudentButton() {
         highlightButton(studentButton);
-        String selectedYear = yearComboBox.getValue();
+        Map<String, Object> params = new HashMap<>();
+        params.put("selectedYear", yearComboBox.getValue());
+        params.put("filteredStudentList", yearFilteredStudentList);
+
         currentController = SceneLoaderUtil.loadScene(
                 "/sms/admin/app/student/STUDENT.fxml",
                 getClass(),
                 StudentLoader.class,
-                Map.of("selectedYear", selectedYear),
+                params,
                 contentPane);
         if (currentController instanceof StudentController controller) {
-            controller.initializeWithYear(selectedYear);
+            controller.initializeWithYear(yearComboBox.getValue());
         }
     }
 
@@ -89,8 +97,19 @@ public class RootController extends FXController {
     private void handlePayrollButton() {
         highlightButton(payrollButton);
         Map<String, Object> params = new HashMap<>();
+        String currentMonth = getCurrentControllerMonth();
+        
+        // Use the stored selected month if no current month
+        if (currentMonth == null) {
+            currentMonth = selectedMonth;
+        }
+        
+        System.out.println("Loading Payroll with month: " + currentMonth);
+        
         params.put("selectedYear", yearComboBox.getValue());
-        params.put("selectedMonth", getCurrentControllerMonth());
+        params.put("selectedMonth", currentMonth);
+        params.put("filteredStudentList", yearFilteredStudentList);
+        params.put("attendanceLogList", attendanceLogList);
 
         currentController = SceneLoaderUtil.loadScene(
                 "/sms/admin/app/payroll/PAYROLL.fxml",
@@ -101,6 +120,9 @@ public class RootController extends FXController {
                 
         if (currentController instanceof PayrollController controller) {
             controller.initializeWithYear(yearComboBox.getValue());
+            if (currentMonth != null) {
+                controller.setSelectedMonth(currentMonth);
+            }
         }
     }
 
@@ -109,8 +131,19 @@ public class RootController extends FXController {
         highlightButton(attendanceButton);
         Map<String, Object> params = new HashMap<>();
         String currentMonth = getCurrentControllerMonth();
+        
+        // Use the stored selected month if no current month
+        if (currentMonth == null) {
+            currentMonth = selectedMonth;
+        }
+        
+        System.out.println("Loading Attendance with month: " + currentMonth);
+        
         params.put("selectedYear", yearComboBox.getValue());
         params.put("selectedMonth", currentMonth != null ? currentMonth : selectedMonth);
+        params.put("studentList", yearFilteredStudentList);
+        // Make sure to pass the actual list, not null
+        params.put("attendanceLogList", App.COLLECTIONS_REGISTRY.getList("ATTENDANCE_LOG"));
 
         try {
             currentController = SceneLoaderUtil.loadScene(
@@ -161,24 +194,29 @@ public class RootController extends FXController {
 
     @Override
     protected void load_fields() {
-        // Initialize school year list
-        schoolYearList =App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR");
+        // Initialize all lists from registry
+        schoolYearList = App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR");
+        studentList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+        attendanceLogList = App.COLLECTIONS_REGISTRY.getList("ATTENDANCE_LOG");
+        yearFilteredStudentList = new FilteredList<>(studentList);
+        
         yearComboBox.setItems(SchoolYearUtil.convertToStringList(schoolYearList));
 
-        // Set initial selected month
+        // Set initial selected month from parameter or current month
         selectedMonth = (String) getParameter("selectedMonth");
         if (selectedMonth == null) {
-            selectedMonth = YearMonth.now().format(DateTimeUtils.MONTH_YEAR_FORMATTER);
+            YearMonth current = YearMonth.now();
+            selectedMonth = current.format(DateTimeUtils.MONTH_YEAR_FORMATTER);
         }
+        System.out.println("RootController initialized with month: " + selectedMonth);
 
         // Set current year as default
         SchoolYear currentYear = SchoolYearUtil.findCurrentYear(schoolYearList);
         if (currentYear != null) {
             String yearString = SchoolYearUtil.formatSchoolYear(currentYear);
             yearComboBox.setValue(yearString);
-
-            // Load initial scene with selected year
-            handleStudentButton();
+            updateYearFilter(yearString);
+            handleStudentButton(); // Start with student view
         }
     }
 
@@ -269,6 +307,7 @@ public class RootController extends FXController {
     }
 
     private void updateCurrentController(String newYear) {
+        updateYearFilter(newYear);
         if (currentController != null) {
             if (currentController instanceof StudentController controller) {
                 controller.initializeWithYear(newYear);
@@ -298,13 +337,32 @@ public class RootController extends FXController {
 
     // Add method with correct name to match what's being called
     public void setSelectedMonth(String monthYear) {
-        this.selectedMonth = monthYear;
-        // Update current controller if it's attendance or payroll
-        if (currentController instanceof AttendanceController controller) {
-            controller.setSelectedMonth(monthYear);
-        } else if (currentController instanceof PayrollController controller) {
-            controller.setSelectedMonth(monthYear);
+        if (monthYear != null && !monthYear.equals(this.selectedMonth)) {
+            System.out.println("RootController: Updating selected month from " + 
+                             this.selectedMonth + " to " + monthYear);
+            this.selectedMonth = monthYear;
+            
+            // Update both controllers if they exist
+            if (currentController instanceof AttendanceController controller) {
+                controller.setSelectedMonth(monthYear);
+            } else if (currentController instanceof PayrollController controller) {
+                controller.setSelectedMonth(monthYear);
+            }
         }
     }
 
+    private void updateYearFilter(String year) {
+        if (year == null) return;
+        
+        String[] yearRange = year.split("-");
+        final int startYear = Integer.parseInt(yearRange[0]);
+        final int endYear = Integer.parseInt(yearRange[1]);
+
+        yearFilteredStudentList.setPredicate(student -> {
+            if (student.getYearID() == null) return false;
+            SchoolYear schoolYear = student.getYearID();
+            return schoolYear.getYearStart() == startYear && 
+                   schoolYear.getYearEnd() == endYear;
+        });
+    }
 }

@@ -75,7 +75,6 @@ public class StudentController extends FXController {
     @FXML
     private Button editButton;
 
-    private ObservableList<Student> originalMasterList; // Add this field to store original list
     private FilteredList<Student> yearFilteredList;
     private FilteredList<Student> searchFilteredList;
     private ContextMenu studentMenu;
@@ -83,24 +82,18 @@ public class StudentController extends FXController {
     @Override
     protected void load_fields() {
         try {
-            // Initialize data from database
-            originalMasterList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
-            yearFilteredList = new FilteredList<>(originalMasterList);
+            // Get filtered list from parameters
+            yearFilteredList = (FilteredList<Student>) getParameter("filteredStudentList");
             searchFilteredList = new FilteredList<>(yearFilteredList);
 
-            // Set filtered items to table
             studentTableView.setItems(searchFilteredList);
 
-            // Get selected year
             String selectedYear = (String) getParameter("selectedYear");
             if (selectedYear == null) {
                 selectedYear = YearData.getCurrentAcademicYear();
             }
 
-            // Apply initial filter
-            initializeWithYear(selectedYear);
-
-            // Configure modal panes
+            // No need to filter by year anymore since we're using the filtered list
             formodal.setAlignment(Pos.TOP_CENTER);
             formodal.usePredefinedTransitionFactories(Side.TOP);
             formodal.setPersistent(true);
@@ -183,25 +176,7 @@ public class StudentController extends FXController {
     }
 
     public void initializeWithYear(String year) {
-        if (year == null || originalMasterList == null)
-            return;
-
-        // Convert year string to yearID (assuming year format is "2023-2024")
-        final int startYear = Integer.parseInt(year.split("-")[0]);
-        final int endYear = Integer.parseInt(year.split("-")[1]);
-        System.out.println("Filtering students for years: " + startYear + "-" + endYear);
-
-        // Update the year filter predicate
-        yearFilteredList.setPredicate(student -> {
-            if (student.getYearID() == null) {
-                return false;
-            }
-            SchoolYear schoolYear = student.getYearID();
-            return schoolYear != null &&
-                    schoolYear.getYearStart() == startYear &&
-                    schoolYear.getYearEnd() == endYear;
-        });
-
+        // No need to filter by year anymore
         updateStatusLabel();
     }
 
