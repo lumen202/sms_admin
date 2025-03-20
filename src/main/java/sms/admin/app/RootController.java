@@ -10,10 +10,14 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
 import dev.finalproject.App;
+import dev.finalproject.data.AttendanceLogDAO;
+import dev.finalproject.data.StudentDAO;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
@@ -137,13 +141,12 @@ public class RootController extends FXController {
             currentMonth = selectedMonth;
         }
         
-        System.out.println("Loading Attendance with month: " + currentMonth);
+        System.out.println("RootController: Loading Attendance with month: " + currentMonth);
         
         params.put("selectedYear", yearComboBox.getValue());
-        params.put("selectedMonth", currentMonth != null ? currentMonth : selectedMonth);
+        params.put("selectedMonth", currentMonth);
         params.put("studentList", yearFilteredStudentList);
-        // Make sure to pass the actual list, not null
-        params.put("attendanceLogList", App.COLLECTIONS_REGISTRY.getList("ATTENDANCE_LOG"));
+        params.put("attendanceLogList", attendanceLogList);
 
         try {
             currentController = SceneLoaderUtil.loadScene(
@@ -154,10 +157,12 @@ public class RootController extends FXController {
                     contentPane);
                     
             if (currentController instanceof AttendanceController controller) {
-                controller.initializeWithYear(yearComboBox.getValue());
-                if (currentMonth != null) {
-                    controller.setSelectedMonth(currentMonth);
-                }
+                String finalMonth = currentMonth; // Capture for lambda
+                Platform.runLater(() -> {
+                    controller.initializeWithYear(yearComboBox.getValue());
+                    System.out.println("RootController: Setting attendance month to " + finalMonth);
+                    controller.setSelectedMonth(finalMonth);
+                });
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -343,11 +348,13 @@ public class RootController extends FXController {
             this.selectedMonth = monthYear;
             
             // Update both controllers if they exist
-            if (currentController instanceof AttendanceController controller) {
-                controller.setSelectedMonth(monthYear);
-            } else if (currentController instanceof PayrollController controller) {
-                controller.setSelectedMonth(monthYear);
-            }
+            Platform.runLater(() -> {
+                if (currentController instanceof AttendanceController controller) {
+                    controller.setSelectedMonth(monthYear);
+                } else if (currentController instanceof PayrollController controller) {
+                    controller.setSelectedMonth(monthYear);
+                }
+            });
         }
     }
 
@@ -364,5 +371,28 @@ public class RootController extends FXController {
             return schoolYear.getYearStart() == startYear && 
                    schoolYear.getYearEnd() == endYear;
         });
+    }
+    
+    public void refreshCollections() {
+        // Update registry first
+        App.COLLECTIONS_REGISTRY.register("ATTENDANCE_LOG", 
+            FXCollections.observableArrayList(AttendanceLogDAO.getAttendanceLogList()));
+        App.COLLECTIONS_REGISTRY.register("STUDENT",
+            FXCollections.observableArrayList(StudentDAO.getStudentList()));
+        
+        // Get fresh references from registry
+        attendanceLogList = App.COLLECTIONS_REGISTRY.getList("ATTENDANCE_LOG");
+        studentList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+        
+        // Re-apply the year filter
+        updateYearFilter(yearComboBox.getValue());
+        
+        // Force payroll refresh if active
+        if (currentController instanceof PayrollController) {
+            Platform.runLater(() -> handlePayrollButton());
+        }
+        
+        System.out.println("RootController: Collections refreshed with " + 
+                          attendanceLogList.size() + " attendance logs");
     }
 }

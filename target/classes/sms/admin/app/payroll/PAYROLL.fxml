@@ -6,8 +6,10 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -73,10 +75,14 @@
             <HBox alignment="CENTER_LEFT" spacing="10">
                <Label styleClass="section-header" text="Payment Records" />
                <Region HBox.hgrow="ALWAYS" />
-               <HBox spacing="5">
-                  <Button styleClass="small-button" text="One-way" />
-                  <Button styleClass="small-button" text="Two-way" />
-                  <Button styleClass="small-button" text="Four-way" />
+               <HBox spacing="10">
+                    <RadioButton fx:id="oneWayRadio" text="One Way" selected="true">
+                        <toggleGroup>
+                            <ToggleGroup fx:id="fareTypeGroup" />
+                        </toggleGroup>
+                    </RadioButton>
+                    <RadioButton fx:id="twoWayRadio" text="Two Way" toggleGroup="$fareTypeGroup" />
+                    <RadioButton fx:id="fourWayRadio" text="Four Way" toggleGroup="$fareTypeGroup" />
                </HBox>
             </HBox>
             <TableView fx:id="payrollTable" styleClass="payroll-table" VBox.vgrow="ALWAYS">

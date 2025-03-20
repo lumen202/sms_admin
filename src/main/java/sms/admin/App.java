@@ -23,6 +23,10 @@ import javafx.collections.FXCollections;
 import javafx.scene.image.Image;
 import javafx.stage.WindowEvent;
 import sms.admin.app.RootLoader;
+import sms.admin.util.db.DatabaseChangeListener;
+import sms.admin.util.db.DatabaseConnection;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 public class App extends FXApplication {
 
@@ -37,12 +41,13 @@ public class App extends FXApplication {
     public static final DBService DB_SMS = DBService.INSTANCE
     .initialize("jdbc:mysql://192.168.254.108:3306/student_management_system_db?user=remote_user&allowPublicKeyRetrieval=true&useSSL=false");
 
-
+    private DatabaseChangeListener dbChangeListener;
 
     @Override
     public void initialize() throws Exception {
         try {
             configureApplication();
+            initializeDatabaseListener();
             initializeDataset();
             initializeApplication();
         } catch (Exception e) {
@@ -61,6 +66,53 @@ public class App extends FXApplication {
         applicationStage.setWidth(900);
         applicationStage.setHeight(700);
         applicationStage.setOnCloseRequest(this::handleApplicationClose);
+    }
+
+    private void initializeDatabaseListener() {
+        try {
+            Connection conn = DatabaseConnection.getConnection();
+            dbChangeListener = new DatabaseChangeListener(conn);
+            dbChangeListener.addChangeHandler((tableName, changeType) -> {
+                Platform.runLater(() -> {
+                    LOGGER.info("Database change detected: " + tableName + " - " + changeType);
+                    refreshCollectionForTable(tableName);
+                });
+            });
+            dbChangeListener.startListening(5); // Check every 5 seconds
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Failed to initialize database listener", e);
+        }
+    }
+
+    private void refreshCollectionForTable(String tableName) {
+        try {
+            switch (tableName.toLowerCase()) {
+                case "student" -> {
+                    var newList = FXCollections.observableArrayList(StudentDAO.getStudentList());
+                    COLLECTIONS_REGISTRY.register("STUDENT", newList);
+                }
+                case "guardian" -> {
+                    var newList = FXCollections.observableArrayList(GuardianDAO.getGuardianList());
+                    COLLECTIONS_REGISTRY.register("GUARDIAN", newList);
+                }
+                case "address" -> {
+                    var newList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
+                    COLLECTIONS_REGISTRY.register("ADDRESS", newList);
+                }
+                case "attendance_log" -> {
+                    var newList = FXCollections.observableArrayList(AttendanceLogDAO.getAttendanceLogList());
+                    COLLECTIONS_REGISTRY.register("ATTENDANCE_LOG", newList);
+                }
+                case "school_year" -> {
+                    var newList = FXCollections.observableArrayList(SchoolYearDAO.getSchoolYearList());
+                    COLLECTIONS_REGISTRY.register("SCHOOL_YEAR", newList);
+                }
+                default -> LOGGER.warning("Unknown table for refresh: " + tableName);
+            }
+            LOGGER.info("Successfully refreshed collection for table: " + tableName);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error refreshing collection for table: " + tableName, e);
+        }
     }
 
     public void initializeDataset() {
@@ -129,6 +181,10 @@ public class App extends FXApplication {
 
     private void handleApplicationClose(WindowEvent event) {
         try {
+            if (dbChangeListener != null) {
+                dbChangeListener.stop();
+            }
+            DatabaseConnection.closeConnection();
             clearCollections();
             Platform.exit();
         } catch (Exception e) {

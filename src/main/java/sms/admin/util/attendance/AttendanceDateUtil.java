@@ -10,61 +10,49 @@ import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import dev.finalproject.models.Student;
+import java.util.Arrays;
 
 public class AttendanceDateUtil {
-    
+    private static final DayOfWeek[] WEEKDAYS = {
+        DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, 
+        DayOfWeek.THURSDAY, DayOfWeek.FRIDAY
+    };
+
+    private static final Map<DayOfWeek, String> SHORT_NAMES = Map.of(
+        DayOfWeek.MONDAY, "M",
+        DayOfWeek.TUESDAY, "T",
+        DayOfWeek.WEDNESDAY, "W",
+        DayOfWeek.THURSDAY, "Th",
+        DayOfWeek.FRIDAY, "F"
+    );
+
     public static String formatDayName(DayOfWeek day, boolean useShortName) {
-        if (useShortName) {
-            return switch (day) {
-                case MONDAY -> "M";
-                case TUESDAY -> "T";
-                case WEDNESDAY -> "W";
-                case THURSDAY -> "Th";
-                case FRIDAY -> "F";
-                default -> day.getDisplayName(TextStyle.SHORT, Locale.getDefault());
-            };
-        }
-        return day.getDisplayName(TextStyle.FULL, Locale.getDefault());
+        return useShortName ? SHORT_NAMES.getOrDefault(day, 
+            day.getDisplayName(TextStyle.SHORT, Locale.getDefault())) :
+            day.getDisplayName(TextStyle.FULL, Locale.getDefault());
     }
 
-    public static Map<DayOfWeek, TableColumn<Student, String>> createDayNameColumns(boolean useShortNames) {
+    public static Map<DayOfWeek, TableColumn<Student, String>> createDayNameColumns(boolean useShortNames, List<LocalDate> dates) {
         Map<DayOfWeek, TableColumn<Student, String>> columns = new LinkedHashMap<>();
         
-        DayOfWeek[] weekdays = {
-            DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, 
-            DayOfWeek.THURSDAY, DayOfWeek.FRIDAY
-        };
-        
-        for (DayOfWeek day : weekdays) {
-            String dayName = formatDayName(day, useShortNames);
-            TableColumn<Student, String> dayColumn = new TableColumn<>(dayName);
-            dayColumn.setStyle("-fx-alignment: CENTER;");
-            columns.put(day, dayColumn);
-        }
-        
-        return columns;
-    }
-
-    public static Map<DayOfWeek, TableColumn<Student, String>> createDayNameColumns(boolean useShortNames, List<LocalDate> datesInWeek) {
-        Map<DayOfWeek, TableColumn<Student, String>> columns = new LinkedHashMap<>();
-        
-        datesInWeek.stream()
-                   .filter(date -> !isWeekend(date))
-                   .map(LocalDate::getDayOfWeek)
-                   .distinct()
-                   .forEach(day -> {
-                       String dayName = formatDayName(day, useShortNames);
-                       TableColumn<Student, String> dayColumn = new TableColumn<>(dayName);
-                       dayColumn.setStyle("-fx-alignment: CENTER;");
-                       dayColumn.setUserData(day); // Store day of week for reference
-                       columns.put(day, dayColumn);
-                   });
+        (dates != null ? dates.stream()
+                              .filter(date -> !isWeekend(date))
+                              .map(LocalDate::getDayOfWeek)
+                              .distinct()
+                              .sorted() :
+                        Arrays.stream(WEEKDAYS))
+            .forEach(day -> {
+                String dayName = formatDayName(day, useShortNames);
+                TableColumn<Student, String> dayColumn = new TableColumn<>(dayName);
+                dayColumn.setStyle("-fx-alignment: CENTER;");
+                columns.put(day, dayColumn);
+            });
         
         return columns;
     }
 
     public static boolean isWeekend(LocalDate date) {
-        return date.getDayOfWeek() == DayOfWeek.SATURDAY || 
-               date.getDayOfWeek() == DayOfWeek.SUNDAY;
+        return date != null && (date.getDayOfWeek() == DayOfWeek.SATURDAY || 
+                              date.getDayOfWeek() == DayOfWeek.SUNDAY);
     }
 }

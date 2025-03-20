@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
@@ -46,6 +48,8 @@ public class AttendanceUtil {
     public static final int TIME_IN_PM = 1300;
     public static final int TIME_OUT_PM = 1630;
 
+    private static final Map<String, String> attendanceStatusCache = new HashMap<>();
+    
     public static void setupTableColumns(
             TableColumn<Student, Integer> colNo,
             TableColumn<Student, String> colFullName) {
@@ -120,59 +124,52 @@ public class AttendanceUtil {
                 record.getDay() == date.getDayOfMonth();
     }
 
-    public static String getAttendanceStatus(
-            Student student,
-            LocalDate date,
-            ObservableList<AttendanceLog> attendanceLogs) {
-
+    public static String getAttendanceStatus(Student student, LocalDate date, ObservableList<AttendanceLog> attendanceLogs) {
         if (student == null || date == null || attendanceLogs == null) {
-            System.out.println("Null parameters in getAttendanceStatus");
             return ABSENT_MARK;
         }
 
-        // Debug print
-        System.out.println("Checking attendance for Student ID: " + student.getStudentID() + 
-                          " on date: " + date + 
-                          " (Logs available: " + attendanceLogs.size() + ")");
+        String cacheKey = String.format("%d_%s", student.getStudentID(), date);
+        return attendanceStatusCache.computeIfAbsent(cacheKey, k -> calculateAttendanceStatus(student, date, attendanceLogs));
+    }
 
+    private static String calculateAttendanceStatus(Student student, LocalDate date, ObservableList<AttendanceLog> attendanceLogs) {
         AttendanceLog log = attendanceLogs.stream()
-            .filter(l -> l != null && 
-                   l.getStudentID() != null && 
-                   l.getRecordID() != null &&
-                   l.getStudentID().getStudentID() == student.getStudentID() &&  // Compare IDs instead of objects
-                   l.getRecordID().getYear() == date.getYear() &&
-                   l.getRecordID().getMonth() == date.getMonthValue() &&
-                   l.getRecordID().getDay() == date.getDayOfMonth())
+            .filter(l -> isMatchingLog(l, student, date))
             .findFirst()
             .orElse(null);
 
         if (log == null) {
-            System.out.println("No log found for student " + student.getStudentID() + " on " + date);
             return ABSENT_MARK;
         }
 
-        System.out.println("Found log: AM(" + log.getTimeInAM() + "," + log.getTimeOutAM() + 
-                          ") PM(" + log.getTimeInPM() + "," + log.getTimeOutPM() + ")");
+        if (isExcused(log)) return EXCUSED_MARK;
+        
+        boolean hasAM = hasValidTimeRange(log.getTimeInAM(), log.getTimeOutAM());
+        boolean hasPM = hasValidTimeRange(log.getTimeInPM(), log.getTimeOutPM());
 
-        // Check excused status using the helper method
-        if (isExcused(log)) {
-            return EXCUSED_MARK;
-        }
+        return hasAM && hasPM ? PRESENT_MARK :
+               hasAM || hasPM ? HALF_DAY_MARK :
+                               ABSENT_MARK;
+    }
 
-        // Check attendance status for full or half day
-        boolean hasAM = log.getTimeInAM() > 0 && log.getTimeInAM() != TIME_ABSENT && 
-                       log.getTimeOutAM() > 0 && log.getTimeOutAM() != TIME_ABSENT;
-                       
-        boolean hasPM = log.getTimeInPM() > 0 && log.getTimeInPM() != TIME_ABSENT &&
-                       log.getTimeOutPM() > 0 && log.getTimeOutPM() != TIME_ABSENT;
+    private static boolean isMatchingLog(AttendanceLog log, Student student, LocalDate date) {
+        return log != null && 
+               log.getStudentID() != null && 
+               log.getRecordID() != null &&
+               log.getStudentID().getStudentID() == student.getStudentID() &&
+               log.getRecordID().getYear() == date.getYear() &&
+               log.getRecordID().getMonth() == date.getMonthValue() &&
+               log.getRecordID().getDay() == date.getDayOfMonth();
+    }
 
-        if (hasAM && hasPM) {
-            return PRESENT_MARK;
-        } else if (hasAM || hasPM) {
-            return HALF_DAY_MARK;
-        }
+    private static boolean hasValidTimeRange(int timeIn, int timeOut) {
+        return timeIn > 0 && timeIn != TIME_ABSENT && 
+               timeOut > 0 && timeOut != TIME_ABSENT;
+    }
 
-        return ABSENT_MARK;
+    public static void clearCache() {
+        attendanceStatusCache.clear();
     }
 
     public static boolean isExcused(AttendanceLog log) {

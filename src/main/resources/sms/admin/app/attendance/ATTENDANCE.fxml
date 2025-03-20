@@ -33,6 +33,9 @@
                                 <Label styleClass="section-header" text="Select Period" />
                                 <ComboBox fx:id="monthYearComboBox" prefWidth="200" promptText="Select Month and Year" />
                                 <Region HBox.hgrow="ALWAYS" />
+                                
+                                <!-- Remove RadioButton group section -->
+                                
                                 <MenuButton fx:id="exportButton" prefHeight="35.0" prefWidth="95.0" text="Export" styleClass="attendance-export-button">
                                     <items>
                                         <MenuItem fx:id="exportExcel" text="Excel" />
