@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<StackPane prefHeight="597.0" prefWidth="545.0" stylesheets="@../styles/main.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.enrollment.EnrollmentController">
+<StackPane prefHeight="597.0" prefWidth="545.0" style="-fx-border-color: #000080; -fx-border-width: 2; -fx-background-color: white;" stylesheets="@../styles/main.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.enrollment.EnrollmentController">
    <children>
       <ScrollPane fitToWidth="true" styleClass="content-area">
          <content>
@@ -141,6 +141,7 @@
                   
                   <HBox alignment="CENTER_RIGHT" spacing="10">
                      <Button fx:id="clearButton" styleClass="secondary-button" text="Clear" />
+                     <Button fx:id="cancelButton" onAction="#handleCancel" styleClass="secondary-button" text="Cancel" />
                      <Button fx:id="submitButton" defaultButton="true" onAction="#handleSubmit" styleClass="primary-button" text="Submit" />
                   </HBox>
                </children>

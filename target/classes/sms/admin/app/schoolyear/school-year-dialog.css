@@ -1,68 +1,108 @@
 .dialog-pane {
     -fx-background-color: white;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.5, 0.0, 0.0);
-    -fx-background-radius: 5px;
-    -fx-border-radius: 5px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 0);
+    -fx-min-width: 350;
+    -fx-min-height: 280;
+    -fx-border-color: #003366;
+    -fx-border-width: 1.5;
 }
 
 .dialog-header {
-    -fx-font-size: 20px;
+    -fx-font-size: 15;
     -fx-font-weight: bold;
-    -fx-text-fill: #2C3E50;
-    -fx-padding: 0 0 15 0;
+    -fx-text-fill: white;
+    -fx-padding: 12;
+    -fx-background-color: #003366;
+    -fx-alignment: center;
 }
 
 .dialog-content {
-    -fx-padding: 10px;
+    -fx-padding: 15px;
+}
+
+.dialog-content .label {
+    -fx-font-size: 12;
+    -fx-text-fill: #555555;
+    -fx-font-weight: bold;
+}
+
+.dialog-content GridPane {
+    -fx-hgap: 10;
+    -fx-vgap: 10;
+    -fx-padding: 8 0 8 0;
 }
 
 .date-picker {
-    -fx-pref-width: 200px;
+    -fx-pref-width: 180px;
 }
 
 .date-picker .text-field {
     -fx-background-color: white;
-    -fx-border-color: #E0E0E0;
+    -fx-border-color: #D0D0D0;
     -fx-border-radius: 3px;
 }
 
 .date-picker:focused {
-    -fx-border-color: #2196F3;
+    -fx-border-color: #1976D2;
 }
 
-.cancel-button {
-    -fx-background-color: #E0E0E0;
-    -fx-text-fill: #333333;
-    -fx-padding: 8 15 8 15;
-    -fx-background-radius: 3;
+.cancel-button, .primary-button {
+    -fx-background-radius: 50;
+    -fx-min-width: 110px;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-max-height: 36px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 6, 0, 0, 2);
+    -fx-padding: 0 25;
 }
 
 .primary-button {
-    -fx-background-color: #2196F3;
+    -fx-background-color: linear-gradient(to bottom, #003366, #002244);
     -fx-text-fill: white;
-    -fx-padding: 8 20 8 20;
-    -fx-background-radius: 3;
 }
 
 .primary-button:hover {
-    -fx-background-color: #1976D2;
+    -fx-background-color: linear-gradient(to bottom, #004488, #003366);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 3);
+}
+
+.primary-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #002244, #001122);
+}
+
+.cancel-button {
+    -fx-background-color: linear-gradient(to bottom, #800000, #600000);
+    -fx-text-fill: white;
 }
 
 .cancel-button:hover {
-    -fx-background-color: #D0D0D0;
+    -fx-background-color: linear-gradient(to bottom, #900000, #700000);
+}
+
+.cancel-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #600000, #400000);
 }
 
 .combo-box {
-    -fx-pref-width: 200px;
     -fx-background-color: white;
-    -fx-border-color: #E0E0E0;
-    -fx-border-radius: 3px;
+    -fx-border-color: #DEE2E6;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-pref-width: 180px;
+    -fx-font-size: 12px;
 }
 
 .combo-box:focused {
-    -fx-border-color: #2196F3;
+    -fx-border-color: #003366;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 3, 0, 0, 1);
 }
 
 .combo-box .list-cell {
-    -fx-padding: 5 10 5 10;
+    -fx-padding: 4 8 4 8;
+    -fx-text-fill: #2C3E50;
 }

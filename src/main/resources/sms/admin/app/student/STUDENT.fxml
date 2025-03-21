@@ -30,7 +30,11 @@
                     <HBox alignment="CENTER_LEFT" spacing="10" styleClass="search-section"> 
                         <TextField fx:id="searchField" prefWidth="300" promptText="Search students..." styleClass="search-field" />
                         <Region HBox.hgrow="ALWAYS" />
-                        <HBox spacing="5">
+                        <HBox spacing="10">
+                            <Button fx:id="addStudentButton" 
+                                    text="Add Student" 
+                                    styleClass="action-button"
+                                    mnemonicParsing="false" />
                             <MenuButton fx:id="exportButton" prefHeight="35.0" prefWidth="95.0" text="File" styleClass="student-export-button">
                                 <items>
                                     <Menu text="Export">

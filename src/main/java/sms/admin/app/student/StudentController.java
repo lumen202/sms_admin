@@ -33,6 +33,8 @@ import sms.admin.util.enrollment.EnrollmentUtils;
 import sms.admin.util.enrollment.CsvImporter;
 import java.io.IOException;
 import java.util.List;
+import sms.admin.app.enrollment.EnrollmentDialog;
+import javafx.scene.control.Button;
 
 public class StudentController extends FXController {
     @FXML
@@ -77,6 +79,8 @@ public class StudentController extends FXController {
     private Label totalLabel;
     @FXML
     private Label statusLabel;
+    @FXML
+    private Button addStudentButton; // Add this field
 
     private FilteredList<Student> yearFilteredList;
     private FilteredList<Student> searchFilteredList;
@@ -106,6 +110,7 @@ public class StudentController extends FXController {
             alert.setContentText("An error occurred while loading student data from the database.");
             alert.showAndWait();
         }
+        addStudentButton.setOnAction(e -> handleAddStudent());
     }
 
     @Override
@@ -299,6 +304,41 @@ public class StudentController extends FXController {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Import Error");
             alert.setHeaderText("Failed to import students");
+            alert.setContentText(e.getMessage());
+            alert.showAndWait();
+        }
+    }
+
+    private void handleAddStudent() {
+        try {
+            // Find current school year
+            String yearString = (String) getParameter("selectedYear");
+            if (yearString != null) {
+                String[] years = yearString.split("-");
+                int startYear = Integer.parseInt(years[0].trim());
+                int endYear = Integer.parseInt(years[1].trim());
+                
+                SchoolYear currentYear = App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR").stream()
+                    .filter(sy -> sy instanceof SchoolYear)
+                    .map(sy -> (SchoolYear) sy)
+                    .filter(sy -> sy.getYearStart() == startYear && sy.getYearEnd() == endYear)
+                    .findFirst()
+                    .orElse(null);
+
+                if (currentYear != null) {
+                    EnrollmentDialog dialog = new EnrollmentDialog(currentYear);
+                    dialog.setTitle("Add New Student");
+                    dialog.showAndWait();
+                    
+                    // Refresh the table after adding a student
+                    yearFilteredList.setPredicate(yearFilteredList.getPredicate());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Failed to open enrollment form");
             alert.setContentText(e.getMessage());
             alert.showAndWait();
         }

@@ -33,8 +33,8 @@
                <ComboBox fx:id="yearComboBox" prefWidth="180" promptText="Select School Year" styleClass="header-combo-box" />
                <MenuButton styleClass="icon-menu-button">
                   <items>
-                     <MenuItem fx:id="newSchoolYearMenuItem" text="New School Year" onAction="#handleNewSchoolYear" />
-                     <MenuItem fx:id="editSchoolYearMenuItem" text="Edit School Year" onAction="#handleEditSchoolYear" />
+                     <MenuItem fx:id="newSchoolYearMenuItem" onAction="#handleNewSchoolYear" text="New School Year" />
+                     <MenuItem fx:id="editSchoolYearMenuItem" onAction="#handleEditSchoolYear" text="Edit School Year" />
                      <MenuItem fx:id="generateKeyMenuItem" text="Generate Key Code" />
                   </items>
                   <graphic>
@@ -66,7 +66,7 @@
                      <FontIcon iconLiteral="mdi2c-calendar-clock" iconSize="20" />
                   </graphic>
                </Button>
-               <Button fx:id="payrollButton" styleClass="nav-button" text="Payroll">
+               <Button fx:id="payrollButton" styleClass="nav-button" text="Payroll Summary">
                   <graphic>
                      <FontIcon iconLiteral="mdi2c-cash" iconSize="20" />
                   </graphic>

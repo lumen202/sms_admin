@@ -22,6 +22,7 @@ import sms.admin.util.enrollment.CsvStudent;
 import sms.admin.util.enrollment.EnrollmentUtils;
 import sms.admin.util.DialogUtils;
 import sms.admin.util.enrollment.CsvImporter;
+import javafx.stage.Stage;
 
 public class EnrollmentController extends FXController {
 
@@ -67,6 +68,7 @@ public class EnrollmentController extends FXController {
     private TextField barangayField;
 
     private SchoolYear currentSchoolYear;
+    private Stage dialogStage;
 
     @Override
     protected void load_fields() {
@@ -170,6 +172,12 @@ public class EnrollmentController extends FXController {
                         currentSchoolYear);
 
                 handleClear();
+                
+                // If we're in dialog mode, close the dialog
+                if (dialogStage != null) {
+                    dialogStage.close();
+                }
+                
                 showSuccessMessage("Student enrolled successfully!");
 
             } catch (Exception e) {
@@ -252,6 +260,7 @@ public class EnrollmentController extends FXController {
         return isValid;
     }
 
+    @FXML
     private void handleClear() {
         // Clear all fields
         firstNameField.clear();
@@ -371,5 +380,16 @@ public class EnrollmentController extends FXController {
 
     private void showErrorMessage(String message) {
         DialogUtils.showError(message);
+    }
+
+    public void setDialogStage(Stage dialogStage) {
+        this.dialogStage = dialogStage;
+    }
+
+    @FXML
+    private void handleCancel() {
+        if (dialogStage != null) {
+            dialogStage.close();
+        }
     }
 }

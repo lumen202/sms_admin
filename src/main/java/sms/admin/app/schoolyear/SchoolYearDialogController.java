@@ -9,6 +9,11 @@ import sms.admin.util.dialog.DialogManager;
 import java.time.Month;
 import java.time.LocalDate;
 import javafx.collections.FXCollections;
+import java.util.ArrayList;
+import java.util.List;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import java.time.YearMonth;
 
 public class SchoolYearDialogController {
     @FXML
@@ -31,9 +36,20 @@ public class SchoolYearDialogController {
     private SchoolYear existingSchoolYear;
     private SchoolYearDialog dialog;
 
+    private final ObjectProperty<SchoolYear> schoolYearProperty = new SimpleObjectProperty<>();
+
+    public ObjectProperty<SchoolYear> schoolYearProperty() {
+        return schoolYearProperty;
+    }
+
+    // Define months as a class field for reuse
+    private final String[] months = { "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+            "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER" };
+
     public void initialize() {
-        // Setup year options (current year +/- 5 years)
         int currentYear = LocalDate.now().getYear();
+
+        // Setup initial year options (current year +/- 5 years)
         Integer[] years = new Integer[11];
         for (int i = 0; i < 11; i++) {
             years[i] = currentYear - 5 + i;
@@ -42,16 +58,78 @@ public class SchoolYearDialogController {
         endYearCombo.setItems(FXCollections.observableArrayList(years));
 
         // Setup month options
-        String[] months = { "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-                "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER" };
         startMonthCombo.setItems(FXCollections.observableArrayList(months));
         endMonthCombo.setItems(FXCollections.observableArrayList(months));
 
-        // Set default values
+        // Add listeners for dynamic updates
+        startYearCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                updateEndYearOptions();
+                updateEndMonthOptions();
+            }
+        });
+
+        startMonthCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            updateEndMonthOptions();
+        });
+
+        endYearCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            updateEndMonthOptions();
+        });
+
+        // Set default values for a new academic year
         startYearCombo.setValue(currentYear);
-        endYearCombo.setValue(currentYear);
-        startMonthCombo.setValue("JUNE");
-        endMonthCombo.setValue("MARCH");
+        startMonthCombo.setValue("SEPTEMBER");
+        endMonthCombo.setValue("JUNE");
+        // Listener will set endYearCombo to currentYear + 1
+    }
+
+    // Update end year options based on start year
+    private void updateEndYearOptions() {
+        Integer startYear = startYearCombo.getValue();
+        if (startYear != null) {
+            List<Integer> endYears = new ArrayList<>();
+            for (int i = startYear; i <= startYear + 10; i++) {
+                endYears.add(i);
+            }
+            endYearCombo.setItems(FXCollections.observableArrayList(endYears));
+            // Set default end year to startYear + 1 if current value is invalid
+            if (endYearCombo.getValue() == null || endYearCombo.getValue() < startYear) {
+                endYearCombo.setValue(startYear + 1);
+            }
+        }
+    }
+
+    // Update end month options based on start year, start month, and end year
+    private void updateEndMonthOptions() {
+        Integer startYear = startYearCombo.getValue();
+        String startMonth = startMonthCombo.getValue();
+        Integer endYear = endYearCombo.getValue();
+
+        if (startYear == null || startMonth == null || endYear == null) {
+            endMonthCombo.setItems(FXCollections.observableArrayList(months));
+            return;
+        }
+
+        if (endYear > startYear) {
+            endMonthCombo.setItems(FXCollections.observableArrayList(months));
+        } else if (endYear.equals(startYear)) {
+            int startMonthIndex = getMonthNumber(startMonth);
+            List<String> availableMonths = new ArrayList<>();
+            for (String month : months) {
+                if (getMonthNumber(month) > startMonthIndex) {
+                    availableMonths.add(month);
+                }
+            }
+            endMonthCombo.setItems(FXCollections.observableArrayList(availableMonths));
+            // Adjust end month if current selection is invalid
+            if (!availableMonths.contains(endMonthCombo.getValue()) && !availableMonths.isEmpty()) {
+                endMonthCombo.setValue(availableMonths.get(0));
+            }
+        } else {
+            // endYear < startYear (shouldn't happen due to updateEndYearOptions)
+            endMonthCombo.setItems(FXCollections.emptyObservableList());
+        }
     }
 
     public void setDialogStage(Stage dialogStage) {
@@ -73,6 +151,8 @@ public class SchoolYearDialogController {
             endYearCombo.setValue(schoolYear.getYearEnd());
             startMonthCombo.setValue(schoolYear.getMonthStart());
             endMonthCombo.setValue(schoolYear.getMonthEnd());
+            updateEndYearOptions();
+            updateEndMonthOptions();
         }
     }
 
@@ -83,9 +163,25 @@ public class SchoolYearDialogController {
             if (schoolYear != null) {
                 try {
                     if (existingSchoolYear == null) {
+                        // Insert new school year
                         SchoolYearDAO.insert(schoolYear);
+                        // Refresh from database to ensure all fields are properly set
+                        List<SchoolYear> updatedList = SchoolYearDAO.getSchoolYearList();
+                        SchoolYear newSchoolYear = updatedList.stream()
+                                .filter(sy -> sy.getYearID() == schoolYear.getYearID())
+                                .findFirst()
+                                .orElse(schoolYear);
+                        schoolYearProperty.set(newSchoolYear);
                     } else {
+                        // Update existing school year
                         SchoolYearDAO.update(schoolYear);
+                        // Refresh from database to ensure all fields are properly updated
+                        List<SchoolYear> updatedList = SchoolYearDAO.getSchoolYearList();
+                        SchoolYear updatedSchoolYear = updatedList.stream()
+                                .filter(sy -> sy.getYearID() == schoolYear.getYearID())
+                                .findFirst()
+                                .orElse(schoolYear);
+                        schoolYearProperty.set(updatedSchoolYear);
                     }
                     isSaveClicked = true;
                     DialogManager.setOverlayEffect((Stage) dialogStage.getOwner(), false);
@@ -108,19 +204,42 @@ public class SchoolYearDialogController {
     }
 
     public SchoolYear createSchoolYear() {
+        int yearId = existingSchoolYear != null ? 
+                    existingSchoolYear.getYearID() : 
+                    getNextYearId();
+        
+        // Get the last day of the end month
+        int endDay = getLastDayOfMonth(
+            endYearCombo.getValue(),
+            endMonthCombo.getValue()
+        );
+        
         return new SchoolYear(
-                existingSchoolYear != null ? existingSchoolYear.getYearID() : 0,
+                yearId,
                 startYearCombo.getValue(),
                 endYearCombo.getValue(),
                 startMonthCombo.getValue(),
                 endMonthCombo.getValue(),
-                1, // Default to first day of month
-                1 // Default to first day of month
+                1, // First day of start month
+                endDay // Last day of end month
         );
     }
 
+    private int getNextYearId() {
+        List<SchoolYear> allYears = SchoolYearDAO.getSchoolYearList();
+        return allYears.stream()
+                .mapToInt(SchoolYear::getYearID)
+                .max()
+                .orElse(0) + 1;
+    }
+
     private int getMonthNumber(String monthName) {
-        return java.time.Month.valueOf(monthName.toUpperCase()).getValue();
+        return Month.valueOf(monthName.toUpperCase()).getValue();
+    }
+
+    private int getLastDayOfMonth(int year, String monthName) {
+        Month month = Month.valueOf(monthName.toUpperCase());
+        return YearMonth.of(year, month).lengthOfMonth();
     }
 
     private boolean isInputValid() {
@@ -143,7 +262,7 @@ public class SchoolYearDialogController {
             if (endYearCombo.getValue() < startYearCombo.getValue()) {
                 errorMessage += "End year must be greater than or equal to start year!\n";
             } else if (endYearCombo.getValue().equals(startYearCombo.getValue()) &&
-                    Month.valueOf(endMonthCombo.getValue()).getValue() < Month.valueOf(startMonthCombo.getValue())
+                    Month.valueOf(endMonthCombo.getValue()).getValue() <= Month.valueOf(startMonthCombo.getValue())
                             .getValue()) {
                 errorMessage += "End month must be after start month for the same year!\n";
             }

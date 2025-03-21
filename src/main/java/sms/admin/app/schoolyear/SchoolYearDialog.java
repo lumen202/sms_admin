@@ -10,9 +10,11 @@ import javafx.scene.control.Dialog;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.beans.property.ObjectProperty;
 import sms.admin.util.dialog.DialogManager;
 
 public class SchoolYearDialog extends Dialog<SchoolYear> {
+    private SchoolYearDialogController controller;
 
     public SchoolYearDialog(SchoolYear schoolYear) {
         initStyle(StageStyle.UNDECORATED);
@@ -22,7 +24,7 @@ public class SchoolYearDialog extends Dialog<SchoolYear> {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("SCHOOL_YEAR_DIALOG.fxml"));
             getDialogPane().setContent(loader.load());
             
-            SchoolYearDialogController controller = loader.getController();
+            controller = loader.getController();
             controller.setDialog(this);
             controller.setDialogStage((Stage)getDialogPane().getScene().getWindow());
             controller.setExistingSchoolYear(schoolYear);
@@ -60,5 +62,9 @@ public class SchoolYearDialog extends Dialog<SchoolYear> {
             e.printStackTrace();
             throw new RuntimeException("Failed to load school year dialog", e);
         }
+    }
+
+    public ObjectProperty<SchoolYear> schoolYearProperty() {
+        return controller.schoolYearProperty();
     }
 }

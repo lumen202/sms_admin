@@ -3,6 +3,7 @@ package sms.admin.app;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.time.YearMonth;
 
@@ -199,10 +200,19 @@ public class RootController extends FXController {
 
     @Override
     protected void load_fields() {
-        // Initialize all lists from registry
-        schoolYearList = App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR");
-        studentList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
-        attendanceLogList = App.COLLECTIONS_REGISTRY.getList("ATTENDANCE_LOG");
+        // Initialize all lists from registry with fresh data
+        schoolYearList = FXCollections.observableArrayList(App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR"));
+        studentList = FXCollections.observableArrayList(StudentDAO.getStudentList());
+        attendanceLogList = FXCollections.observableArrayList(AttendanceLogDAO.getAttendanceLogList());
+        
+        // Initialize the shared CURRENT_LOGS
+        AttendanceController.CURRENT_LOGS.setAll(attendanceLogList);
+        
+        // Update registry with fresh lists
+        App.COLLECTIONS_REGISTRY.register("STUDENT", studentList);
+        App.COLLECTIONS_REGISTRY.register("ATTENDANCE_LOG", attendanceLogList);
+        
+        // Create filtered list after initializing main list
         yearFilteredStudentList = new FilteredList<>(studentList);
         
         yearComboBox.setItems(SchoolYearUtil.convertToStringList(schoolYearList));
@@ -313,15 +323,26 @@ public class RootController extends FXController {
 
     private void updateCurrentController(String newYear) {
         updateYearFilter(newYear);
+        
+        // Create fresh parameter map
+        Map<String, Object> params = new HashMap<>();
+        params.put("selectedYear", newYear);
+        params.put("selectedMonth", selectedMonth);
+        params.put("filteredStudentList", yearFilteredStudentList);
+        params.put("attendanceLogList", attendanceLogList);
+        params.put("studentList", studentList);
+
         if (currentController != null) {
-            if (currentController instanceof StudentController controller) {
-                controller.initializeWithYear(newYear);
-            } else if (currentController instanceof PayrollController controller) {
+            if (currentController instanceof PayrollController controller) {
+                // Update PayrollController with fresh data
+                controller.refreshData();
                 controller.initializeWithYear(newYear);
             } else if (currentController instanceof AttendanceController controller) {
+                controller.refreshData();
                 controller.initializeWithYear(newYear);
-            } else if (currentController instanceof EnrollmentController controller) {
-                controller.initializeWithYear(newYear);
+            } else {
+                // Handle other controllers...
+                reloadCurrentScene();
             }
         }
     }
@@ -374,25 +395,35 @@ public class RootController extends FXController {
     }
     
     public void refreshCollections() {
-        // Update registry first
-        App.COLLECTIONS_REGISTRY.register("ATTENDANCE_LOG", 
-            FXCollections.observableArrayList(AttendanceLogDAO.getAttendanceLogList()));
-        App.COLLECTIONS_REGISTRY.register("STUDENT",
-            FXCollections.observableArrayList(StudentDAO.getStudentList()));
+        // Get fresh data
+        List<Student> freshStudents = StudentDAO.getStudentList();
+        List<AttendanceLog> freshLogs = AttendanceLogDAO.getAttendanceLogList();
         
-        // Get fresh references from registry
-        attendanceLogList = App.COLLECTIONS_REGISTRY.getList("ATTENDANCE_LOG");
-        studentList = App.COLLECTIONS_REGISTRY.getList("STUDENT");
-        
-        // Re-apply the year filter
-        updateYearFilter(yearComboBox.getValue());
-        
-        // Force payroll refresh if active
-        if (currentController instanceof PayrollController) {
-            Platform.runLater(() -> handlePayrollButton());
-        }
+        // Update observable lists
+        Platform.runLater(() -> {
+            studentList.setAll(freshStudents);
+            attendanceLogList.setAll(freshLogs);
+            
+            // Update CURRENT_LOGS too
+            AttendanceController.CURRENT_LOGS.setAll(freshLogs);
+            
+            // Update registry
+            App.COLLECTIONS_REGISTRY.register("STUDENT", studentList);
+            App.COLLECTIONS_REGISTRY.register("ATTENDANCE_LOG", attendanceLogList);
+            
+            // Reapply filter
+            updateYearFilter(yearComboBox.getValue());
+            
+            // Refresh current controller
+            if (currentController instanceof PayrollController controller) {
+                controller.refreshData();
+            } else if (currentController instanceof AttendanceController controller) {
+                controller.refreshData();
+            }
+        });
         
         System.out.println("RootController: Collections refreshed with " + 
-                          attendanceLogList.size() + " attendance logs");
+                          attendanceLogList.size() + " attendance logs and " +
+                          studentList.size() + " students");
     }
 }

@@ -10,8 +10,6 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.ToggleGroup?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -44,28 +42,7 @@
                         <MenuItem fx:id="exportDetailedPdf" text="Detailed PDF" />
                      </items>
                   </MenuButton>
-                  <MenuButton prefHeight="35.0" prefWidth="139.0" styleClass="menu-button" text="Management">
-                     <items>
-                        <MenuItem text="Attendance">
-                           <graphic>
-                              <ImageView fitHeight="16" fitWidth="16">
-                                 <image>
-                                    <Image url="@../../../assets/img/attendance.png" />
-                                 </image>
-                              </ImageView>
-                           </graphic>
-                        </MenuItem>
-                        <MenuItem text="Personnel">
-                           <graphic>
-                              <ImageView fitHeight="16" fitWidth="16">
-                                 <image>
-                                    <Image url="@../../../assets/img/personnel.png" />
-                                 </image>
-                              </ImageView>
-                           </graphic>
-                        </MenuItem>
-                     </items>
-                  </MenuButton>
+                  <!-- Removed management MenuButton -->
                </HBox>
             </HBox>
          </VBox>
@@ -76,13 +53,13 @@
                <Label styleClass="section-header" text="Payment Records" />
                <Region HBox.hgrow="ALWAYS" />
                <HBox spacing="10">
-                    <RadioButton fx:id="oneWayRadio" text="One Way" selected="true">
+                    <RadioButton fx:id="oneWayRadio" text="One Way">
                         <toggleGroup>
                             <ToggleGroup fx:id="fareTypeGroup" />
                         </toggleGroup>
                     </RadioButton>
                     <RadioButton fx:id="twoWayRadio" text="Two Way" toggleGroup="$fareTypeGroup" />
-                    <RadioButton fx:id="fourWayRadio" text="Four Way" toggleGroup="$fareTypeGroup" />
+                    <RadioButton fx:id="fourWayRadio" text="Four Way" toggleGroup="$fareTypeGroup" selected="true" />
                </HBox>
             </HBox>
             <TableView fx:id="payrollTable" styleClass="payroll-table" VBox.vgrow="ALWAYS">

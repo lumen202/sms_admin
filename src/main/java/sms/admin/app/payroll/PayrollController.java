@@ -3,24 +3,22 @@ package sms.admin.app.payroll;
 import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.LocalDate;
-import java.time.Month;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.itextpdf.layout.Document;
 
-import dev.finalproject.App;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
-import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
@@ -38,22 +36,13 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.Node;
 import sms.admin.app.RootController;
 import sms.admin.app.attendance.AttendanceController;
-import sms.admin.util.YearData;
 import sms.admin.util.attendance.AttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
 import sms.admin.util.exporter.PayrollTableExporter;
-import sms.admin.util.mock.DataUtil;
 import sms.admin.util.exporter.exporterv2.DetailedPayrollExporter;
 import sms.admin.util.exporter.exporterv2.DetailedPayrollPdfExporter;
-import java.io.FileOutputStream;
-
-// Add these imports at the top
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-// ...existing imports...
-
-// Add to imports
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 
@@ -96,19 +85,24 @@ public class PayrollController extends FXController {
     @FXML private RadioButton fourWayRadio;
     @FXML private ToggleGroup fareTypeGroup;
 
-    private ObservableList<Student> masterStudentList;
-    private FilteredList<Student> filteredStudentList;
-    private ObservableList<AttendanceLog> attendanceLog;
+    private Map<Integer, List<AttendanceLog>> studentAttendanceCache = new HashMap<>();
 
     private final DecimalFormat daysFormat = new DecimalFormat("#.# day(s)");
     private final DecimalFormat currencyFormat = new DecimalFormat("₱#,##0.00");
 
+    private FilteredList<Student> filteredStudentList;
+    private ObservableList<AttendanceLog> attendanceLog;
+
+    @SuppressWarnings("unchecked")
     @Override
     protected void load_fields() {
         rootPane.getProperties().put("controller", this);
-        
         filteredStudentList = (FilteredList<Student>) getParameter("filteredStudentList");
-        attendanceLog = (ObservableList<AttendanceLog>) getParameter("attendanceLogList");
+        
+        // Set four-way as default
+        if (fourWayRadio != null) {
+            fourWayRadio.setSelected(true);
+        }
 
         // Initialize month selection
         String selectedYear = (String) getParameter("selectedYear");
@@ -168,10 +162,11 @@ public class PayrollController extends FXController {
             }
         });
 
-        // Update fare formatting
+        // Update fare formatting to show multiplied fare
         colFare.setCellValueFactory(cellData -> {
             Student student = cellData.getValue();
-            return new SimpleDoubleProperty(student.getFare()).asObject(); // Add asObject()
+            double multipliedFare = student.getFare() * getFareMultiplier();
+            return new SimpleDoubleProperty(multipliedFare).asObject();
         });
         colFare.setCellFactory(column -> new TableCell<Student, Double>() {
             @Override
@@ -185,12 +180,12 @@ public class PayrollController extends FXController {
             }
         });
 
-        // Update total amount formatting
+        // Update total amount calculation to use the already multiplied fare
         colTotalAmount.setCellValueFactory(cellData -> {
             Student student = cellData.getValue();
             double totalDays = calculateTotalDays(student);
-            double fare = student.getFare();
-            return new SimpleDoubleProperty(totalDays * fare).asObject(); // Add asObject()
+            double multipliedFare = student.getFare() * getFareMultiplier();
+            return new SimpleDoubleProperty(totalDays * multipliedFare).asObject();
         });
         colTotalAmount.setCellFactory(column -> new TableCell<Student, Double>() {
             @Override
@@ -207,19 +202,38 @@ public class PayrollController extends FXController {
         // Set items to filtered list instead of direct student list
         payrollTable.setItems(filteredStudentList);
         updateTotalAmount();
+
+        // Add fixed widths to prevent column resizing issues
+        colNo.setPrefWidth(80);
+        colNo.setMinWidth(80);
+        colNo.setMaxWidth(80);
+        
+        colFullName.setPrefWidth(220);
+        colFullName.setMinWidth(220);
+        
+        colTotalDays.setPrefWidth(100);
+        colTotalDays.setMinWidth(100);
+        
+        colFare.setPrefWidth(200);
+        colFare.setMinWidth(200);
+        
+        colTotalAmount.setPrefWidth(120);
+        colTotalAmount.setMinWidth(120);
     }
 
     private void updateTotalAmount() {
         double totalAmount = filteredStudentList.stream()
                 .mapToDouble(student -> {
                     double totalDays = calculateTotalDays(student);
-                    return totalDays * student.getFare();
+                    double fare = student.getFare() * getFareMultiplier();
+                    return totalDays * fare;
                 })
                 .sum();
 
         totalAmountLabel.setText(currencyFormat.format(totalAmount));
     }
 
+    @SuppressWarnings("unchecked")
     private double calculateTotalDays(Student student) {
         try {
             String monthYearValue = yearMonthComboBox.getValue();
@@ -230,58 +244,56 @@ public class PayrollController extends FXController {
             YearMonth selectedMonth = DateTimeUtils.parseMonthYear(monthYearValue);
             double totalDays = 0;
 
-            // Use the latest attendance logs from the parameter
-            attendanceLog = (ObservableList<AttendanceLog>) getParameter("attendanceLogList");
-
-            // Filter and validate logs first
-            List<AttendanceLog> validLogs = attendanceLog.stream()
-                .filter(log -> {
-                    if (log == null || log.getRecordID() == null || log.getStudentID() == null) {
-                        return false;
-                    }
-                    AttendanceRecord record = log.getRecordID();
-                    try {
-                        LocalDate.of(record.getYear(), record.getMonth(), record.getDay());
-                        return log.getStudentID().getStudentID() == student.getStudentID();
-                    } catch (DateTimeException e) {
-                        return false;
-                    }
-                })
+            // Use the shared observable list instead of parameter
+            List<AttendanceLog> studentLogs = AttendanceController.CURRENT_LOGS.stream()
+                .filter(log -> log != null && 
+                       log.getStudentID() != null && 
+                       log.getStudentID().getStudentID() == student.getStudentID())
                 .collect(Collectors.toList());
 
-            // Process only valid logs for the selected month
-            for (AttendanceLog log : validLogs) {
+            // Process logs for selected month
+            for (AttendanceLog log : studentLogs) {
+                if (log.getRecordID() == null) continue;
+                
                 AttendanceRecord record = log.getRecordID();
                 YearMonth logMonth = YearMonth.of(record.getYear(), record.getMonth());
                 
                 if (logMonth.equals(selectedMonth)) {
-                    // Direct calculation from log values
-                    if (log.getTimeInAM() == AttendanceUtil.TIME_ABSENT && 
-                        log.getTimeOutAM() == AttendanceUtil.TIME_ABSENT &&
-                        log.getTimeInPM() == AttendanceUtil.TIME_ABSENT && 
-                        log.getTimeOutPM() == AttendanceUtil.TIME_ABSENT) {
-                        continue; // Skip absent days
-                    } else if (log.getTimeInAM() == AttendanceUtil.TIME_EXCUSED) {
-                        totalDays += 1.0; // Count excused as present
-                    } else if (log.getTimeInPM() == AttendanceUtil.TIME_ABSENT && 
-                             log.getTimeOutPM() == AttendanceUtil.TIME_ABSENT) {
-                        totalDays += 0.5; // Half day
+                    // Calculate days based on status
+                    if (isAbsent(log)) {
+                        continue;
+                    } else if (isExcused(log)) {
+                        totalDays += 1.0;
+                    } else if (isHalfDay(log)) {
+                        totalDays += 0.5;
                     } else {
-                        totalDays += 1.0; // Present
+                        totalDays += 1.0;
                     }
                 }
             }
 
-            System.out.println("Calculated " + totalDays + " days for student " + 
-                             student.getStudentID() + " in month " + selectedMonth);
             return totalDays;
-
         } catch (Exception e) {
-            System.err.println("Error calculating total days for student " + student.getStudentID() + 
-                ": " + e.getMessage());
+            System.err.println("Error calculating days for student " + student.getStudentID());
             e.printStackTrace();
             return 0;
         }
+    }
+
+    private boolean isAbsent(AttendanceLog log) {
+        return log.getTimeInAM() == AttendanceUtil.TIME_ABSENT && 
+               log.getTimeOutAM() == AttendanceUtil.TIME_ABSENT &&
+               log.getTimeInPM() == AttendanceUtil.TIME_ABSENT && 
+               log.getTimeOutPM() == AttendanceUtil.TIME_ABSENT;
+    }
+
+    private boolean isExcused(AttendanceLog log) {
+        return log.getTimeInAM() == AttendanceUtil.TIME_EXCUSED;
+    }
+
+    private boolean isHalfDay(AttendanceLog log) {
+        return log.getTimeInPM() == AttendanceUtil.TIME_ABSENT && 
+               log.getTimeOutPM() == AttendanceUtil.TIME_ABSENT;
     }
 
     @Override
@@ -294,6 +306,12 @@ public class PayrollController extends FXController {
                     rootPane.prefHeightProperty().bind(newScene.heightProperty());
                 }
             });
+        }
+        
+        // Add size bindings to prevent table movement
+        if (payrollTable != null) {
+            payrollTable.prefWidthProperty().bind(rootPane.widthProperty().subtract(40)); // 20px padding on each side
+            payrollTable.prefHeightProperty().bind(rootPane.heightProperty().subtract(200)); // Adjust for header and footer
         }
     }
 
@@ -380,37 +398,23 @@ public class PayrollController extends FXController {
         }
     }
 
-    private void updateAttendanceMonth(String selectedMonthYear) {
-        try {
-            Scene scene = rootPane.getScene();
-            if (scene == null)
-                return;
-
-            Parent root = scene.getRoot();
-            if (root == null)
-                return;
-
-            // Find AttendanceController in the current scene
-            for (Node node : root.lookupAll("*")) {
-                if (node.getId() != null && node.getId().equals("attendanceRoot")) {
-                    Object controller = node.getProperties().get("controller");
-                    if (controller instanceof AttendanceController attendanceController) {
-                        attendanceController.setSelectedMonth(selectedMonthYear);
-                        return;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Could not sync month selection with Attendance: " + e.getMessage());
-        }
+    private void handleFareTypeChange(String fareType) {
+        System.out.println("Selected fare type: " + fareType + " (multiplier: " + getFareMultiplier() + ")");
+        
+        // Just refresh the cell values without toggling column visibility
+        Platform.runLater(() -> {
+            payrollTable.refresh();
+            updateTotalAmount();
+        });
     }
 
-    private void handleFareTypeChange(String fareType) {
-        // Implement fare type change logic here
-        System.out.println("Selected fare type: " + fareType);
-        // Update calculations based on fare type
-        payrollTable.refresh();
-        updateTotalAmount();
+    private double getFareMultiplier() {
+        if (fourWayRadio.isSelected()) {
+            return 4.0;
+        } else if (twoWayRadio.isSelected()) {
+            return 2.0;
+        }
+        return 1.0; // one way
     }
 
     @FXML
@@ -460,32 +464,21 @@ public class PayrollController extends FXController {
     }
 
     // Update refreshData to properly sync with attendance logs
+    @SuppressWarnings("unchecked")
     public void refreshData() {
-        try {
-            // Get fresh data from parameters
-            attendanceLog = (ObservableList<AttendanceLog>) getParameter("attendanceLogList");
-            filteredStudentList = (FilteredList<Student>) getParameter("filteredStudentList");
-            
-            // Update table items and recalculate
-            payrollTable.setItems(filteredStudentList);
-            
-            Platform.runLater(() -> {
-                // Force recalculation of all cells
-                for (TableColumn<?, ?> column : payrollTable.getColumns()) {
-                    column.setVisible(false);
-                    column.setVisible(true);
-                }
+        Platform.runLater(() -> {
+            try {
+                filteredStudentList = (FilteredList<Student>) getParameter("filteredStudentList");
+                payrollTable.setItems(filteredStudentList);
                 payrollTable.refresh();
                 updateTotalAmount();
-            });
-            
-            System.out.println("PayrollController: Refreshed data with " + 
-                              attendanceLog.size() + " attendance logs and " + 
-                              filteredStudentList.size() + " students");
-        } catch (Exception e) {
-            System.err.println("Error refreshing payroll data: " + e.getMessage());
-            e.printStackTrace();
-        }
+                
+                System.out.println("PayrollController: Refreshed with " + filteredStudentList.size() + " students");
+            } catch (Exception e) {
+                System.err.println("Error refreshing payroll data: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
     }
 
 }
