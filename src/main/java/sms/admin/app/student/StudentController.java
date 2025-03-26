@@ -1,40 +1,39 @@
 package sms.admin.app.student;
 
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
+
 import atlantafx.base.controls.ModalPane;
+import dev.finalproject.App;
 import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
-import dev.sol.core.application.loader.FXLoaderFactory;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
-import sms.admin.app.student.viewstudent.StudentProfileLoader;
-import sms.admin.util.exporter.StudentTableExporter;
-import sms.admin.util.YearData;
-import dev.finalproject.App;
-import javafx.scene.control.Alert;
 import javafx.stage.FileChooser;
-import java.time.LocalDate;
-import java.io.File;
+import sms.admin.app.enrollment.EnrollmentDialog;
+import sms.admin.app.student.viewstudent.StudentProfileLoader;
+import sms.admin.util.enrollment.CsvImporter;
 import sms.admin.util.enrollment.CsvStudent;
 import sms.admin.util.enrollment.EnrollmentUtils;
-import sms.admin.util.enrollment.CsvImporter;
-import java.io.IOException;
-import java.util.List;
-import sms.admin.app.enrollment.EnrollmentDialog;
-import javafx.scene.control.Button;
+import sms.admin.util.exporter.StudentTableExporter;
 
 public class StudentController extends FXController {
     @FXML
@@ -89,16 +88,22 @@ public class StudentController extends FXController {
     @Override
     protected void load_fields() {
         try {
-            // Get filtered list from parameters
-            yearFilteredList = (FilteredList<Student>) getParameter("filteredStudentList");
+            String selectedYear = (String) getParameter("selectedYear");
+            ObservableList<Student> students = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+            
+            if (selectedYear != null) {
+                String[] yearRange = selectedYear.split("-");
+                int startYear = Integer.parseInt(yearRange[0]);
+
+                students = students.filtered(student -> 
+                    student.getYearID() != null &&
+                    student.getYearID().getYearStart() == startYear);
+            }
+            
+            yearFilteredList = new FilteredList<>(FXCollections.observableArrayList(students));
             searchFilteredList = new FilteredList<>(yearFilteredList);
             studentTableView.setItems(searchFilteredList);
-            String selectedYear = (String) getParameter("selectedYear");
-            if (selectedYear == null) {
-                selectedYear = YearData.getCurrentAcademicYear();
-            }
 
-            // No need to filter by year anymore since we're using the filtered list
             formodal.setAlignment(Pos.TOP_CENTER);
             formodal.usePredefinedTransitionFactories(Side.TOP);
             formodal.setPersistent(true);

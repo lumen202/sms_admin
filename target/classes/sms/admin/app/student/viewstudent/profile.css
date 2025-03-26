@@ -73,13 +73,9 @@
     -fx-padding: 8 12;
 }
 
-.profile-field:disabled {
-    -fx-opacity: 0.8;
-    -fx-background-color: #F8F9FA;
-}
-
-.profile-field:editable {
+.profile-field:focused {
     -fx-border-color: #3498DB;
+    -fx-border-width: 2;
 }
 
 .empty-profile-image {
@@ -107,6 +103,11 @@
 /* Buttons */
 .secondary-button {
     -fx-background-color: linear-gradient(to bottom, #800000, #600000);
+    -fx-text-fill: white;
+}
+
+.action-button {
+    -fx-background-color: linear-gradient(to bottom, #003366, #002244);
     -fx-text-fill: white;
 }
 

@@ -5,21 +5,14 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
-<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox fx:id="contentBox" styleClass="profile-container" spacing="15"
-      stylesheets="@../../styles/main.css,@../../styles/dialog.css,@profile.css" 
-      xmlns="http://javafx.com/javafx/22" 
-      xmlns:fx="http://javafx.com/fxml/1" 
-      fx:controller="sms.admin.app.student.viewstudent.StudentProfileController">
+<VBox fx:id="contentBox" spacing="15" styleClass="profile-container" stylesheets="@../../styles/main.css,@../../styles/dialog.css,@profile.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.student.viewstudent.StudentProfileController">
 
     <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="profile-content" VBox.vgrow="ALWAYS">
         <content>
@@ -47,19 +40,19 @@
                         </columnConstraints>
 
                         <Label text="First Name:" GridPane.rowIndex="0" />
-                        <TextField fx:id="firstNameField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="firstNameField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Middle Name:" GridPane.rowIndex="1" />
-                        <TextField fx:id="middleNameField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <TextField fx:id="middleNameField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                         <Label text="Last Name:" GridPane.rowIndex="2" />
-                        <TextField fx:id="lastNameField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <TextField fx:id="lastNameField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                         <Label text="Name Extension:" GridPane.rowIndex="3" />
-                        <TextField fx:id="nameExtField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <TextField fx:id="nameExtField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                         <Label text="Fare:" GridPane.rowIndex="4" />
-                        <TextField fx:id="fareField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                        <TextField fx:id="fareField" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                         <rowConstraints>
                             <RowConstraints />
                             <RowConstraints />
@@ -80,19 +73,19 @@
                         </columnConstraints>
 
                         <Label text="Street Address:" GridPane.rowIndex="0" />
-                        <TextField fx:id="streetAddressField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="streetAddressField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Barangay:" GridPane.rowIndex="1" />
-                        <TextField fx:id="barangayField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <TextField fx:id="barangayField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                         <Label text="Municipality:" GridPane.rowIndex="2" />
-                        <TextField fx:id="cityField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <TextField fx:id="cityField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                         <Label text="Province:" GridPane.rowIndex="3" />
-                        <TextField fx:id="municipalityField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <TextField fx:id="municipalityField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                         <Label text="ZIP Code:" GridPane.rowIndex="4" />
-                        <TextField fx:id="zipCodeField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                        <TextField fx:id="zipCodeField" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
                         <rowConstraints>
                             <RowConstraints />
@@ -114,10 +107,10 @@
                         </columnConstraints>
 
                         <Label text="Contact Number:" GridPane.rowIndex="0" />
-                        <TextField fx:id="contactField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="contactField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Email Address:" GridPane.rowIndex="1" />
-                        <TextField fx:id="emailField" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <TextField fx:id="emailField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                         <rowConstraints>
                             <RowConstraints />
                             <RowConstraints />
@@ -135,17 +128,13 @@
                         </columnConstraints>
                         
                         <!-- Hidden Cluster ID field - placed first but invisible -->
-                        <TextField fx:id="clusterIdField" managed="false" visible="false" 
-                                opacity="0" maxHeight="0" maxWidth="0" 
-                                GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="clusterIdField" managed="false" maxHeight="0" maxWidth="0" opacity="0" visible="false" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Cluster:" GridPane.rowIndex="1" />
-                        <TextField fx:id="clusterField" editable="false" 
-                                GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <TextField fx:id="clusterField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                         <Label text="Details:" GridPane.rowIndex="2" />
-                        <TextField fx:id="clusterDetailsField" editable="false" 
-                                GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <TextField fx:id="clusterDetailsField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                         <rowConstraints>
                             <RowConstraints maxHeight="0" />
                             <RowConstraints />
@@ -157,23 +146,7 @@
                 <!-- Guardian Information Section -->
                 <VBox spacing="8" styleClass="profile-section">
                     <Label styleClass="section-header" text="Guardian Information" />
-                    <!-- View Mode Fields -->
-                    <GridPane fx:id="guardianViewGrid" hgap="15" vgap="10">
-                        <columnConstraints>
-                            <ColumnConstraints minWidth="120" />
-                            <ColumnConstraints hgrow="ALWAYS" />
-                        </columnConstraints>
-                        <Label text="Guardian:" GridPane.rowIndex="0" />
-                        <TextField fx:id="guardianNameField" editable="false" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                        <Label text="Contact Number:" GridPane.rowIndex="1" />
-                        <TextField fx:id="guardianContactField" editable="false" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                        <rowConstraints>
-                            <RowConstraints />
-                            <RowConstraints />
-                        </rowConstraints>
-                    </GridPane>
-                    <!-- Edit Mode Fields -->
-                    <GridPane fx:id="guardianEditGrid" hgap="15" vgap="10" visible="false" managed="false">
+                    <GridPane fx:id="guardianEditGrid" hgap="15" vgap="10">
                         <columnConstraints>
                             <ColumnConstraints minWidth="120" />
                             <ColumnConstraints hgrow="ALWAYS" />
@@ -208,9 +181,7 @@
         <padding>
             <Insets bottom="15.0" right="15.0" top="15.0" />
         </padding>
-        <Button fx:id="backCancelButton" minHeight="35" minWidth="80" 
-                onAction="#handleBackOrCancel" styleClass="secondary-button" text="Back" />
-        <Button fx:id="editSaveButton" minHeight="35" minWidth="80" 
-                onAction="#handleEditOrSave" styleClass="action-button" text="Edit Profile" />
+        <Button fx:id="backCancelButton" minHeight="35" minWidth="80" onAction="#handleClose" styleClass="secondary-button" text="Cancel" />
+        <Button fx:id="editSaveButton" minHeight="35" minWidth="80" onAction="#handleSave" styleClass="action-button" text="Save Changes" />
     </HBox>
 </VBox>

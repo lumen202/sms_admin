@@ -19,12 +19,9 @@ import javafx.scene.control.TableColumn;
 
 public class WeeklyAttendanceUtil {
     private static final String WEEK_RANGE_SEPARATOR = " - ";
-    private static final double DEFAULT_DAY_COLUMN_WIDTH = 120.0;
     private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormatter.ofPattern("dd");
-    private static final Map<Integer, String> DAY_INITIALS = Map.of(
-        1, "M", 2, "T", 3, "W", 4, "Th", 5, "F", 6, "Sa", 7, "Su"
-    );
-
+    private static final double DEFAULT_DAY_COLUMN_WIDTH = 120.0;
+    
     private static final Map<String, Integer> workingDaysCache = new HashMap<>();
     private static final Map<String, Double> weekWidthCache = new HashMap<>();
     
@@ -40,7 +37,7 @@ public class WeeklyAttendanceUtil {
         LocalDate firstDay = LocalDate.of(yearNumber, month.getValue(), 1);
         
         // Skip to first weekday
-        while (AttendanceUtil.isWeekend(firstDay)) {
+        while (CommonAttendanceUtil.isWeekend(firstDay)) {
             firstDay = firstDay.plusDays(1);
         }
         return firstDay;
@@ -61,24 +58,8 @@ public class WeeklyAttendanceUtil {
     public static TableColumn<Student, String> createDayColumn(
             LocalDate date,
             ObservableList<AttendanceLog> attendanceLogs) {
-        if (date == null || attendanceLogs == null) {
-            return null;
-        }
-        
-        TableColumn<Student, String> dayColumn = new TableColumn<>(
-            String.format("%d%s", date.getDayOfMonth(), getDayInitial(date.getDayOfWeek().getValue()))
-        );
-        
-        dayColumn.setCellValueFactory(cellData -> 
-            new SimpleStringProperty(AttendanceUtil.getAttendanceStatus(cellData.getValue(), date, attendanceLogs))
-        );
-        
-        dayColumn.setStyle("-fx-alignment: CENTER; -fx-font-size: 11px;");
-        return dayColumn;
-    }
-    
-    private static String getDayInitial(int dayOfWeek) {
-        return DAY_INITIALS.getOrDefault(dayOfWeek, "");
+        // Use TableColumnUtil instead
+        return TableColumnUtil.createDayColumn(date, attendanceLogs, DEFAULT_DAY_COLUMN_WIDTH);
     }
 
     public static void updateWeeklyColumns(
@@ -133,7 +114,7 @@ public class WeeklyAttendanceUtil {
                 
                 currentDay = weekEnd.plusDays(1);
                 while (currentDay.getMonthValue() == currentMonth && 
-                       AttendanceUtil.isWeekend(currentDay)) {
+                       CommonAttendanceUtil.isWeekend(currentDay)) {
                     currentDay = currentDay.plusDays(1);
                 }
             } else {
@@ -200,7 +181,7 @@ public class WeeklyAttendanceUtil {
         String key = generateWeekKey(week);
         return workingDaysCache.computeIfAbsent(key, k -> 
             (int) week.getDates().stream()
-                .filter(date -> !AttendanceDateUtil.isWeekend(date))
+                .filter(date -> !CommonAttendanceUtil.isWeekend(date))
                 .count()
         );
     }
@@ -233,16 +214,18 @@ public class WeeklyAttendanceUtil {
             List<LocalDate> dates = new ArrayList<>();
             LocalDate current = start;
             while (!current.isAfter(end)) {
-                if (!AttendanceDateUtil.isWeekend(current)) {
+                if (!CommonAttendanceUtil.isWeekend(current)) {
                     dates.add(current);
                 }
                 current = current.plusDays(1);
             }
+            dates.sort(LocalDate::compareTo); // Ensure dates are sorted
             return dates;
         }
         
         public boolean hasWorkingDays() {
-            return getDates().stream().anyMatch(date -> !AttendanceDateUtil.isWeekend(date));
+            return getDates().stream()
+                .anyMatch(date -> !CommonAttendanceUtil.isWeekend(date));
         }
     }
 }

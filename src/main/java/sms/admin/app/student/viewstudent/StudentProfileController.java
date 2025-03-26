@@ -37,7 +37,6 @@ public class StudentProfileController extends FXController {
     // Core fields
     private Stage stage;
     private Student student;
-    private boolean isEditMode = false;
     private static final String STUDENT_PHOTOS_DIR = "src/main/resources/sms/admin/assets/img/profile";
     private static final String DEFAULT_PHOTO_PATH = "/assets/img/default-profile.png";
     private static final String BACKUP_PHOTO_PATH = "/sms/admin/assets/img/default-profile.png";
@@ -47,7 +46,6 @@ public class StudentProfileController extends FXController {
     private ObservableList<StudentGuardian> studentGuardianMasterList;
     private ObservableList<Guardian> guardianMasterList;
     private ObservableList<Cluster> clusterMasterList;
-    private List<TextField> editableFields;
 
     // FXML injected fields
     @FXML
@@ -68,38 +66,33 @@ public class StudentProfileController extends FXController {
     private TextField clusterField, clusterDetailsField;
     // Guardian Fields
     @FXML
-    private TextField guardianNameField, guardianContactField;
-    @FXML
     private TextField guardianFirstNameField, guardianMiddleNameField, guardianLastNameField,
             guardianRelationshipField, guardianContactInfoField;
     @FXML
     private GridPane guardianViewGrid, guardianEditGrid;
 
+    private ObservableList<Address> addresses;
+    private ObservableList<Guardian> guardians;
+    private ObservableList<StudentGuardian> studentGuardians;
+    private ObservableList<Student> students;
+
     @Override
     protected void load_fields() {
+        // Initialize collections from registry
+        addresses = App.COLLECTIONS_REGISTRY.getList("ADDRESS");
+        guardians = App.COLLECTIONS_REGISTRY.getList("GUARDIAN");
+        studentGuardians = App.COLLECTIONS_REGISTRY.getList("STUDENT_GUARDIAN");
+        students = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+
         initializeMasterLists();
-        initializeEditableFields();
         initializeKeyHandler();
-        
-        // Check if edit mode parameter is set
-        Boolean editMode = (Boolean) getParameter("EDIT_MODE");
-        if (Boolean.TRUE.equals(editMode)) {
-            isEditMode = true;
-        }
-        
-        resetUIState();
-        
-        // Update UI for edit mode if needed
-        if (isEditMode) {
-            prepareGuardianEditFields();
-            updateUIForEditMode();
-        }
+        updateUI();
     }
 
     @Override
     protected void load_listeners() {
-        editSaveButton.setOnAction(e -> handleEditOrSave());
-        backCancelButton.setOnAction(e -> handleBackOrCancel());
+        editSaveButton.setOnAction(e -> saveChanges());
+        backCancelButton.setOnAction(e -> closeDialog());
         changePhotoButton.setOnAction(e -> handleChangePhoto());
     }
 
@@ -111,7 +104,6 @@ public class StudentProfileController extends FXController {
     @FXML
     public void initialize() {
         // Called after FXML injection; ensure initial state
-        initializeEditableFields();
         changePhotoButton.setVisible(false);
         changePhotoButton.setManaged(false);
         ProfilePhotoManager.loadPhoto(profileImageView, -1); // Load default photo when no student is set
@@ -125,20 +117,12 @@ public class StudentProfileController extends FXController {
 
     public void setStudent(Student student) {
         this.student = student;
-        if (student != null && editableFields != null) {
+        if (student != null) {
             loadStudentData();
         }
     }
 
     // Initialization Helpers
-    private void resetUIState() {
-        if (!isEditMode) {  // Only reset edit mode if not explicitly set
-            isEditMode = false;
-        }
-        updateUIForEditMode();
-        changePhotoButton.setVisible(isEditMode);  // Show change photo button in edit mode
-    }
-
     private void initializeMasterLists() {
         try {
             addressMasterList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
@@ -152,18 +136,6 @@ public class StudentProfileController extends FXController {
         }
     }
 
-    private void initializeEditableFields() {
-        // Ensure FXML fields are injected before proceeding
-        if (firstNameField == null) {
-            return;
-        }
-        editableFields = List.of(
-                firstNameField, middleNameField, lastNameField, nameExtField,
-                streetAddressField, barangayField, cityField, municipalityField, zipCodeField,
-                contactField, emailField, fareField, clusterField, clusterDetailsField
-        );
-    }
-
     private void initializeKeyHandler() {
         if (stage != null && stage.getScene() != null) {
             stage.getScene().setOnKeyPressed(this::handleKeyPress);
@@ -173,11 +145,7 @@ public class StudentProfileController extends FXController {
     // Event Handlers
     private void handleKeyPress(KeyEvent event) {
         if (event.getCode() == KeyCode.ESCAPE) {
-            if (isEditMode) {
-                handleBackOrCancel();
-            } else {
-                closeDialog();
-            }
+            closeDialog();
             event.consume();
         }
     }
@@ -185,28 +153,6 @@ public class StudentProfileController extends FXController {
     @FXML
     private void closeDialog() {
         DialogManager.closeWithFade(stage, null);
-    }
-
-    @FXML
-    private void handleBackOrCancel() {
-        if (isEditMode) {
-            isEditMode = false;
-            loadStudentData();
-            updateUIForEditMode();
-        } else {
-            closeDialog();
-        }
-    }
-
-    @FXML
-    private void handleEditOrSave() {
-        if (isEditMode) {
-            saveStudentChanges();
-        } else {
-            isEditMode = true;
-            prepareGuardianEditFields();
-            updateUIForEditMode();
-        }
     }
 
     private void handleChangePhoto() {
@@ -224,91 +170,33 @@ public class StudentProfileController extends FXController {
         }
     }
 
+    @FXML
+    private void handleClose() {
+        closeDialog();
+    }
+
+    @FXML
+    private void handleSave() {
+        saveChanges();
+    }
+
     // UI Update Helpers
-    private void updateUIForEditMode() {
-        // Handle field editability and visibility
-        editableFields.forEach(field -> {
-            if (field != null) {
-                field.setEditable(isEditMode);
-                boolean hasValue = field.getText() != null && !field.getText().trim().isEmpty();
-                boolean shouldShow = isEditMode || hasValue;
-                field.setVisible(shouldShow);
-                field.setManaged(shouldShow);
-
-                // Find and set visibility of corresponding label
-                Label label = findFieldLabel(field);
-                if (label != null) {
-                    label.setVisible(shouldShow);
-                    label.setManaged(shouldShow);
-                }
-            }
-        });
-
-        // Toggle guardian grids
-        toggleGuardianGrids();
-
-        // Update buttons
-        changePhotoButton.setVisible(isEditMode);
-        changePhotoButton.setManaged(isEditMode);
-        backCancelButton.setText(isEditMode ? "Cancel" : "Back");
-        editSaveButton.setText(isEditMode ? "Save Changes" : "Edit Profile");
-    }
-
-    private Label findFieldLabel(TextField field) {
-        if (field.getParent() instanceof GridPane) {
-            GridPane grid = (GridPane) field.getParent();
-            final Integer fieldRow = GridPane.getRowIndex(field);
-            final int rowIndex = fieldRow != null ? fieldRow : 0;
-
-            // Find label in the same row
-            return grid.getChildren().stream()
-                    .filter(node -> node instanceof Label
-                    && Objects.equals(GridPane.getRowIndex(node), rowIndex))
-                    .map(node -> (Label) node)
-                    .findFirst()
-                    .orElse(null);
-        }
-        return null;
-    }
-
-    private void toggleGuardianGrids() {
-        if (guardianViewGrid != null && guardianEditGrid != null) {
-            guardianViewGrid.setVisible(!isEditMode);
-            guardianViewGrid.setManaged(!isEditMode);
-            guardianEditGrid.setVisible(isEditMode);
-            guardianEditGrid.setManaged(isEditMode);
-        }
+    private void updateUI() {
+        changePhotoButton.setVisible(true);
+        changePhotoButton.setManaged(true);
     }
 
     // Data Loading Methods
     private void loadStudentData() {
-        if (student == null || editableFields == null) {
+        if (student == null) {
             return;
         }
-        clearAllFields();
         loadBasicStudentInfo();
         loadAddressInfo();
         loadGuardianInfo();
         loadClusterInfo();
         loadStudentPhoto();
-        updateUIForEditMode();
-    }
-
-    private void clearAllFields() {
-        editableFields.forEach(field -> {
-            if (field != null) {
-                field.clear();
-                field.setVisible(false);
-                field.setManaged(false);
-
-                // Also hide the corresponding label
-                Label label = findFieldLabel(field);
-                if (label != null) {
-                    label.setVisible(false);
-                    label.setManaged(false);
-                }
-            }
-        });
+        updateUI();
     }
 
     private void loadBasicStudentInfo() {
@@ -352,6 +240,7 @@ public class StudentProfileController extends FXController {
             clearGuardianFields();
             return;
         }
+        
         studentGuardianMasterList.stream()
                 .filter(sg -> sg.getStudentId().getStudentID() == student.getStudentID())
                 .findFirst()
@@ -359,15 +248,23 @@ public class StudentProfileController extends FXController {
                 .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
                 .findFirst()
                 .ifPresent(guardian -> {
-                    guardianNameField.setText(guardian.getGuardianFullName());
-                    guardianContactField.setText(guardian.getContact());
+                    // Set the individual fields instead of the combined fields
+                    guardianFirstNameField.setText(guardian.getFirstName());
+                    guardianMiddleNameField.setText(guardian.getMiddleName());
+                    guardianLastNameField.setText(guardian.getLastName());
+                    guardianContactInfoField.setText(guardian.getContact());
+                    // Don't use guardianNameField and guardianContactField as they don't exist in FXML
                 })
                 );
     }
 
     private void clearGuardianFields() {
-        guardianNameField.clear();
-        guardianContactField.clear();
+        // Clear the actual fields that exist in FXML
+        guardianFirstNameField.clear();
+        guardianMiddleNameField.clear();
+        guardianLastNameField.clear();
+        guardianRelationshipField.clear();
+        guardianContactInfoField.clear();
     }
 
     private void loadClusterInfo() {
@@ -383,7 +280,7 @@ public class StudentProfileController extends FXController {
     }
 
     // Save Changes
-    private void saveStudentChanges() {
+    private void saveChanges() {
         try {
             // Update basic student info
             ProfileDataManager.updateBasicStudentInfo(student,
@@ -402,12 +299,17 @@ public class StudentProfileController extends FXController {
             // Update student in database
             StudentDAO.update(student);
 
-            isEditMode = false;
-            updateUIForEditMode();
+            // Update the student in the registry list
+            int index = students.indexOf(student);
+            if (index >= 0) {
+                students.set(index, student);
+            }
+
+            closeDialog();
 
         } catch (Exception e) {
             e.printStackTrace();
-
+            DialogUtils.showErrorDialog("Error", "Failed to save changes", e.getMessage());
         }
     }
 
@@ -426,8 +328,8 @@ public class StudentProfileController extends FXController {
     private Guardian handleGuardianUpdate() {
         Guardian currentGuardian = findCurrentGuardian();
         Guardian updatedGuardian = ProfileDataManager.createOrUpdateGuardian(
-                guardianNameField.getText(),
-                guardianContactField.getText(),
+                guardianFirstNameField.getText(),
+                guardianContactInfoField.getText(),
                 guardianFirstNameField,
                 guardianMiddleNameField,
                 guardianLastNameField,
@@ -480,20 +382,6 @@ public class StudentProfileController extends FXController {
             StudentGuardian newRelation = new StudentGuardian(student, guardian);
             StudentGuardianDAO.insert(newRelation);
             studentGuardianMasterList.add(newRelation);
-        }
-    }
-
-    private void prepareGuardianEditFields() {
-        if (!guardianNameField.getText().isEmpty()) {
-            String[] nameParts = guardianNameField.getText().split(" ");
-            if (nameParts.length >= 2) {
-                guardianFirstNameField.setText(nameParts[0]);
-                guardianLastNameField.setText(nameParts[nameParts.length - 1]);
-                if (nameParts.length > 2) {
-                    guardianMiddleNameField.setText(nameParts[1]);
-                }
-            }
-            guardianContactInfoField.setText(guardianContactField.getText());
         }
     }
 }

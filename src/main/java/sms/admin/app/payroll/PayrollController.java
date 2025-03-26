@@ -1,16 +1,17 @@
 package sms.admin.app.payroll;
 
 import java.text.DecimalFormat;
-import java.time.DateTimeException;
-import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 
+import dev.finalproject.data.StudentDAO;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
 import dev.finalproject.models.Student;
@@ -19,6 +20,7 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
@@ -28,23 +30,22 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.Node;
+import sms.admin.App;
 import sms.admin.app.RootController;
 import sms.admin.app.attendance.AttendanceController;
 import sms.admin.util.attendance.AttendanceUtil;
+import sms.admin.util.attendance.CommonAttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
 import sms.admin.util.exporter.PayrollTableExporter;
 import sms.admin.util.exporter.exporterv2.DetailedPayrollExporter;
 import sms.admin.util.exporter.exporterv2.DetailedPayrollPdfExporter;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.ToggleGroup;
 
 public class PayrollController extends FXController {
 
@@ -86,6 +87,7 @@ public class PayrollController extends FXController {
     @FXML private ToggleGroup fareTypeGroup;
 
     private Map<Integer, List<AttendanceLog>> studentAttendanceCache = new HashMap<>();
+    
 
     private final DecimalFormat daysFormat = new DecimalFormat("#.# day(s)");
     private final DecimalFormat currencyFormat = new DecimalFormat("₱#,##0.00");
@@ -97,17 +99,33 @@ public class PayrollController extends FXController {
     @Override
     protected void load_fields() {
         rootPane.getProperties().put("controller", this);
-        filteredStudentList = (FilteredList<Student>) getParameter("filteredStudentList");
         
+        // Initialize student list with filtering
+        String selectedYear = (String) getParameter("selectedYear");
+        List<Student> students = StudentDAO.getStudentList();
+        if (selectedYear != null) {
+            String[] yearRange = selectedYear.split("-");
+            int startYear = Integer.parseInt(yearRange[0]);
+
+            students = students.stream()
+                .filter(student -> student.getYearID() != null &&
+                        student.getYearID().getYearStart() == startYear)
+                .collect(Collectors.toList());
+        }
+        filteredStudentList = new FilteredList<>(FXCollections.observableArrayList(students));
+        
+        // Initialize attendance logs
+        attendanceLog = (ObservableList<AttendanceLog>) getParameter("attendanceLogs");
+        if (attendanceLog == null) {
+            attendanceLog = App.COLLECTIONS_REGISTRY.getList("ATTENDANCE_LOG");
+        }
         // Set four-way as default
         if (fourWayRadio != null) {
             fourWayRadio.setSelected(true);
         }
 
         // Initialize month selection
-        String selectedYear = (String) getParameter("selectedYear");
         String selectedMonth = (String) getParameter("selectedMonth");
-        
         if (selectedYear != null) {
             DateTimeUtils.updateMonthYearComboBox(yearMonthComboBox, selectedYear);
             if (selectedMonth != null && yearMonthComboBox.getItems().contains(selectedMonth)) {
@@ -244,56 +262,39 @@ public class PayrollController extends FXController {
             YearMonth selectedMonth = DateTimeUtils.parseMonthYear(monthYearValue);
             double totalDays = 0;
 
-            // Use the shared observable list instead of parameter
-            List<AttendanceLog> studentLogs = AttendanceController.CURRENT_LOGS.stream()
+            // Get logs only for this student in this month
+            List<AttendanceLog> studentLogs = attendanceLog.stream()
                 .filter(log -> log != null && 
                        log.getStudentID() != null && 
-                       log.getStudentID().getStudentID() == student.getStudentID())
+                       log.getStudentID().getStudentID() == student.getStudentID() &&
+                       log.getRecordID() != null &&
+                       YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth())
+                              .equals(selectedMonth))
                 .collect(Collectors.toList());
 
-            // Process logs for selected month
+            // Count only valid log entries
             for (AttendanceLog log : studentLogs) {
-                if (log.getRecordID() == null) continue;
-                
-                AttendanceRecord record = log.getRecordID();
-                YearMonth logMonth = YearMonth.of(record.getYear(), record.getMonth());
-                
-                if (logMonth.equals(selectedMonth)) {
-                    // Calculate days based on status
-                    if (isAbsent(log)) {
-                        continue;
-                    } else if (isExcused(log)) {
-                        totalDays += 1.0;
-                    } else if (isHalfDay(log)) {
-                        totalDays += 0.5;
-                    } else {
-                        totalDays += 1.0;
-                    }
+                // Use AttendanceUtil directly to determine status
+                String status = AttendanceUtil.getAttendanceStatus(log); // Changed to use AttendanceUtil
+                switch (status) {
+                    case AttendanceUtil.PRESENT_MARK,
+                         AttendanceUtil.EXCUSED_MARK -> totalDays += 1.0;
+                    case AttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
+                    // Absent (✗) counts as 0
                 }
             }
-
+            
+            System.out.println("Student " + student.getStudentID() + 
+                             " | Month: " + selectedMonth + 
+                             " | Logs: " + studentLogs.size() + 
+                             " | Total days: " + totalDays);
+            
             return totalDays;
         } catch (Exception e) {
             System.err.println("Error calculating days for student " + student.getStudentID());
             e.printStackTrace();
             return 0;
         }
-    }
-
-    private boolean isAbsent(AttendanceLog log) {
-        return log.getTimeInAM() == AttendanceUtil.TIME_ABSENT && 
-               log.getTimeOutAM() == AttendanceUtil.TIME_ABSENT &&
-               log.getTimeInPM() == AttendanceUtil.TIME_ABSENT && 
-               log.getTimeOutPM() == AttendanceUtil.TIME_ABSENT;
-    }
-
-    private boolean isExcused(AttendanceLog log) {
-        return log.getTimeInAM() == AttendanceUtil.TIME_EXCUSED;
-    }
-
-    private boolean isHalfDay(AttendanceLog log) {
-        return log.getTimeInPM() == AttendanceUtil.TIME_ABSENT && 
-               log.getTimeOutPM() == AttendanceUtil.TIME_ABSENT;
     }
 
     @Override

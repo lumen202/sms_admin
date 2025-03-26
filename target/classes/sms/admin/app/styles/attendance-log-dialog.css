@@ -302,3 +302,37 @@
 .secondary-button:pressed {
     -fx-background-color: #23395B;
 }
+
+.table-view {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #cccccc;
+    -fx-padding: 5px;
+}
+
+.table-view .column-group {
+    -fx-background-color: #e0e0e0;
+    -fx-font-weight: bold;
+    -fx-padding: 5px;
+}
+
+.table-view .table-cell {
+    -fx-alignment: center;
+    -fx-padding: 5px;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #f8f8f8;
+}
+
+.table-row-cell:even {
+    -fx-background-color: white;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #0096c9;
+    -fx-text-fill: white;
+}

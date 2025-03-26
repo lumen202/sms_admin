@@ -9,10 +9,8 @@
     -fx-background-radius: 5;
     -fx-border-radius: 5;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 0);
-    -fx-min-width: 320;
-    -fx-min-height: 320;
-    -fx-max-width: 320;
-    -fx-max-height: 320;
+    -fx-min-width: 700;
+    -fx-min-height: 500;
 }
 
 .dialog-header {
@@ -33,6 +31,27 @@
     -fx-font-weight: bold;
 }
 
+.label-value {
+    -fx-font-size: 13;
+    -fx-text-fill: #333333;
+}
+
+.info-section {
+    -fx-background-color: #F8F9FA;
+    -fx-padding: 10;
+    -fx-background-radius: 5;
+    -fx-border-color: #E9ECEF;
+    -fx-border-radius: 5;
+}
+
+.section-pane {
+    -fx-background-color: white;
+    -fx-padding: 5;
+    -fx-background-radius: 5;
+    -fx-border-color: #E9ECEF;
+    -fx-border-radius: 5;
+}
+
 .titled-pane {
     -fx-background-color: white;
     -fx-border-color: #DEE2E6;
@@ -45,33 +64,6 @@
     -fx-background-color: #003366; /* Main theme primary color */
     -fx-text-fill: white;
     -fx-font-weight: bold;
-}
-
-.table-view {
-    -fx-fixed-cell-size: 25;
-    -fx-pref-height: 80;
-}
-
-.table-view .column-header {
-    -fx-background-color: #F1F3F5;
-    -fx-padding: 5 3;
-    -fx-border-color: transparent transparent #DEE2E6 transparent;
-    -fx-font-size: 12px;
-}
-
-.table-view .table-row-cell {
-    -fx-background-color: white;
-    -fx-border-color: transparent transparent #F1F3F5 transparent;
-    -fx-cell-size: 25;
-}
-
-.table-view .table-row-cell:hover {
-    -fx-background-color: #F8F9FA;
-}
-
-.table-column {
-    -fx-alignment: CENTER;
-    -fx-font-size: 12px;
 }
 
 .secondary-button, .primary-button, .edit-button, .action-button {

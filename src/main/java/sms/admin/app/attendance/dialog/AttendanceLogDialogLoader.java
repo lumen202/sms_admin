@@ -23,9 +23,11 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.scene.Node;
 
-public class AttendanceLogDialog extends FXLoader {
+public class AttendanceLogDialogLoader extends FXLoader {
+    private static AttendanceLogDialogController lastController;
+    private AttendanceLogDialogController controller;
 
-    public AttendanceLogDialog(Student student, LocalDate date, List<AttendanceLog> logs) {
+    public AttendanceLogDialogLoader(Student student, LocalDate date, List<AttendanceLog> logs) {
         String fxmlPath = "/sms/admin/app/attendance/dialog/ATTENDANCE_LOG_DIALOG.fxml";
         createInstance(getClass().getResource(fxmlPath));
         
@@ -39,6 +41,10 @@ public class AttendanceLogDialog extends FXLoader {
             .orElse(null));
             
         initialize();
+    }
+
+    public AttendanceLogDialogController getController() {
+        return controller;
     }
 
     @Override
@@ -83,27 +89,35 @@ public class AttendanceLogDialog extends FXLoader {
                 blurAnimation.play();
             }
 
-            // Set smaller dimensions
-            double dialogWidth = 350;
-            double dialogHeight = 400;
+            // Set dimensions with minimums
+            double dialogWidth = 700;
+            double dialogHeight = 600;
             stage.setWidth(dialogWidth);
             stage.setHeight(dialogHeight);
+            stage.setMinWidth(700);  // Minimum width to show all columns
+            stage.setMinHeight(400); // Minimum height for usability
 
             Scene scene = new Scene(root);
             scene.setFill(Color.TRANSPARENT);
             stage.setScene(scene);
             
-            // Configure scene
+            // Reapply CSS loading
             scene.getStylesheets().addAll(
                 getClass().getResource("/sms/admin/app/styles/main.css").toExternalForm(),
                 getClass().getResource("/sms/admin/app/styles/attendance-log-dialog.css").toExternalForm()
             );
 
             // Configure controller
-            AttendanceLogDialogController controller = loader.getController();
+            controller = loader.getController();
             if (controller == null) {
                 throw new RuntimeException("Failed to load dialog controller");
             }
+
+            // Transfer state from previous instance if it exists
+            if (lastController != null) {
+                controller.restoreState(lastController);
+            }
+            lastController = controller;
 
             // Set stage and initialize data
             controller.setStage(stage);
@@ -117,7 +131,7 @@ public class AttendanceLogDialog extends FXLoader {
             root.setOnMousePressed(event -> {
                 root.setOnMouseDragged(e -> {
                     stage.setX(e.getScreenX() - event.getSceneX());
-                    stage.setY(e.getScreenY() - event.getSceneY());
+                    stage.setY(e.getScreenY() - event.getScreenY());
                 });
             });
 

@@ -1,5 +1,8 @@
 package sms.admin;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,26 +23,25 @@ import dev.sol.core.scene.FXSkin;
 import dev.sol.db.DBService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.ObservableListBase;
 import javafx.scene.image.Image;
 import javafx.stage.WindowEvent;
 import sms.admin.app.RootLoader;
 import sms.admin.util.db.DatabaseChangeListener;
 import sms.admin.util.db.DatabaseConnection;
-import java.sql.Connection;
-import java.sql.SQLException;
 
 public class App extends FXApplication {
-
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 
     public static final String REMOTE_HOST = buildJdbcUrl("192.168.254.108");
     public static final String LOCAL_HOST = buildJdbcUrl("localhost");
+    public static final String LAB_HOST = "jdbc:mysql://192.168.254.108:3306/student_management_system_db?user=remote_user&allowPublicKeyRetrieval=true&useSSL=false";
 
     public static final FXControllerRegister CONTROLLER_REGISTRY = FXControllerRegister.INSTANCE;
     public static final FXCollectionsRegister COLLECTIONS_REGISTRY = FXCollectionsRegister.INSTANCE;
     public static final FXNodeRegister NODE_REGISTER = FXNodeRegister.INSTANCE;
-    public static final DBService DB_SMS = DBService.INSTANCE
-    .initialize("jdbc:mysql://192.168.254.108:3306/student_management_system_db?user=remote_user&allowPublicKeyRetrieval=true&useSSL=false");
+    public static final DBService DB_SMS = DBService.INSTANCE.initialize(LOCAL_HOST);
 
     private DatabaseChangeListener dbChangeListener;
 
@@ -118,6 +120,7 @@ public class App extends FXApplication {
     public void initializeDataset() {
         try {
             initializeBaseCollections();
+            // Lazy-load dependent and related collections by registering a lazy wrapper.
             initializeDependentCollections();
             initializeRelatedCollections();
         } catch (Exception e) {
@@ -127,6 +130,7 @@ public class App extends FXApplication {
     }
 
     private void initializeBaseCollections() {
+        // Base collections are essential; load them synchronously.
         COLLECTIONS_REGISTRY.register("CLUSTER",
                 FXCollections.observableArrayList(ClusterDAO.getClusterList()));
         COLLECTIONS_REGISTRY.register("SCHOOL_YEAR",
@@ -137,27 +141,26 @@ public class App extends FXApplication {
         StudentDAO.initialize(
                 COLLECTIONS_REGISTRY.getList("CLUSTER"),
                 COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR"));
+        // Use lazy wrappers for potentially large datasets.
         COLLECTIONS_REGISTRY.register("STUDENT",
-                FXCollections.observableArrayList(StudentDAO.getStudentList()));
+                new LazyObservableList<>(StudentDAO::getStudentList));
         COLLECTIONS_REGISTRY.register("GUARDIAN",
-                FXCollections.observableArrayList(GuardianDAO.getGuardianList()));
+                new LazyObservableList<>(GuardianDAO::getGuardianList));
         COLLECTIONS_REGISTRY.register("STUDENT_GUARDIAN",
-                FXCollections.observableArrayList(StudentGuardianDAO.getStudentGuardianList()));
+                new LazyObservableList<>(StudentGuardianDAO::getStudentGuardianList));
     }
 
     private void initializeRelatedCollections() {
         AddressDAO.initialize(COLLECTIONS_REGISTRY.getList("STUDENT"));
         COLLECTIONS_REGISTRY.register("ADDRESS",
-                FXCollections.observableArrayList(AddressDAO.getAddressesList()));
-
+                new LazyObservableList<>(AddressDAO::getAddressesList));
         COLLECTIONS_REGISTRY.register("ATTENDANCE_RECORD",
-                FXCollections.observableArrayList(AttendanceRecordDAO.getRecordList()));
-
+                new LazyObservableList<>(AttendanceRecordDAO::getRecordList));
         AttendanceLogDAO.initialize(
                 COLLECTIONS_REGISTRY.getList("STUDENT"),
                 COLLECTIONS_REGISTRY.getList("ATTENDANCE_RECORD"));
         COLLECTIONS_REGISTRY.register("ATTENDANCE_LOG",
-                FXCollections.observableArrayList(AttendanceLogDAO.getAttendanceLogList()));
+                new LazyObservableList<>(AttendanceLogDAO::getAttendanceLogList));
     }
 
     private void initializeApplication() {
@@ -171,7 +174,6 @@ public class App extends FXApplication {
 
             applicationStage.requestFocus();
             rootLoader.load();
-
             LOGGER.info("Application UI initialized successfully");
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to initialize application UI", e);
@@ -195,8 +197,7 @@ public class App extends FXApplication {
     private void clearCollections() {
         String[] knownCollections = {
             "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
-            "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD",
-            "ATTENDANCE_LOG"
+            "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG"
         };
 
         for (String key : knownCollections) {
@@ -216,5 +217,37 @@ public class App extends FXApplication {
         final String CONNECTION_OPTIONS = "?allowPublicKeyRetrieval=true&useSSL=false";
         return String.format("jdbc:mysql://%s:%d/%s?user=%s&password=%s%s",
                 host, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, CONNECTION_OPTIONS);
+    }
+
+    /**
+     * A simple lazy-loading wrapper for an ObservableList.
+     * The data is loaded only on first access.
+     */
+    private static class LazyObservableList<T> extends ObservableListBase<T> {
+        private ObservableList<T> backing;
+        private final Supplier<java.util.List<T>> supplier;
+
+        public LazyObservableList(Supplier<java.util.List<T>> supplier) {
+            this.supplier = supplier;
+        }
+
+        private void load() {
+            if (backing == null) {
+                backing = FXCollections.observableArrayList(supplier.get());
+            }
+        }
+
+        @Override
+        public T get(int index) {
+            load();
+            return backing.get(index);
+        }
+
+        @Override
+        public int size() {
+            load();
+            return backing.size();
+        }
+        
     }
 }

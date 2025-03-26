@@ -3,6 +3,9 @@ package sms.admin.app.attendance.dialog;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
 import dev.finalproject.models.Student;
@@ -11,90 +14,173 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.stage.Stage;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
-import javafx.geometry.Insets;
+import javafx.stage.Stage;
 import sms.admin.util.attendance.AttendanceUtil;
+import sms.admin.util.attendance.CommonAttendanceUtil;
 import sms.admin.util.dialog.DialogManager;
 
 public class AttendanceLogDialogController extends FXController {
     private Stage stage;
 
+    @FXML private Label studentNameLabel;
+    @FXML private Label dateLabel;
+    @FXML private TableView<AttendanceLog> logTable;
+    @FXML private TableColumn<AttendanceLog, String> dateColumn;
+    @FXML private TableColumn<AttendanceLog, String> timeInAMColumn;
+    @FXML private TableColumn<AttendanceLog, String> timeOutAMColumn;
+    @FXML private TableColumn<AttendanceLog, String> timeInPMColumn;
+    @FXML private TableColumn<AttendanceLog, String> timeOutPMColumn;
+    @FXML private Button closeButton;
+    @FXML private VBox contentBox;
+
+    private Student currentStudent;
+    private LocalDate currentDate;
+    private ObservableList<AttendanceLog> currentLogs;
+
     public void setStage(Stage stage) {
         this.stage = stage;
     }
-
-    @FXML
-    private Label studentNameLabel;
-    @FXML
-    private Label dateLabel;
-    @FXML
-    private TableView<AttendanceLog> amLogTable;
-    @FXML
-    private TableView<AttendanceLog> pmLogTable;
-    @FXML
-    private TableColumn<AttendanceLog, String> timeInAMColumn;
-    @FXML
-    private TableColumn<AttendanceLog, String> timeOutAMColumn;
-    @FXML
-    private TableColumn<AttendanceLog, String> timeInPMColumn;
-    @FXML
-    private TableColumn<AttendanceLog, String> timeOutPMColumn;
-    @FXML
-    private Button closeButton;
-    @FXML
-    private VBox contentBox; // Add this field to your FXML
 
     public AttendanceLogDialogController() {
         System.out.println("AttendanceLogDialogController constructor called");
     }
 
     public void initData(Student student, LocalDate date, List<AttendanceLog> allLogs) {
-        if (student != null) {
+        // Set fields first
+        this.currentStudent = student;
+        this.currentDate = date;
+        this.currentLogs = FXCollections.observableArrayList();
+        
+        // Set up labels before loading logs
+        if (currentStudent != null) {
             String studentName = String.format("%s, %s %s", 
-                student.getLastName(),
-                student.getFirstName(),
-                student.getMiddleName() != null ? student.getMiddleName() : "");
+                currentStudent.getLastName(),
+                currentStudent.getFirstName(),
+                currentStudent.getMiddleName() != null ? currentStudent.getMiddleName() : "");
             studentNameLabel.setText(studentName.trim());
         }
-
-        if (date != null) {
-            dateLabel.setText(date.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")));
+        
+        if (currentDate != null) {
+            dateLabel.setText(currentDate.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
         }
+        
+        // Now refresh logs after fields are set
+        refreshLogs(allLogs);
+    }
 
-        // Find matching log
-        AttendanceLog matchingLog = allLogs.stream()
-            .filter(l -> l != null && l.getRecordID() != null && l.getStudentID() != null)
-            .filter(l -> l.getStudentID().getStudentID() == student.getStudentID())
-            .filter(l -> {
-                AttendanceRecord record = l.getRecordID();
-                return record.getYear() == date.getYear() 
-                    && record.getMonth() == date.getMonthValue() 
-                    && record.getDay() == date.getDayOfMonth();
-            })
-            .findFirst()
-            .orElse(null);
+    public void refreshLogs(List<AttendanceLog> allLogs) {
+        if (currentStudent == null || currentDate == null) {
+            System.err.println("Cannot refresh logs - student or date is null");
+            return;
+        }
 
         setupTableColumns();
+        logTable.setFixedCellSize(35);
+        logTable.setEditable(false);
+        logTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
-        // Update tables with single log if found
-        if (matchingLog != null) {
-            ObservableList<AttendanceLog> logList = FXCollections.observableArrayList(matchingLog);
-            amLogTable.setItems(logList);
-            pmLogTable.setItems(logList);
-        } else {
-            amLogTable.setItems(FXCollections.emptyObservableList());
-            pmLogTable.setItems(FXCollections.emptyObservableList());
+        // Create a map for all days in the month
+        Map<Integer, AttendanceLog> monthLogs = new TreeMap<>();
+        int daysInMonth = currentDate.lengthOfMonth();
+        // Initialize all days with null (will be shown as absent), excluding weekends
+        for (int day = 1; day <= daysInMonth; day++) {
+            LocalDate currentDayDate = LocalDate.of(currentDate.getYear(), currentDate.getMonth(), day);
+            if (!currentDayDate.isAfter(LocalDate.now()) && !CommonAttendanceUtil.isWeekend(currentDayDate)) {
+                monthLogs.put(day, null);
+            }
         }
+
+        // Fill in actual logs, excluding weekends
+        if (allLogs != null) {
+            allLogs.stream()
+                .filter(l -> l != null && 
+                        l.getStudentID() != null &&
+                        l.getStudentID().getStudentID() == currentStudent.getStudentID() &&
+                        l.getRecordID() != null && 
+                        l.getRecordID().getYear() == currentDate.getYear() &&
+                        l.getRecordID().getMonth() == currentDate.getMonthValue() &&
+                        !CommonAttendanceUtil.isWeekend(LocalDate.of(
+                            l.getRecordID().getYear(), 
+                            l.getRecordID().getMonth(), 
+                            l.getRecordID().getDay()
+                        )))
+                .forEach(log -> monthLogs.put(log.getRecordID().getDay(), log));
+        }
+
+        // Create observable list with all weekdays
+        ObservableList<AttendanceLog> logList = FXCollections.observableArrayList();
+        monthLogs.forEach((day, log) -> {
+            if (log == null) {
+                AttendanceRecord record = new AttendanceRecord(-1, currentDate.getMonthValue(), day, currentDate.getYear());
+                AttendanceLog absentLog = new AttendanceLog(-1, record, currentStudent, 
+                    AttendanceUtil.TIME_ABSENT, 
+                    AttendanceUtil.TIME_ABSENT, 
+                    AttendanceUtil.TIME_ABSENT, 
+                    AttendanceUtil.TIME_ABSENT
+                );
+                logList.add(absentLog);
+            } else {
+                logList.add(log);
+            }
+        });
+
+        logTable.setItems(logList);
+        logTable.refresh();
+    }
+
+    public void restoreState(AttendanceLogDialogController previous) {
+        if (previous != null && previous.currentLogs != null) {
+            this.currentLogs = previous.currentLogs;
+        }
+    }
+
+    private boolean validateAndCorrectSwappedTimes(AttendanceLog log) {
+        if (log == null) return false;
+        boolean corrected = false;
+
+        // Store original values
+        int timeInAM = log.getTimeInAM();
+        int timeOutAM = log.getTimeOutAM();
+        int timeInPM = log.getTimeInPM();
+        int timeOutPM = log.getTimeOutPM();
+
+        // Fix AM times if needed
+        if (timeInAM > timeOutAM && timeInAM > 0 && timeOutAM > 0) {
+            log.setTimeInAM(timeOutAM);
+            log.setTimeOutAM(timeInAM);
+            corrected = true;
+        }
+
+        // Fix PM times if needed
+        if (timeInPM > timeOutPM && timeInPM > 0 && timeOutPM > 0) {
+            log.setTimeInPM(timeOutPM);
+            log.setTimeOutPM(timeInPM);
+            corrected = true;
+        }
+
+        // Check for swapped AM/PM times
+        if (timeOutAM > timeInPM && timeInPM > 0 && timeOutAM > 0) {
+            // Swap AM out with PM in
+            int temp = timeOutAM;
+            log.setTimeOutAM(timeInPM);
+            log.setTimeInPM(temp);
+            corrected = true;
+        }
+
+        return corrected;
     }
 
     @Override
     protected void load_fields() {
-        setupTableColumns();
         if (contentBox != null) {
             contentBox.setSpacing(15);
             contentBox.setPadding(new Insets(10));
@@ -108,30 +194,94 @@ public class AttendanceLogDialogController extends FXController {
 
     @Override
     protected void load_listeners() {
-        // Add button listener
         if (closeButton != null) {
             closeButton.setOnAction(e -> handleClose());
         }
     }
 
     private void setupTableColumns() {
-        // AM columns
-        timeInAMColumn.setCellValueFactory(data -> 
-            new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeInAM())));
-        timeOutAMColumn.setCellValueFactory(data -> 
-            new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeOutAM())));
+        dateColumn.setText("Day");
+        
+        // Create AM/PM group columns
+        TableColumn<AttendanceLog, String> amGroup = new TableColumn<>("Morning");
+        amGroup.getColumns().addAll(timeInAMColumn, timeOutAMColumn);
+        timeInAMColumn.setText("Time In");
+        timeOutAMColumn.setText("Time Out");
 
-        // PM columns
-        timeInPMColumn.setCellValueFactory(data -> 
-            new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeInPM())));
-        timeOutPMColumn.setCellValueFactory(data -> 
-            new SimpleStringProperty(AttendanceUtil.formatTime(data.getValue().getTimeOutPM())));
+        TableColumn<AttendanceLog, String> pmGroup = new TableColumn<>("Afternoon");
+        pmGroup.getColumns().addAll(timeInPMColumn, timeOutPMColumn);
+        timeInPMColumn.setText("Time In");
+        timeOutPMColumn.setText("Time Out");
 
-        // Set column widths
-        timeInAMColumn.setPrefWidth(160);
-        timeOutAMColumn.setPrefWidth(160);
-        timeInPMColumn.setPrefWidth(160);
-        timeOutPMColumn.setPrefWidth(160);
+        // Clear existing columns and add new structure
+        logTable.getColumns().clear();
+        logTable.getColumns().addAll(dateColumn, amGroup, pmGroup);
+
+        // Setup cell factories with tooltips
+        dateColumn.setCellFactory(col -> createTooltipCell("Day of Month"));
+        timeInAMColumn.setCellFactory(col -> createTooltipCell("Morning Time In"));
+        timeOutAMColumn.setCellFactory(col -> createTooltipCell("Morning Time Out"));
+        timeInPMColumn.setCellFactory(col -> createTooltipCell("Afternoon Time In"));
+        timeOutPMColumn.setCellFactory(col -> createTooltipCell("Afternoon Time Out"));
+
+        // Configure cell value factories
+        dateColumn.setCellValueFactory(cellData -> 
+            new SimpleStringProperty(formatDay(cellData.getValue())));
+            
+        timeInAMColumn.setCellValueFactory(cellData -> 
+            new SimpleStringProperty(getCellValue(cellData.getValue(), AttendanceLog::getTimeInAM)));
+        
+        timeOutAMColumn.setCellValueFactory(cellData -> 
+            new SimpleStringProperty(getCellValue(cellData.getValue(), AttendanceLog::getTimeInPM)));
+        
+        timeInPMColumn.setCellValueFactory(cellData -> 
+            new SimpleStringProperty(getCellValue(cellData.getValue(), AttendanceLog::getTimeOutAM)));
+        
+        timeOutPMColumn.setCellValueFactory(cellData -> 
+            new SimpleStringProperty(getCellValue(cellData.getValue(), AttendanceLog::getTimeOutPM)));
+
+        // Apply common styles
+        List.of(dateColumn, timeInAMColumn, timeOutAMColumn, timeInPMColumn, timeOutPMColumn)
+            .forEach(col -> {
+                col.setStyle("-fx-alignment: CENTER;");
+                col.setSortable(false);
+                col.setResizable(true);
+            });
+    }
+
+    private String formatDay(AttendanceLog log) {
+        if (log == null || log.getRecordID() == null) return "";
+        AttendanceRecord record = log.getRecordID();
+        LocalDate logDate = LocalDate.of(record.getYear(), record.getMonth(), record.getDay());
+        if (logDate.isAfter(LocalDate.now())) {
+            return "-";
+        }
+        return String.format("%02d", record.getDay());
+    }
+
+    private TableCell<AttendanceLog, String> createTooltipCell(String tooltipText) {
+        return new TableCell<>() {
+            final Tooltip tooltip = new Tooltip(tooltipText);
+            
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                    setTooltip(null);
+                } else {
+                    setText(item);
+                    setTooltip(tooltip);
+                    setAlignment(Pos.CENTER);
+                }
+            }
+        };
+    }
+
+    private String getCellValue(AttendanceLog log, java.util.function.Function<AttendanceLog, Integer> timeGetter) {
+        if (log == null) return "";
+        if (log.getLogID() == -1) return "--:--";  // Dummy log for absent
+        return AttendanceUtil.formatTime(timeGetter.apply(log));
     }
 
     @FXML

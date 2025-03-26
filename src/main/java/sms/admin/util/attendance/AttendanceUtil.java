@@ -267,4 +267,17 @@ public class AttendanceUtil {
             return "--:--";
         }
     }
+
+    public static String getAttendanceStatus(AttendanceLog log) {
+        if (log == null) return ABSENT_MARK;
+
+        if (isExcused(log)) return EXCUSED_MARK;
+
+        boolean hasAM = hasValidTimeRange(log.getTimeInAM(), log.getTimeOutAM());
+        boolean hasPM = hasValidTimeRange(log.getTimeInPM(), log.getTimeOutPM());
+
+        if (hasAM && hasPM) return PRESENT_MARK;
+        if (hasAM || hasPM) return HALF_DAY_MARK;
+        return ABSENT_MARK;
+    }
 }

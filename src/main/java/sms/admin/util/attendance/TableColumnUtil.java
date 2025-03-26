@@ -3,40 +3,131 @@ package sms.admin.util.attendance;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import dev.finalproject.models.Student;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
+import dev.finalproject.models.AttendanceLog;
+import java.time.LocalDate;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TableColumnUtil {
-    public static final double MIN_WEEK_WIDTH = 200.0;
-    public static final double MIN_DAY_WIDTH = 40.0;
+    private static final double MIN_COLUMN_WIDTH = 30.0; // Increased from 25.0
+    private static final double DEFAULT_COLUMN_WIDTH = 120.0;
+    public static final double MIN_WEEK_WIDTH = 100.0;  // Reduced from 120.0
+    public static final double MIN_DAY_WIDTH = 30.0;    // Increased from 25.0
     
     private static final double MIN_FONT_SIZE = 8.0;
     private static final double MAX_FONT_SIZE = 14.0;
     private static final double MIN_CELL_HEIGHT = 24.0;
     private static final double MAX_CELL_HEIGHT = 40.0;
 
+    public static TableColumn<Student, String> createDayColumn(
+            LocalDate date,
+            ObservableList<AttendanceLog> logs,
+            double width) {
+        if (date == null || logs == null) return null;
+        
+        TableColumn<Student, String> column = new TableColumn<>(
+            String.format("%d%s", date.getDayOfMonth(), 
+            CommonAttendanceUtil.getDayInitial(date.getDayOfWeek()))
+        );
+        
+        Map<Integer, AttendanceLog> studentLogs = logs.stream()
+            .filter(log -> log != null && log.getStudentID() != null)
+            .collect(Collectors.toMap(
+                log -> log.getStudentID().getStudentID(),
+                log -> log,
+                (a, b) -> b
+            ));
+            
+        column.setCellValueFactory(cellData -> {
+            Student student = cellData.getValue();
+            if (student != null) {
+                AttendanceLog log = studentLogs.get(student.getStudentID());
+                return new SimpleStringProperty(CommonAttendanceUtil.computeAttendanceStatus(log));
+            }
+            return new SimpleStringProperty(CommonAttendanceUtil.ABSENT_MARK);
+        });
+        
+        column.setMinWidth(width);
+        column.setPrefWidth(width);
+        column.setMaxWidth(width * 1.5);
+        column.setResizable(false);
+        column.setStyle("-fx-alignment: CENTER;");
+        
+        return column;
+    }
+
+    public static void configureBasicColumns(
+            TableColumn<Student, Integer> idColumn,
+            TableColumn<Student, String> nameColumn,
+            double tableWidth) {
+        
+        idColumn.setPrefWidth(44);
+        idColumn.setMinWidth(44);
+        idColumn.setMaxWidth(44);
+        idColumn.setResizable(false);
+        idColumn.setStyle("-fx-alignment: CENTER;");
+
+        nameColumn.setPrefWidth(300);
+        nameColumn.setMinWidth(300);
+        nameColumn.setMaxWidth(400);
+        nameColumn.setStyle("-fx-alignment: CENTER-LEFT;");
+    }
+
+    public static double calculateDayColumnWidth(double availableWidth, int totalDays) {
+        return Math.max(MIN_COLUMN_WIDTH, availableWidth / Math.max(totalDays, 1));
+    }
+
     public static void adjustColumnWidths(TableView<Student> table, 
             TableColumn<Student, ?> idColumn,
             TableColumn<Student, ?> nameColumn,
             TableColumn<Student, ?> monthColumn) {
         
-        // Calculate available width for month columns
-        double availableWidth = table.getWidth() - idColumn.getWidth() - nameColumn.getWidth();
-        int weekCount = monthColumn.getColumns().size();
+        double availableWidth = table.getWidth() - 30 - 130 - 20; // ID width + Name width + padding
+        if (availableWidth <= 0) return;
+
+        int totalLeafColumns = countLeafColumns(monthColumn);
+        if (totalLeafColumns == 0) return;
+
+        double leafWidth = Math.max(30, availableWidth / (totalLeafColumns * 1.2)); // Reduced division factor
         
-        if (weekCount > 0) {
-            // Force fit all columns within available width
-            double weekWidth = Math.max(availableWidth / weekCount, MIN_WEEK_WIDTH);
-            double totalWeekWidth = weekWidth * weekCount;
+        monthColumn.getColumns().forEach(weekCol -> {
+            int weekDays = countLeafColumns(weekCol);
+            double weekWidth = weekDays * leafWidth * 1.1; // Reduced multiplier
             
-            // If total width exceeds available space, recalculate to fit
-            if (totalWeekWidth > availableWidth) {
-                weekWidth = availableWidth / weekCount;
-            }
+            weekCol.setPrefWidth(weekWidth);
+            weekCol.setMinWidth(weekWidth * 0.95); // Increased minimum
+            weekCol.setMaxWidth(weekWidth * 1.1);
             
-            distributeWeekWidths(monthColumn.getColumns(), weekWidth, weekCount);
-        }
+            weekCol.getColumns().forEach(dayCol -> {
+                int dayColumns = countLeafColumns(dayCol);
+                double dayWidth = dayColumns * leafWidth;
+                
+                dayCol.setPrefWidth(dayWidth);
+                dayCol.setMinWidth(dayWidth * 0.9);
+                dayCol.setMaxWidth(dayWidth * 1.2);
+                
+                dayCol.getColumns().forEach(dateCol -> {
+                    dateCol.setPrefWidth(leafWidth);
+                    dateCol.setMinWidth(leafWidth * 0.9);
+                    dateCol.setMaxWidth(leafWidth * 1.2);
+                });
+            });
+        });
+        
+        monthColumn.setPrefWidth(availableWidth);
     }
-    
+
+    private static int countLeafColumns(TableColumn<?, ?> column) {
+        if (column.getColumns().isEmpty()) {
+            return 1;
+        }
+        return column.getColumns().stream()
+            .mapToInt(TableColumnUtil::countLeafColumns)
+            .sum();
+    }
+
     private static void distributeWeekWidths(ObservableList<TableColumn<Student, ?>> weekColumns, 
             double weekWidth, int weekCount) {
         weekColumns.forEach(weekCol -> {
