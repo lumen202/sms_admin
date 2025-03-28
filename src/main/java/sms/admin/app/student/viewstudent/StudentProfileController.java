@@ -1,14 +1,12 @@
 package sms.admin.app.student.viewstudent;
 
 import java.io.File;
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
-import dev.finalproject.App;
 import dev.finalproject.data.AddressDAO;
 import dev.finalproject.data.StudentDAO;
 import dev.finalproject.data.StudentGuardianDAO;
+import dev.finalproject.datbase.DataManager;
 import dev.finalproject.models.Address;
 import dev.finalproject.models.Cluster;
 import dev.finalproject.models.Guardian;
@@ -78,11 +76,11 @@ public class StudentProfileController extends FXController {
 
     @Override
     protected void load_fields() {
-        // Initialize collections from registry
-        addresses = App.COLLECTIONS_REGISTRY.getList("ADDRESS");
-        guardians = App.COLLECTIONS_REGISTRY.getList("GUARDIAN");
-        studentGuardians = App.COLLECTIONS_REGISTRY.getList("STUDENT_GUARDIAN");
-        students = App.COLLECTIONS_REGISTRY.getList("STUDENT");
+        // Initialize collections via the shared DataManager
+        addresses = DataManager.getInstance().getCollectionsRegistry().getList("ADDRESS");
+        guardians = DataManager.getInstance().getCollectionsRegistry().getList("GUARDIAN");
+        studentGuardians = DataManager.getInstance().getCollectionsRegistry().getList("STUDENT_GUARDIAN");
+        students = DataManager.getInstance().getCollectionsRegistry().getList("STUDENT");
 
         initializeMasterLists();
         initializeKeyHandler();
@@ -127,8 +125,9 @@ public class StudentProfileController extends FXController {
         try {
             addressMasterList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
             studentGuardianMasterList = FXCollections.observableArrayList(StudentGuardianDAO.getStudentGuardianList());
-            guardianMasterList = App.COLLECTIONS_REGISTRY.getList("GUARDIAN");
-            clusterMasterList = App.COLLECTIONS_REGISTRY.getList("CLUSTER");
+            // Use DataManager to retrieve shared collections
+            guardianMasterList = DataManager.getInstance().getCollectionsRegistry().getList("GUARDIAN");
+            clusterMasterList = DataManager.getInstance().getCollectionsRegistry().getList("CLUSTER");
         } catch (Exception e) {
             e.printStackTrace();
             DialogUtils.showErrorDialog("Database Error", "Failed to load data",
@@ -159,8 +158,7 @@ public class StudentProfileController extends FXController {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select Profile Picture");
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
-        );
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
         File selectedFile = fileChooser.showOpenDialog(profileImageView.getScene().getWindow());
         if (selectedFile != null) {
             String savedPath = ProfilePhotoManager.savePhoto(selectedFile, student.getStudentID());
@@ -212,12 +210,12 @@ public class StudentProfileController extends FXController {
     private void loadAddressInfo() {
         // Reload address list if needed
         if (addressMasterList == null || addressMasterList.isEmpty()) {
-            AddressDAO.initialize(App.COLLECTIONS_REGISTRY.getList("STUDENT"));
+            AddressDAO.initialize(DataManager.getInstance().getCollectionsRegistry().getList("STUDENT"));
             addressMasterList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
         }
         Optional<Address> studentAddress = addressMasterList.stream()
                 .filter(addr -> addr.getStudentID() != null
-                && addr.getStudentID().getStudentID() == student.getStudentID())
+                        && addr.getStudentID().getStudentID() == student.getStudentID())
                 .findFirst();
 
         studentAddress.ifPresentOrElse(addr -> {
@@ -240,26 +238,23 @@ public class StudentProfileController extends FXController {
             clearGuardianFields();
             return;
         }
-        
+
         studentGuardianMasterList.stream()
                 .filter(sg -> sg.getStudentId().getStudentID() == student.getStudentID())
                 .findFirst()
                 .ifPresent(sg -> guardianMasterList.stream()
-                .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
-                .findFirst()
-                .ifPresent(guardian -> {
-                    // Set the individual fields instead of the combined fields
-                    guardianFirstNameField.setText(guardian.getFirstName());
-                    guardianMiddleNameField.setText(guardian.getMiddleName());
-                    guardianLastNameField.setText(guardian.getLastName());
-                    guardianContactInfoField.setText(guardian.getContact());
-                    // Don't use guardianNameField and guardianContactField as they don't exist in FXML
-                })
-                );
+                        .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
+                        .findFirst()
+                        .ifPresent(guardian -> {
+                            guardianFirstNameField.setText(guardian.getFirstName());
+                            guardianMiddleNameField.setText(guardian.getMiddleName());
+                            guardianLastNameField.setText(guardian.getLastName());
+                            guardianRelationshipField.setText(guardian.getRelationship());
+                            guardianContactInfoField.setText(guardian.getContact());
+                        }));
     }
 
     private void clearGuardianFields() {
-        // Clear the actual fields that exist in FXML
         guardianFirstNameField.clear();
         guardianMiddleNameField.clear();
         guardianLastNameField.clear();
@@ -336,8 +331,7 @@ public class StudentProfileController extends FXController {
                 guardianRelationshipField,
                 guardianContactInfoField,
                 currentGuardian,
-                guardianMasterList
-        );
+                guardianMasterList);
 
         updateStudentGuardianRelationship(updatedGuardian);
         return updatedGuardian;
@@ -347,8 +341,7 @@ public class StudentProfileController extends FXController {
         ProfileDataManager.handleClusterUpdate(
                 clusterField.getText(),
                 student.getClusterID() != null ? String.valueOf(student.getClusterID().getClusterID()) : "",
-                clusterMasterList
-        ).ifPresent(student::setClusterID);
+                clusterMasterList).ifPresent(student::setClusterID);
     }
 
     // Helper Methods for Data Retrieval
@@ -370,8 +363,8 @@ public class StudentProfileController extends FXController {
                 .filter(sg -> sg.getStudentId().getStudentID() == student.getStudentID())
                 .findFirst()
                 .flatMap(sg -> guardianMasterList.stream()
-                .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
-                .findFirst())
+                        .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
+                        .findFirst())
                 .orElse(null);
     }
 

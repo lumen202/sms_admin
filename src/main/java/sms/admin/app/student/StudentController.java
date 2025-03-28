@@ -1,12 +1,13 @@
 package sms.admin.app.student;
 
 import java.io.File;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import atlantafx.base.controls.ModalPane;
-import dev.finalproject.App;
+import dev.finalproject.data.StudentDAO;
+import dev.finalproject.datbase.DataManager;
 import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
@@ -36,6 +37,7 @@ import sms.admin.util.enrollment.EnrollmentUtils;
 import sms.admin.util.exporter.StudentTableExporter;
 
 public class StudentController extends FXController {
+
     @FXML
     private TableView<Student> studentTableView;
     @FXML
@@ -57,9 +59,9 @@ public class StudentController extends FXController {
     @FXML
     private TableColumn<Student, String> addressColumn;
     @FXML
-    private BorderPane contentPane; // Changed from StackPane to BorderPane to match FXML
+    private BorderPane contentPane;
     @FXML
-    private ModalPane formodal; // ModalPane from AtlantaFX (defined in FXML without children)
+    private ModalPane formodal;
     @FXML
     private StackPane modalContainer;
     @FXML
@@ -71,7 +73,7 @@ public class StudentController extends FXController {
     @FXML
     private MenuItem exportPdf;
     @FXML
-    private MenuItem importCsv; // Add new import menu item field
+    private MenuItem importCsv;
     @FXML
     private TextField searchField;
     @FXML
@@ -79,48 +81,46 @@ public class StudentController extends FXController {
     @FXML
     private Label statusLabel;
     @FXML
-    private Button addStudentButton; // Add this field
+    private Button addStudentButton;
 
-    private FilteredList<Student> yearFilteredList;
-    private FilteredList<Student> searchFilteredList;
+    // The master list is modifiable and backs our filtered view.
+    private ObservableList<Student> masterStudentList = FXCollections.observableArrayList();
+    // One filtered list to handle both year and search criteria.
+    private FilteredList<Student> filteredList;
     private ContextMenu studentMenu;
+    private String selectedYear; // e.g., "2024-2025"
+    private String searchText = "";
 
     @Override
     protected void load_fields() {
         try {
-            String selectedYear = (String) getParameter("selectedYear");
-            ObservableList<Student> students = App.COLLECTIONS_REGISTRY.getList("STUDENT");
-            
-            if (selectedYear != null) {
-                String[] yearRange = selectedYear.split("-");
-                int startYear = Integer.parseInt(yearRange[0]);
-
-                students = students.filtered(student -> 
-                    student.getYearID() != null &&
-                    student.getYearID().getYearStart() == startYear);
+            contentPane.getProperties().put("controller", this);
+            selectedYear = (String) getParameter("selectedYear");
+            if (selectedYear == null) {
+                selectedYear = getDefaultYear();
             }
-            
-            yearFilteredList = new FilteredList<>(FXCollections.observableArrayList(students));
-            searchFilteredList = new FilteredList<>(yearFilteredList);
-            studentTableView.setItems(searchFilteredList);
+            // Load the master list for the selected year using the DataManager
+            initializeStudentList(selectedYear);
+            // Create a single FilteredList using the master list.
+            filteredList = new FilteredList<>(masterStudentList);
+            studentTableView.setItems(filteredList);
 
             formodal.setAlignment(Pos.TOP_CENTER);
             formodal.usePredefinedTransitionFactories(Side.TOP);
             formodal.setPersistent(true);
+
+            updateFilter();
+            updateStatusLabel();
         } catch (Exception e) {
             e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Database Error");
-            alert.setHeaderText("Failed to load student data");
-            alert.setContentText("An error occurred while loading student data from the database.");
-            alert.showAndWait();
+            showErrorAlert("Database Error", "Failed to load student data",
+                    "An error occurred while loading student data from the database.");
         }
         addStudentButton.setOnAction(e -> handleAddStudent());
     }
 
     @Override
     protected void load_bindings() {
-        // Setup sample data for the cluster table.
         studentIDColumn.setCellValueFactory(cell -> cell.getValue().studentIDProperty().asObject());
         firstNameColumn.setCellValueFactory(cell -> cell.getValue().firstNameProperty());
         middleNameColumn.setCellValueFactory(cell -> cell.getValue().middleNameProperty());
@@ -129,74 +129,112 @@ public class StudentController extends FXController {
         clusterColumn.setCellValueFactory(cell -> cell.getValue().clusterIDProperty().getValue().clusterNameProperty());
         contactColumn.setCellValueFactory(cell -> cell.getValue().contactProperty());
         emailColumn.setCellValueFactory(cell -> cell.getValue().emailProperty());
-        studentTableView.setItems(searchFilteredList);
+
+        studentTableView.setItems(filteredList);
 
         studentMenu = new ContextMenu();
-        MenuItem viewMenu = new MenuItem("View Student Profile");
-        viewMenu.setOnAction(e -> openStudentProfile());
+        MenuItem viewMenu = new MenuItem("Edit Student");
+        viewMenu.setOnAction(e -> openStudentProfileInEditMode());
         studentMenu.getItems().add(viewMenu);
+        MenuItem deleteMenu = new MenuItem("Delete Student");
+        deleteMenu.setOnAction(e -> deleteStudent(studentTableView.getSelectionModel().getSelectedItem()));
+        studentMenu.getItems().add(deleteMenu);
         studentTableView.setContextMenu(studentMenu);
-
-        // Configure the ModalPane (its content will be set when opening the form).
-        formodal.setAlignment(Pos.TOP_CENTER);
-        formodal.setVisible(false);
     }
 
     @Override
     protected void load_listeners() {
-        // Add export menu item handlers
         exportExcel.setOnAction(event -> handleExport("excel"));
         exportCsv.setOnAction(event -> handleExport("csv"));
         exportPdf.setOnAction(event -> handleExport("pdf"));
-        
-        // Add import handler
         importCsv.setOnAction(event -> handleImport());
 
-        // Modified search field listener
+        // Update the search text and filter predicate as the user types.
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            String searchText = newValue.toLowerCase();
-            searchFilteredList.setPredicate(student -> {
-                if (searchText == null || searchText.isEmpty()) {
-                    return true;
-                }
-                // Search in multiple fields
-                return student.getFirstName().toLowerCase().contains(searchText)
-                        || student.getLastName().toLowerCase().contains(searchText)
-                        || student.getMiddleName().toLowerCase().contains(searchText)
-                        || student.getEmail().toLowerCase().contains(searchText)
-                        || student.getContact().toLowerCase().contains(searchText)
-                        || String.valueOf(student.getStudentID()).contains(searchText);
-            });
+            searchText = newValue.toLowerCase();
+            updateFilter();
             updateStatusLabel();
         });
     }
 
     public void updateYear(String year) {
-        // No need to filter by year anymore
-        initializeWithYear(year);
-        updateStatusLabel();
+        if (year != null && !year.equals(selectedYear)) {
+            selectedYear = year;
+            initializeStudentList(selectedYear);
+            updateFilter();
+            studentTableView.refresh();
+            updateStatusLabel();
+        }
     }
 
     public void initializeWithYear(String year) {
-        // No need to filter by year anymore
-        updateStatusLabel();
+        if (year == null)
+            return;
+        updateYear(year); // Delegate to updateYear for consistency
+    }
+
+    /**
+     * Populate the masterStudentList with students matching the selected year
+     * and that are not archived.
+     */
+    private void initializeStudentList(String year) {
+        int startYear = Integer.parseInt(year.split("-")[0]);
+        ObservableList<Student> students = DataManager.getInstance()
+                .getCollectionsRegistry()
+                .getList("STUDENT");
+        masterStudentList.setAll(
+                students.stream()
+                        .filter(s -> s != null && s.getYearID() != null
+                                && s.getYearID().getYearStart() == startYear
+                                && s.isDeleted() == 0)
+                        .collect(Collectors.toList()));
+    }
+
+    /**
+     * Update the filter predicate to apply both the year and search filters.
+     */
+    private void updateFilter() {
+        filteredList.setPredicate(student -> {
+            boolean matchesYear = student.getYearID() != null &&
+                    student.getYearID().getYearStart() == Integer.parseInt(selectedYear.split("-")[0]);
+            boolean matchesSearch = searchText == null || searchText.isEmpty() ||
+                    student.getFirstName().toLowerCase().contains(searchText) ||
+                    student.getLastName().toLowerCase().contains(searchText) ||
+                    student.getMiddleName().toLowerCase().contains(searchText) ||
+                    student.getEmail().toLowerCase().contains(searchText) ||
+                    student.getContact().toLowerCase().contains(searchText) ||
+                    String.valueOf(student.getStudentID()).contains(searchText);
+            return matchesYear && matchesSearch;
+        });
     }
 
     private void updateStatusLabel() {
-        int totalStudents = searchFilteredList.size();
+        int totalStudents = filteredList.size();
         totalLabel.setText("Total Students: " + totalStudents);
     }
 
     @FXML
     private void openStudentProfile() {
-        try {
-            Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
-            if (selectedStudent == null) {
-                return;
-            }
+        Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
+        if (selectedStudent != null) {
             openStudentProfile(selectedStudent);
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * Marks the student as archived (i.e. deleted) and updates the underlying
+     * master list.
+     */
+    private void deleteStudent(Student student) {
+        try {
+            student.setDeleted(1);
+            StudentDAO.update(student);
+            masterStudentList.remove(student);
+            studentTableView.refresh();
+            updateStatusLabel();
+        } catch (Exception e) {
+            e.printStackTrace();
+            showErrorAlert("Error", "Failed to delete student", e.getMessage());
         }
     }
 
@@ -208,20 +246,15 @@ public class StudentController extends FXController {
             loader.load();
         } catch (Exception e) {
             e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Failed to open student profile");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            showErrorAlert("Error", "Failed to open student profile", e.getMessage());
         }
     }
 
     private void openStudentProfileInEditMode() {
         try {
             Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
-            if (selectedStudent == null) {
+            if (selectedStudent == null)
                 return;
-            }
 
             StudentProfileLoader loader = new StudentProfileLoader();
             loader.addParameter("SELECTED_STUDENT", selectedStudent);
@@ -230,11 +263,7 @@ public class StudentController extends FXController {
             loader.load();
         } catch (Exception e) {
             e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Failed to open student profile");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            showErrorAlert("Error", "Failed to open student profile in edit mode", e.getMessage());
         }
     }
 
@@ -244,8 +273,7 @@ public class StudentController extends FXController {
     }
 
     private String getExportPath(String extension) {
-        return System.getProperty("user.home") + "/Downloads/students_" +
-                LocalDate.now().toString() + "." + extension;
+        return System.getProperty("user.home") + "/Downloads/students_" + LocalDate.now().toString() + "." + extension;
     }
 
     private void handleExport(String type) {
@@ -261,6 +289,7 @@ public class StudentController extends FXController {
             System.out.println("Export completed: " + outputPath);
         } catch (Exception e) {
             e.printStackTrace();
+            showErrorAlert("Export Error", "Failed to export students", e.getMessage());
         }
     }
 
@@ -268,84 +297,90 @@ public class StudentController extends FXController {
         try {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Select CSV File");
-            fileChooser.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
 
             File selectedFile = fileChooser.showOpenDialog(studentTableView.getScene().getWindow());
             if (selectedFile != null) {
                 statusLabel.setText("Processing: " + selectedFile.getName());
-                try {
-                    List<CsvStudent> students = CsvImporter.importCsv(selectedFile);
-                    int successCount = 0;
+                List<CsvStudent> students = CsvImporter.importCsv(selectedFile);
+                int successCount = 0;
 
-                    SchoolYear currentSchoolYear = (SchoolYear) App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR").stream()
-                        .filter(sy -> sy instanceof SchoolYear)
-                        .findFirst()
-                        .orElse(null);
-
-                    if (currentSchoolYear == null) {
-                        statusLabel.setText("Error: No school year selected");
-                        return;
-                    }
-
-                    for (CsvStudent csvStudent : students) {
-                        try {
-                            EnrollmentUtils.enrollStudentFromCsv(csvStudent, currentSchoolYear);
-                            successCount++;
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    statusLabel.setText("Successfully imported " + successCount + " students");
-
-                } catch (IOException e) {
-                    statusLabel.setText("Error: Failed to read CSV file");
-                    e.printStackTrace();
+                SchoolYear currentSchoolYear = getCurrentSchoolYear();
+                if (currentSchoolYear == null) {
+                    statusLabel.setText("Error: No school year selected");
+                    return;
                 }
+
+                for (CsvStudent csvStudent : students) {
+                    try {
+                        EnrollmentUtils.enrollStudentFromCsv(csvStudent, currentSchoolYear);
+                        successCount++;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // Refresh the table after import
+                initializeStudentList(selectedYear);
+                updateFilter();
+                studentTableView.refresh();
+                statusLabel.setText("Successfully imported " + successCount + " students");
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Import Error");
-            alert.setHeaderText("Failed to import students");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            showErrorAlert("Import Error", "Failed to import students", e.getMessage());
         }
     }
 
     private void handleAddStudent() {
         try {
-            // Find current school year
-            String yearString = (String) getParameter("selectedYear");
-            if (yearString != null) {
-                String[] years = yearString.split("-");
-                int startYear = Integer.parseInt(years[0].trim());
-                int endYear = Integer.parseInt(years[1].trim());
-                
-                SchoolYear currentYear = App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR").stream()
-                    .filter(sy -> sy instanceof SchoolYear)
-                    .map(sy -> (SchoolYear) sy)
-                    .filter(sy -> sy.getYearStart() == startYear && sy.getYearEnd() == endYear)
-                    .findFirst()
-                    .orElse(null);
+            SchoolYear currentSchoolYear = getCurrentSchoolYear();
+            if (currentSchoolYear != null) {
+                EnrollmentDialog dialog = new EnrollmentDialog(currentSchoolYear);
+                dialog.setTitle("Add New Student");
+                dialog.showAndWait();
 
-                if (currentYear != null) {
-                    EnrollmentDialog dialog = new EnrollmentDialog(currentYear);
-                    dialog.setTitle("Add New Student");
-                    dialog.showAndWait();
-                    
-                    // Refresh the table after adding a student
-                    yearFilteredList.setPredicate(yearFilteredList.getPredicate());
-                }
+                // Refresh the table after adding a student
+                initializeStudentList(selectedYear);
+                updateFilter();
+                studentTableView.refresh();
+                updateStatusLabel();
+            } else {
+                showErrorAlert("Error", "No school year selected",
+                        "Please select a school year before adding a student.");
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Failed to open enrollment form");
-            alert.setContentText(e.getMessage());
-            alert.showAndWait();
+            showErrorAlert("Error", "Failed to open enrollment form", e.getMessage());
         }
+    }
+
+    private SchoolYear getCurrentSchoolYear() {
+        if (selectedYear == null)
+            return null;
+        String[] years = selectedYear.split("-");
+        int startYear = Integer.parseInt(years[0].trim());
+        int endYear = Integer.parseInt(years[1].trim());
+
+        return DataManager.getInstance().getCollectionsRegistry().getList("SCHOOL_YEAR").stream()
+                .filter(sy -> sy instanceof SchoolYear)
+                .map(sy -> (SchoolYear) sy)
+                .filter(sy -> sy.getYearStart() == startYear && sy.getYearEnd() == endYear)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String getDefaultYear() {
+        int currentYear = LocalDate.now().getYear();
+        return (LocalDate.now().getMonthValue() >= 6 ? currentYear : currentYear - 1) + "-" +
+                (LocalDate.now().getMonthValue() >= 6 ? currentYear + 1 : currentYear);
+    }
+
+    private void showErrorAlert(String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 }

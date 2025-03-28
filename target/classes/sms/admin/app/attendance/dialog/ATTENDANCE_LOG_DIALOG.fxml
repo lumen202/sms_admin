@@ -1,16 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 
-<VBox fx:id="contentBox" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" 
-      fx:controller="sms.admin.app.attendance.dialog.AttendanceLogDialogController"
-      prefHeight="500.0" prefWidth="700" spacing="8" styleClass="attendance-log-dialog">
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox fx:id="contentBox" prefHeight="500.0" prefWidth="700" spacing="8"
+    styleClass="attendance-log-dialog" xmlns="http://javafx.com/javafx/22"
+    xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="sms.admin.app.attendance.dialog.AttendanceLogDialogController">
     <padding>
-        <Insets top="10" right="10" bottom="10" left="10" />
+        <Insets bottom="10" left="10" right="10" top="10" />
     </padding>
-    
-    <VBox spacing="5" prefHeight="40" styleClass="info-section">
+
+    <VBox prefHeight="40" spacing="5" style="-fx-background-color: #003366;;"
+        styleClass="info-section">
         <HBox spacing="10">
             <Label styleClass="label-caption" text="Student:" />
             <Label fx:id="studentNameLabel" styleClass="label-value" HBox.hgrow="ALWAYS" />
@@ -20,25 +27,30 @@
             <Label fx:id="dateLabel" styleClass="label-value" HBox.hgrow="ALWAYS" />
         </HBox>
     </VBox>
-    
-    <VBox VBox.vgrow="ALWAYS" styleClass="section-pane" spacing="5">
+
+    <VBox spacing="5" styleClass="section-pane" VBox.vgrow="ALWAYS">
         <padding>
-            <Insets top="5" right="5" bottom="5" left="5" />
+            <Insets bottom="5" left="5" right="5" top="5" />
         </padding>
         <Label styleClass="section-header" text="Monthly Attendance Log" />
         <TableView fx:id="logTable" VBox.vgrow="ALWAYS">
             <columns>
-                <TableColumn fx:id="dateColumn" minWidth="80" maxWidth="80" prefWidth="80" text="Date" />
+                <TableColumn fx:id="dateColumn" maxWidth="80" minWidth="80" prefWidth="80"
+                    text="Date" />
                 <TableColumn text="Morning Session">
                     <columns>
-                        <TableColumn fx:id="timeInAMColumn" minWidth="140" prefWidth="140" text="Time-In (7:30)" />
-                        <TableColumn fx:id="timeOutAMColumn" minWidth="140" prefWidth="140" text="Time-Out (11:30)" />
+                        <TableColumn fx:id="timeInAMColumn" minWidth="140" prefWidth="140"
+                            text="Time-In (7:30)" />
+                        <TableColumn fx:id="timeOutAMColumn" minWidth="140" prefWidth="140"
+                            text="Time-Out (11:30)" />
                     </columns>
                 </TableColumn>
                 <TableColumn text="Afternoon Session">
                     <columns>
-                        <TableColumn fx:id="timeInPMColumn" minWidth="140" prefWidth="140" text="Time-In (1:00)" />
-                        <TableColumn fx:id="timeOutPMColumn" minWidth="140" prefWidth="140" text="Time-Out (4:30)" />
+                        <TableColumn fx:id="timeInPMColumn" minWidth="140" prefWidth="140"
+                            text="Time-In (1:00)" />
+                        <TableColumn fx:id="timeOutPMColumn" minWidth="140" prefWidth="140"
+                            text="Time-Out (4:30)" />
                     </columns>
                 </TableColumn>
             </columns>
@@ -47,8 +59,8 @@
             </columnResizePolicy>
         </TableView>
     </VBox>
-    
-    <HBox alignment="CENTER_RIGHT" spacing="10" prefHeight="35">
-        <Button fx:id="closeButton" onAction="#handleClose" text="Close" styleClass="primary-button" />
+
+    <HBox alignment="CENTER_RIGHT" prefHeight="35" spacing="10">
+        <Button fx:id="closeButton" onAction="#handleClose" styleClass="primary-button" text="Close" />
     </HBox>
 </VBox>

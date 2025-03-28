@@ -12,7 +12,6 @@ import java.util.Map;
 
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.Student;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
@@ -21,10 +20,10 @@ public class WeeklyAttendanceUtil {
     private static final String WEEK_RANGE_SEPARATOR = " - ";
     private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormatter.ofPattern("dd");
     private static final double DEFAULT_DAY_COLUMN_WIDTH = 120.0;
-    
+
     private static final Map<String, Integer> workingDaysCache = new HashMap<>();
     private static final Map<String, Double> weekWidthCache = new HashMap<>();
-    
+
     private static String generateWeekKey(WeekDates week) {
         return week.getStart().toString() + "_" + week.getEnd().toString();
     }
@@ -35,7 +34,7 @@ public class WeeklyAttendanceUtil {
         int yearNumber = Integer.parseInt(parts[1]);
         Month month = Month.valueOf(monthName.toUpperCase());
         LocalDate firstDay = LocalDate.of(yearNumber, month.getValue(), 1);
-        
+
         // Skip to first weekday
         while (CommonAttendanceUtil.isWeekend(firstDay)) {
             firstDay = firstDay.plusDays(1);
@@ -46,8 +45,8 @@ public class WeeklyAttendanceUtil {
     public static LocalDate findWeekEndDate(LocalDate start, int month) {
         LocalDate current = start;
         while (current.getMonthValue() == month) {
-            if (current.getDayOfWeek().getValue() == 5 || 
-                current.plusDays(1).getMonthValue() != month) {
+            if (current.getDayOfWeek().getValue() == 5 ||
+                    current.plusDays(1).getMonthValue() != month) {
                 return current;
             }
             current = current.plusDays(1);
@@ -67,24 +66,26 @@ public class WeeklyAttendanceUtil {
             String selectedMonthYear,
             String selectedWeek,
             ObservableList<AttendanceLog> attendanceLogs) {
-        
+
         if (selectedMonthYear == null || selectedWeek == null || weekColumns == null) {
             return;
         }
 
         String[] parts = selectedMonthYear.split(" ");
-        if (parts.length < 2) return;
-        
+        if (parts.length < 2)
+            return;
+
         String monthName = parts[0];
         int yearNumber = Integer.parseInt(parts[1]);
         Month month = Month.valueOf(monthName.toUpperCase());
 
         String[] weekRange = selectedWeek.split(WEEK_RANGE_SEPARATOR);
-        if (weekRange.length < 2) return;
-        
+        if (weekRange.length < 2)
+            return;
+
         int startDay = Integer.parseInt(weekRange[0]);
         int endDay = Integer.parseInt(weekRange[1]);
-        
+
         LocalDate date = LocalDate.of(yearNumber, month.getValue(), startDay);
         LocalDate endDate = LocalDate.of(yearNumber, month.getValue(), endDay);
 
@@ -108,13 +109,13 @@ public class WeeklyAttendanceUtil {
             LocalDate weekEnd = findWeekEndDate(currentDay, currentMonth);
             if (weekEnd != null) {
                 String weekRange = currentDay.format(DAY_FORMATTER) +
-                    WEEK_RANGE_SEPARATOR +
-                    weekEnd.format(DAY_FORMATTER);
+                        WEEK_RANGE_SEPARATOR +
+                        weekEnd.format(DAY_FORMATTER);
                 weekComboBox.getItems().add(weekRange);
-                
+
                 currentDay = weekEnd.plusDays(1);
-                while (currentDay.getMonthValue() == currentMonth && 
-                       CommonAttendanceUtil.isWeekend(currentDay)) {
+                while (currentDay.getMonthValue() == currentMonth &&
+                        CommonAttendanceUtil.isWeekend(currentDay)) {
                     currentDay = currentDay.plusDays(1);
                 }
             } else {
@@ -155,11 +156,11 @@ public class WeeklyAttendanceUtil {
     public static List<WeekDates> splitIntoWeeks(LocalDate startDate, LocalDate endDate) {
         List<WeekDates> weeks = new ArrayList<>();
         WeekFields weekFields = WeekFields.of(Locale.getDefault());
-        
+
         LocalDate current = startDate;
         LocalDate weekStart = current;
         int currentWeek = current.get(weekFields.weekOfWeekBasedYear());
-        
+
         while (!current.isAfter(endDate)) {
             if (current.get(weekFields.weekOfWeekBasedYear()) != currentWeek) {
                 weeks.add(new WeekDates(weekStart, current.minusDays(1)));
@@ -168,31 +169,27 @@ public class WeeklyAttendanceUtil {
             }
             current = current.plusDays(1);
         }
-        
+
         // Add the last week
         if (!weekStart.isAfter(endDate)) {
             weeks.add(new WeekDates(weekStart, endDate));
         }
-        
+
         return weeks;
     }
-    
+
     public static int calculateWorkingDays(WeekDates week) {
         String key = generateWeekKey(week);
-        return workingDaysCache.computeIfAbsent(key, k -> 
-            (int) week.getDates().stream()
+        return workingDaysCache.computeIfAbsent(key, k -> (int) week.getDates().stream()
                 .filter(date -> !CommonAttendanceUtil.isWeekend(date))
-                .count()
-        );
+                .count());
     }
 
     public static double calculateWeekWidth(int workingDaysInWeek, double totalWidth, int totalWorkingDays) {
         String key = workingDaysInWeek + "_" + totalWidth + "_" + totalWorkingDays;
-        return weekWidthCache.computeIfAbsent(key, k ->
-            workingDaysInWeek * totalWidth / Math.max(totalWorkingDays, 1)
-        );
+        return weekWidthCache.computeIfAbsent(key, k -> workingDaysInWeek * totalWidth / Math.max(totalWorkingDays, 1));
     }
-    
+
     public static void clearCaches() {
         workingDaysCache.clear();
         weekWidthCache.clear();
@@ -201,15 +198,20 @@ public class WeeklyAttendanceUtil {
     public static class WeekDates {
         private final LocalDate start;
         private final LocalDate end;
-        
+
         public WeekDates(LocalDate start, LocalDate end) {
             this.start = start;
             this.end = end;
         }
-        
-        public LocalDate getStart() { return start; }
-        public LocalDate getEnd() { return end; }
-        
+
+        public LocalDate getStart() {
+            return start;
+        }
+
+        public LocalDate getEnd() {
+            return end;
+        }
+
         public List<LocalDate> getDates() {
             List<LocalDate> dates = new ArrayList<>();
             LocalDate current = start;
@@ -222,10 +224,10 @@ public class WeeklyAttendanceUtil {
             dates.sort(LocalDate::compareTo); // Ensure dates are sorted
             return dates;
         }
-        
+
         public boolean hasWorkingDays() {
             return getDates().stream()
-                .anyMatch(date -> !CommonAttendanceUtil.isWeekend(date));
+                    .anyMatch(date -> !CommonAttendanceUtil.isWeekend(date));
         }
     }
 }

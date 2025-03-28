@@ -7,11 +7,11 @@ import java.util.List;
 import dev.finalproject.data.AddressDAO;
 import dev.finalproject.data.ClusterDAO;
 import dev.finalproject.data.StudentDAO;
+import dev.finalproject.datbase.DataManager;
 import dev.finalproject.models.Address;
 import dev.finalproject.models.Cluster;
 import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
-import sms.admin.App;
 
 public class EnrollmentUtils {
     private static final Object ID_LOCK = new Object();
@@ -28,7 +28,8 @@ public class EnrollmentUtils {
     private static final int MAX_BARANGAY_LENGTH = 50;
 
     /**
-     * Enrolls a student by creating a new cluster (using the provided clusterName if available),
+     * Enrolls a student by creating a new cluster (using the provided clusterName
+     * if available),
      * inserting the student record, and then creating an address record.
      */
     public static Student enrollStudent(
@@ -73,7 +74,7 @@ public class EnrollmentUtils {
         String clusterLabel = (clusterName != null && !clusterName.isEmpty()) ? clusterName : "Default";
         Cluster cluster = new Cluster(nextClusterId, clusterLabel);
         ClusterDAO.insert(cluster);
-        App.COLLECTIONS_REGISTRY.getList("CLUSTER").add(cluster);
+        DataManager.getInstance().getCollectionsRegistry().getList("CLUSTER").add(cluster);
 
         // 2. Create and insert student.
         Student student = new Student(
@@ -85,7 +86,7 @@ public class EnrollmentUtils {
 
         try {
             StudentDAO.insert(student);
-            App.COLLECTIONS_REGISTRY.getList("STUDENT").add(student);
+            DataManager.getInstance().getCollectionsRegistry().getList("STUDENT").add(student);
 
             // 3. Create and insert address only after successful student insertion.
             Address address = new Address(
@@ -97,7 +98,7 @@ public class EnrollmentUtils {
                     barangay,
                     Integer.parseInt(postalCode));
             AddressDAO.insert(address);
-            App.COLLECTIONS_REGISTRY.getList("ADDRESS").add(address);
+            DataManager.getInstance().getCollectionsRegistry().getList("ADDRESS").add(address);
 
             return student;
         } catch (Exception e) {
@@ -114,10 +115,11 @@ public class EnrollmentUtils {
     }
 
     private static String sanitizeAddressField(String field, int maxLength) {
-        if (field == null) return "";
+        if (field == null)
+            return "";
         field = field.replaceAll("[\\r\\n]", " ")
-                     .trim()
-                     .replaceAll("\\s+", " ");
+                .trim()
+                .replaceAll("\\s+", " ");
         return truncateString(field, maxLength);
     }
 
@@ -139,13 +141,8 @@ public class EnrollmentUtils {
     }
 
     /**
-     * Enrolls a student from CSV data by mapping the CSV fields to the enrollment parameters.
-     * Expected address formats:
-     *   a) "Street, Barangay, City, Municipality"
-     *   b) "Street, Barangay+City, Municipality" (3 parts with heuristic)
-     *   c) "Barangay City Municipality" (no commas; 4 tokens with first token "Barangay")
-     *   d) "City Municipality" (no commas; 2 tokens) → Use CsvStudent's middle name as street and last name as barangay.
-     *   e) "Barangay City Municipality" (no commas; 3 tokens) → Assume no street provided.
+     * Enrolls a student from CSV data by mapping the CSV fields to the enrollment
+     * parameters.
      */
     public static Student enrollStudentFromCsv(CsvStudent csvStudent, SchoolYear schoolYear) throws Exception {
         int studentId;
@@ -156,7 +153,8 @@ public class EnrollmentUtils {
             }
         }
 
-        // Pass CsvStudent instance so that parseAddress can use its middle and last names if needed.
+        // Pass CsvStudent instance so that parseAddress can use its middle and last
+        // names if needed.
         String[] addressParts = parseAddress(csvStudent.getAddress(), csvStudent);
 
         return enrollStudent(
@@ -178,8 +176,7 @@ public class EnrollmentUtils {
                 "",
                 "",
                 csvStudent.getCluster(),
-                schoolYear
-        );
+                schoolYear);
     }
 
     /**
@@ -201,31 +198,10 @@ public class EnrollmentUtils {
 
     /**
      * Updated parser for CSV address.
-     * Handles various formats:
-     *
-     * Case 1: If the address contains commas:
-     *   - If 4 parts: assumes "Street, Barangay, City, Municipality".
-     *   - If 3 parts: uses a heuristic:
-     *       * If the first part appears to be a street (contains "st", "street", or "ave"),
-     *         splits the middle part (by "Brgy." or whitespace) to get barangay and city.
-     *       * Otherwise, assumes no street and maps the parts as: barangay, city, municipality.
-     *   - If 2 parts: splits the first part by whitespace looking for a token starting with "brgy".
-     *         Then, the second part is assumed to contain "City Municipality" (split by whitespace).
-     *
-     * Case 2: If no commas are present:
-     *   - If exactly 4 tokens and the first token is "Barangay", maps accordingly.
-     *   - If exactly 2 tokens, assumes the address provides only city and municipality;
-     *     in that case, uses the CsvStudent's middle name as street and last name as barangay.
-     *   - If exactly 3 tokens, assumes no street was provided and maps as { "", token[0], token[1], token[2] }.
-     *   - Otherwise, treats the entire string as the street.
-     *
-     * @param address the raw address string.
-     * @param csvStudent the CsvStudent instance for additional field values.
-     * @return a String array of length 4: {street, barangay, city, municipality}
      */
     private static String[] parseAddress(String address, CsvStudent csvStudent) {
         if (address == null || address.trim().isEmpty()) {
-            return new String[]{"", "", "", ""};
+            return new String[] { "", "", "", "" };
         }
         if (address.contains(",")) {
             String[] parts = address.split(",");
@@ -234,8 +210,6 @@ public class EnrollmentUtils {
             }
             String street, barangay, city, municipality;
             if (parts.length == 2) {
-                // New branch: When exactly 2 parts are provided.
-                // parts[0] may contain both street and barangay.
                 String part0 = parts[0];
                 int idx = part0.toLowerCase().indexOf("brgy");
                 if (idx != -1) {
@@ -248,7 +222,8 @@ public class EnrollmentUtils {
                         }
                     }
                     if (foundIndex != -1) {
-                        street = foundIndex > 0 ? String.join(" ", java.util.Arrays.copyOfRange(tokens, 0, foundIndex)) : "";
+                        street = foundIndex > 0 ? String.join(" ", java.util.Arrays.copyOfRange(tokens, 0, foundIndex))
+                                : "";
                         barangay = String.join(" ", java.util.Arrays.copyOfRange(tokens, foundIndex, tokens.length));
                     } else {
                         street = part0;
@@ -258,7 +233,6 @@ public class EnrollmentUtils {
                     street = part0;
                     barangay = "";
                 }
-                // parts[1] assumed to contain city and municipality.
                 String[] cm = parts[1].split("\\s+");
                 if (cm.length >= 2) {
                     city = cm[0];
@@ -270,7 +244,6 @@ public class EnrollmentUtils {
             } else if (parts.length == 3) {
                 String first = parts[0].toLowerCase();
                 if (first.contains("st") || first.contains("street") || first.contains("ave")) {
-                    // Format: "Street, Barangay+City, Municipality"
                     street = parts[0];
                     String middle = parts[1];
                     municipality = parts[2];
@@ -289,7 +262,6 @@ public class EnrollmentUtils {
                         }
                     }
                 } else {
-                    // Assume no street provided.
                     street = "";
                     barangay = parts[0];
                     city = parts[1];
@@ -307,35 +279,33 @@ public class EnrollmentUtils {
                 municipality = "";
             }
             return new String[] {
-                truncateString(street, MAX_STREET_LENGTH),
-                truncateString(barangay, MAX_BARANGAY_LENGTH),
-                truncateString(city, MAX_CITY_LENGTH),
-                truncateString(municipality, MAX_MUNICIPALITY_LENGTH)
+                    truncateString(street, MAX_STREET_LENGTH),
+                    truncateString(barangay, MAX_BARANGAY_LENGTH),
+                    truncateString(city, MAX_CITY_LENGTH),
+                    truncateString(municipality, MAX_MUNICIPALITY_LENGTH)
             };
         } else {
-            // No commas present.
             String[] tokens = address.trim().split("\\s+");
             if (tokens.length == 4 && tokens[0].equalsIgnoreCase("Barangay")) {
                 return new String[] {
-                    "", // street is empty
-                    tokens[0] + " " + tokens[1],
-                    tokens[2],
-                    tokens[3]
+                        "", // street is empty
+                        tokens[0] + " " + tokens[1],
+                        tokens[2],
+                        tokens[3]
                 };
             } else if (tokens.length == 2) {
                 return new String[] {
-                    csvStudent.getMiddleName(),
-                    csvStudent.getLastName(),
-                    tokens[0],
-                    tokens[1]
+                        csvStudent.getMiddleName(),
+                        csvStudent.getLastName(),
+                        tokens[0],
+                        tokens[1]
                 };
             } else if (tokens.length == 3) {
-                // Assume no street provided.
                 return new String[] {
-                    "",        // street is empty
-                    tokens[0],
-                    tokens[1],
-                    tokens[2]
+                        "", // street is empty
+                        tokens[0],
+                        tokens[1],
+                        tokens[2]
                 };
             } else {
                 return new String[] { address.trim(), "", "", "" };
@@ -344,26 +314,27 @@ public class EnrollmentUtils {
     }
 
     private static String truncateString(String str, int maxLength) {
-        if (str == null) return "";
+        if (str == null)
+            return "";
         return str.length() > maxLength ? str.substring(0, maxLength) : str;
     }
 
     private static int generateNextId() {
-        synchronized(ID_LOCK) {
+        synchronized (ID_LOCK) {
             if (lastGeneratedId == -1) {
-                lastGeneratedId = App.COLLECTIONS_REGISTRY.getList("STUDENT").stream()
-                    .filter(s -> s instanceof Student)
-                    .map(s -> ((Student) s).getStudentID())
-                    .mapToInt(id -> id)
-                    .max()
-                    .orElse(0);
+                lastGeneratedId = DataManager.getInstance().getCollectionsRegistry().getList("STUDENT").stream()
+                        .filter(s -> s instanceof Student)
+                        .map(s -> ((Student) s).getStudentID())
+                        .mapToInt(id -> id)
+                        .max()
+                        .orElse(0);
             }
             return ++lastGeneratedId;
         }
     }
 
     private static int generateNextClusterId() {
-        return App.COLLECTIONS_REGISTRY.getList("CLUSTER").stream()
+        return DataManager.getInstance().getCollectionsRegistry().getList("CLUSTER").stream()
                 .filter(c -> c instanceof Cluster)
                 .map(c -> ((Cluster) c).getClusterID())
                 .mapToInt(id -> id)
@@ -372,7 +343,7 @@ public class EnrollmentUtils {
     }
 
     private static int generateNextAddressId() {
-        return App.COLLECTIONS_REGISTRY.getList("ADDRESS").stream()
+        return DataManager.getInstance().getCollectionsRegistry().getList("ADDRESS").stream()
                 .filter(a -> a instanceof Address)
                 .map(a -> ((Address) a).getAddressID())
                 .mapToInt(id -> id)
@@ -381,7 +352,7 @@ public class EnrollmentUtils {
     }
 
     private static boolean studentExists(int id) {
-        return App.COLLECTIONS_REGISTRY.getList("STUDENT").stream()
+        return DataManager.getInstance().getCollectionsRegistry().getList("STUDENT").stream()
                 .filter(s -> s instanceof Student)
                 .map(s -> ((Student) s).getStudentID())
                 .anyMatch(sid -> sid == id);

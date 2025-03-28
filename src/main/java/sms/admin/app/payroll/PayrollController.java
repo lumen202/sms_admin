@@ -12,8 +12,8 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 
 import dev.finalproject.data.StudentDAO;
+import dev.finalproject.datbase.DataManager;
 import dev.finalproject.models.AttendanceLog;
-import dev.finalproject.models.AttendanceRecord;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import javafx.application.Platform;
@@ -39,9 +39,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
 import sms.admin.App;
 import sms.admin.app.RootController;
-import sms.admin.app.attendance.AttendanceController;
 import sms.admin.util.attendance.AttendanceUtil;
-import sms.admin.util.attendance.CommonAttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
 import sms.admin.util.exporter.PayrollTableExporter;
 import sms.admin.util.exporter.exporterv2.DetailedPayrollExporter;
@@ -76,64 +74,64 @@ public class PayrollController extends FXController {
     @FXML
     private MenuItem exportPdf;
     @FXML
-    private MenuItem exportDetailedExcel; // Add this field
+    private MenuItem exportDetailedExcel;
     @FXML
-    private MenuItem exportDetailedPdf; // Add this field
-
-    // Add new fields
-    @FXML private RadioButton oneWayRadio;
-    @FXML private RadioButton twoWayRadio;
-    @FXML private RadioButton fourWayRadio;
-    @FXML private ToggleGroup fareTypeGroup;
-
-    private Map<Integer, List<AttendanceLog>> studentAttendanceCache = new HashMap<>();
-    
+    private MenuItem exportDetailedPdf;
+    @FXML
+    private RadioButton oneWayRadio;
+    @FXML
+    private RadioButton twoWayRadio;
+    @FXML
+    private RadioButton fourWayRadio;
+    @FXML
+    private ToggleGroup fareTypeGroup;
 
     private final DecimalFormat daysFormat = new DecimalFormat("#.# day(s)");
     private final DecimalFormat currencyFormat = new DecimalFormat("₱#,##0.00");
-
     private FilteredList<Student> filteredStudentList;
     private ObservableList<AttendanceLog> attendanceLog;
+    private String currentYear; // Track the current year
 
-    @SuppressWarnings("unchecked")
     @Override
     protected void load_fields() {
         rootPane.getProperties().put("controller", this);
-        
-        // Initialize student list with filtering
-        String selectedYear = (String) getParameter("selectedYear");
-        List<Student> students = StudentDAO.getStudentList();
-        if (selectedYear != null) {
-            String[] yearRange = selectedYear.split("-");
-            int startYear = Integer.parseInt(yearRange[0]);
+        currentYear = getSelectedYearOrDefault();
+        initializeData(currentYear);
 
-            students = students.stream()
-                .filter(student -> student.getYearID() != null &&
-                        student.getYearID().getYearStart() == startYear)
-                .collect(Collectors.toList());
-        }
-        filteredStudentList = new FilteredList<>(FXCollections.observableArrayList(students));
-        
-        // Initialize attendance logs
-        attendanceLog = (ObservableList<AttendanceLog>) getParameter("attendanceLogs");
-        if (attendanceLog == null) {
-            attendanceLog = App.COLLECTIONS_REGISTRY.getList("ATTENDANCE_LOG");
-        }
-        // Set four-way as default
         if (fourWayRadio != null) {
-            fourWayRadio.setSelected(true);
+            fourWayRadio.setSelected(true); // Set four-way as default
         }
 
-        // Initialize month selection
+        DateTimeUtils.updateMonthYearComboBox(yearMonthComboBox, currentYear);
         String selectedMonth = (String) getParameter("selectedMonth");
-        if (selectedYear != null) {
-            DateTimeUtils.updateMonthYearComboBox(yearMonthComboBox, selectedYear);
-            if (selectedMonth != null && yearMonthComboBox.getItems().contains(selectedMonth)) {
-                yearMonthComboBox.setValue(selectedMonth);
-            }
+        if (selectedMonth != null && yearMonthComboBox.getItems().contains(selectedMonth)) {
+            yearMonthComboBox.setValue(selectedMonth);
+        } else {
+            yearMonthComboBox.setValue(yearMonthComboBox.getItems().get(0));
         }
 
         setupTable();
+        updateTotalAmount();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void initializeData(String year) {
+        int startYear = Integer.parseInt(year.split("-")[0]);
+        // Retrieve the student list from DataManager instead of direct DAO call
+        List<Student> students = DataManager.getInstance().getCollectionsRegistry().getList("STUDENT");
+        filteredStudentList = new FilteredList<>(FXCollections.observableArrayList(
+                students.stream()
+                        .filter(student -> student.getYearID() != null
+                                && student.getYearID().getYearStart() == startYear && student.isDeleted() == 0)
+                        .collect(Collectors.toList())));
+
+        // Initialize attendance logs from shared DataManager if not provided as a
+        // parameter.
+        attendanceLog = (ObservableList<AttendanceLog>) getParameter("attendanceLogs");
+        if (attendanceLog == null) {
+            attendanceLog = DataManager.getInstance().getCollectionsRegistry().getList("ATTENDANCE_LOG");
+        }
+        payrollTable.setItems(filteredStudentList);
     }
 
     private void updateRootController(String monthYear) {
@@ -150,22 +148,18 @@ public class PayrollController extends FXController {
     }
 
     private void setupTable() {
-        // Configure columns
         colNo.setCellValueFactory(new PropertyValueFactory<>("studentID"));
         colFullName.setCellValueFactory(cellData -> {
             Student student = cellData.getValue();
-            String fullName = String.format("%s, %s %s",
-                    student.getLastName(),
-                    student.getFirstName(),
+            String fullName = String.format("%s, %s %s", student.getLastName(), student.getFirstName(),
                     student.getMiddleName());
             return new SimpleStringProperty(fullName);
         });
 
-        // Update total days formatting
         colTotalDays.setCellValueFactory(cellData -> {
             Student student = cellData.getValue();
             double totalDays = calculateTotalDays(student);
-            return new SimpleIntegerProperty((int) (totalDays * 10)).asObject(); // Multiply by 10 to preserve decimal
+            return new SimpleIntegerProperty((int) (totalDays * 10)).asObject();
         });
         colTotalDays.setCellFactory(column -> new TableCell<Student, Integer>() {
             @Override
@@ -174,13 +168,12 @@ public class PayrollController extends FXController {
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    double days = item / 10.0; // Convert back to actual value
+                    double days = item / 10.0;
                     setText(daysFormat.format(days));
                 }
             }
         });
 
-        // Update fare formatting to show multiplied fare
         colFare.setCellValueFactory(cellData -> {
             Student student = cellData.getValue();
             double multipliedFare = student.getFare() * getFareMultiplier();
@@ -198,7 +191,6 @@ public class PayrollController extends FXController {
             }
         });
 
-        // Update total amount calculation to use the already multiplied fare
         colTotalAmount.setCellValueFactory(cellData -> {
             Student student = cellData.getValue();
             double totalDays = calculateTotalDays(student);
@@ -217,26 +209,19 @@ public class PayrollController extends FXController {
             }
         });
 
-        // Set items to filtered list instead of direct student list
-        payrollTable.setItems(filteredStudentList);
-        updateTotalAmount();
-
-        // Add fixed widths to prevent column resizing issues
         colNo.setPrefWidth(80);
         colNo.setMinWidth(80);
         colNo.setMaxWidth(80);
-        
         colFullName.setPrefWidth(220);
         colFullName.setMinWidth(220);
-        
         colTotalDays.setPrefWidth(100);
         colTotalDays.setMinWidth(100);
-        
         colFare.setPrefWidth(200);
         colFare.setMinWidth(200);
-        
         colTotalAmount.setPrefWidth(120);
         colTotalAmount.setMinWidth(120);
+
+        payrollTable.setItems(filteredStudentList);
     }
 
     private void updateTotalAmount() {
@@ -247,11 +232,12 @@ public class PayrollController extends FXController {
                     return totalDays * fare;
                 })
                 .sum();
-
         totalAmountLabel.setText(currencyFormat.format(totalAmount));
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * Updated to treat a holiday day as a full day present.
+     */
     private double calculateTotalDays(Student student) {
         try {
             String monthYearValue = yearMonthComboBox.getValue();
@@ -262,33 +248,25 @@ public class PayrollController extends FXController {
             YearMonth selectedMonth = DateTimeUtils.parseMonthYear(monthYearValue);
             double totalDays = 0;
 
-            // Get logs only for this student in this month
             List<AttendanceLog> studentLogs = attendanceLog.stream()
-                .filter(log -> log != null && 
-                       log.getStudentID() != null && 
-                       log.getStudentID().getStudentID() == student.getStudentID() &&
-                       log.getRecordID() != null &&
-                       YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth())
-                              .equals(selectedMonth))
-                .collect(Collectors.toList());
+                    .filter(log -> log != null &&
+                            log.getStudentID() != null &&
+                            log.getStudentID().getStudentID() == student.getStudentID() &&
+                            log.getRecordID() != null &&
+                            YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth())
+                                    .equals(selectedMonth))
+                    .collect(Collectors.toList());
 
-            // Count only valid log entries
             for (AttendanceLog log : studentLogs) {
-                // Use AttendanceUtil directly to determine status
-                String status = AttendanceUtil.getAttendanceStatus(log); // Changed to use AttendanceUtil
+                String status = AttendanceUtil.getAttendanceStatus(log);
                 switch (status) {
                     case AttendanceUtil.PRESENT_MARK,
-                         AttendanceUtil.EXCUSED_MARK -> totalDays += 1.0;
+                            AttendanceUtil.EXCUSED_MARK,
+                            AttendanceUtil.HOLIDAY_MARK ->
+                        totalDays += 1.0;
                     case AttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
-                    // Absent (✗) counts as 0
                 }
             }
-            
-            System.out.println("Student " + student.getStudentID() + 
-                             " | Month: " + selectedMonth + 
-                             " | Logs: " + studentLogs.size() + 
-                             " | Total days: " + totalDays);
-            
             return totalDays;
         } catch (Exception e) {
             System.err.println("Error calculating days for student " + student.getStudentID());
@@ -299,27 +277,21 @@ public class PayrollController extends FXController {
 
     @Override
     protected void load_bindings() {
-        System.out.println("PayrollController.load_bindings called");
-        if (rootPane != null) {
-            rootPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
-                if (newScene != null) {
-                    rootPane.prefWidthProperty().bind(newScene.widthProperty());
-                    rootPane.prefHeightProperty().bind(newScene.heightProperty());
-                }
-            });
-        }
-        
-        // Add size bindings to prevent table movement
-        if (payrollTable != null) {
-            payrollTable.prefWidthProperty().bind(rootPane.widthProperty().subtract(40)); // 20px padding on each side
-            payrollTable.prefHeightProperty().bind(rootPane.heightProperty().subtract(200)); // Adjust for header and footer
-        }
+        rootPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                rootPane.prefWidthProperty().bind(newScene.widthProperty());
+                rootPane.prefHeightProperty().bind(newScene.heightProperty());
+            }
+        });
+        payrollTable.prefWidthProperty().bind(rootPane.widthProperty().subtract(40));
+        payrollTable.prefHeightProperty().bind(rootPane.heightProperty().subtract(200));
     }
 
     @Override
     protected void load_listeners() {
         yearMonthComboBox.setOnAction(event -> {
-            if (!yearMonthComboBox.isFocused()) return;
+            if (!yearMonthComboBox.isFocused())
+                return;
             String newValue = yearMonthComboBox.getValue();
             System.out.println("PayrollController: Month changed to " + newValue);
             payrollTable.refresh();
@@ -327,14 +299,12 @@ public class PayrollController extends FXController {
             updateRootController(newValue);
         });
 
-        // Add export menu item handlers
         exportExcel.setOnAction(event -> handleExport("excel"));
         exportCsv.setOnAction(event -> handleExport("csv"));
         exportPdf.setOnAction(event -> handleExport("pdf"));
         exportDetailedExcel.setOnAction(event -> handleDetailedExport("excel"));
-        exportDetailedPdf.setOnAction(event -> handleDetailedExport("pdf")); // Add this line
+        exportDetailedPdf.setOnAction(event -> handleDetailedExport("pdf"));
 
-        // Add radio button listeners
         fareTypeGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 RadioButton selected = (RadioButton) newVal;
@@ -361,7 +331,6 @@ public class PayrollController extends FXController {
                 case "pdf" -> exporter.exportToPdf(payrollTable, title, outputPath);
                 case "csv" -> exporter.exportToCsv(payrollTable, title, outputPath);
             }
-
             System.out.println("Export completed: " + outputPath);
         } catch (Exception e) {
             e.printStackTrace();
@@ -371,9 +340,8 @@ public class PayrollController extends FXController {
     private void handleDetailedExport(String type) {
         try {
             String selectedMonthYear = yearMonthComboBox.getValue();
-            if (selectedMonthYear == null || selectedMonthYear.trim().isEmpty()) {
+            if (selectedMonthYear == null || selectedMonthYear.trim().isEmpty())
                 return;
-            }
 
             YearMonth selectedMonth = DateTimeUtils.parseMonthYear(selectedMonthYear);
             String fileName = String.format("detailed_payroll_%s.%s",
@@ -392,7 +360,6 @@ public class PayrollController extends FXController {
                 exporter.exportToPdf(document, payrollTable.getItems(), "Detailed Payroll");
                 document.close();
             }
-
             System.out.println("Detailed " + type + " export completed: " + outputPath);
         } catch (Exception e) {
             e.printStackTrace();
@@ -401,8 +368,6 @@ public class PayrollController extends FXController {
 
     private void handleFareTypeChange(String fareType) {
         System.out.println("Selected fare type: " + fareType + " (multiplier: " + getFareMultiplier() + ")");
-        
-        // Just refresh the cell values without toggling column visibility
         Platform.runLater(() -> {
             payrollTable.refresh();
             updateTotalAmount();
@@ -410,16 +375,11 @@ public class PayrollController extends FXController {
     }
 
     private double getFareMultiplier() {
-        if (fourWayRadio.isSelected()) {
+        if (fourWayRadio.isSelected())
             return 4.0;
-        } else if (twoWayRadio.isSelected()) {
+        else if (twoWayRadio.isSelected())
             return 2.0;
-        }
         return 1.0; // one way
-    }
-
-    @FXML
-    public void initialize() {
     }
 
     public void updateYear(String newYear) {
@@ -427,32 +387,24 @@ public class PayrollController extends FXController {
     }
 
     public void initializeWithYear(String year) {
-        if (year == null) return;
-
-        try {
-            // Only need to update month combo box since filtering is handled by RootController
-            if (yearMonthComboBox != null) {
-                String currentValue = yearMonthComboBox.getValue();
-                yearMonthComboBox.getItems().clear();
-                DateTimeUtils.updateMonthYearComboBox(yearMonthComboBox, year);
-                
-                if (currentValue != null && yearMonthComboBox.getItems().contains(currentValue)) {
-                    yearMonthComboBox.setValue(currentValue);
-                }
-            }
-
-            payrollTable.refresh();
-            updateTotalAmount();
-            
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (year == null || year.equals(currentYear))
+            return;
+        currentYear = year;
+        initializeData(year);
+        DateTimeUtils.updateMonthYearComboBox(yearMonthComboBox, year);
+        String selectedMonth = (String) getParameter("selectedMonth");
+        if (selectedMonth != null && yearMonthComboBox.getItems().contains(selectedMonth)) {
+            yearMonthComboBox.setValue(selectedMonth);
+        } else {
+            yearMonthComboBox.setValue(yearMonthComboBox.getItems().get(0));
         }
+        payrollTable.refresh();
+        updateTotalAmount();
     }
 
     public void setSelectedMonth(String monthYear) {
         if (monthYear != null && yearMonthComboBox != null) {
-            if (!monthYear.equals(yearMonthComboBox.getValue()) && 
-                yearMonthComboBox.getItems().contains(monthYear)) {
+            if (!monthYear.equals(yearMonthComboBox.getValue()) && yearMonthComboBox.getItems().contains(monthYear)) {
                 yearMonthComboBox.setValue(monthYear);
                 payrollTable.refresh();
                 updateTotalAmount();
@@ -464,22 +416,16 @@ public class PayrollController extends FXController {
         return yearMonthComboBox != null ? yearMonthComboBox.getValue() : null;
     }
 
-    // Update refreshData to properly sync with attendance logs
-    @SuppressWarnings("unchecked")
-    public void refreshData() {
-        Platform.runLater(() -> {
-            try {
-                filteredStudentList = (FilteredList<Student>) getParameter("filteredStudentList");
-                payrollTable.setItems(filteredStudentList);
-                payrollTable.refresh();
-                updateTotalAmount();
-                
-                System.out.println("PayrollController: Refreshed with " + filteredStudentList.size() + " students");
-            } catch (Exception e) {
-                System.err.println("Error refreshing payroll data: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
+    /**
+     * Added method: Returns the selected year or a default value.
+     */
+    private String getSelectedYearOrDefault() {
+        String year = (String) getParameter("selectedYear");
+        if (year == null) {
+            int currentYear = java.time.LocalDate.now().getYear();
+            year = (java.time.LocalDate.now().getMonthValue() >= 6 ? currentYear : currentYear - 1) + "-" +
+                    (java.time.LocalDate.now().getMonthValue() >= 6 ? currentYear + 1 : currentYear);
+        }
+        return year;
     }
-
 }

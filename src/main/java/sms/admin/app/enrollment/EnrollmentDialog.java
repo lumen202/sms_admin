@@ -12,7 +12,7 @@ public class EnrollmentDialog extends Dialog<Void> {
     private EnrollmentController controller;
 
     public EnrollmentDialog(SchoolYear schoolYear) {
-        initStyle(StageStyle.UNDECORATED);
+        // initStyle(StageStyle.UNDECORATED);
         initModality(Modality.APPLICATION_MODAL);
 
         try {

@@ -56,11 +56,6 @@
                      <FontIcon iconLiteral="mdi2a-account-multiple" iconSize="20" />
                   </graphic>
                </Button>
-               <Button fx:id="enrollmentButton" styleClass="nav-button" text="Enrollment">
-                  <graphic>
-                     <FontIcon iconLiteral="mdi2f-folder-plus" iconSize="20" />
-                  </graphic>
-               </Button>
                <Button fx:id="attendanceButton" styleClass="nav-button" text="Attendance">
                   <graphic>
                      <FontIcon iconLiteral="mdi2c-calendar-clock" iconSize="20" />

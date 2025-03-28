@@ -2,6 +2,9 @@ package sms.admin.util.attendance;
 
 import dev.finalproject.models.Student;
 import dev.finalproject.models.AttendanceLog;
+import dev.finalproject.models.AttendanceRecord;
+import dev.finalproject.data.AttendanceLogDAO;
+import dev.finalproject.data.AttendanceRecordDAO;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableCell;
 import javafx.application.Platform;
@@ -27,7 +30,7 @@ public class AttendanceEditUtil {
             TableCell<Student, String> cell,
             Student student,
             LocalDate date,
-            ObservableList<AttendanceLog> attendanceLog,
+            ObservableList<AttendanceLog> attendanceLogs,
             Runnable onComplete) {
             
         String currentStatus = cell.getText();
@@ -36,25 +39,22 @@ public class AttendanceEditUtil {
         cell.setGraphic(comboBox);
         cell.setText(null);
         
-        // Request focus after showing
         Platform.runLater(() -> {
             comboBox.requestFocus();
             comboBox.show();
         });
 
-        // Handle focus lost
         comboBox.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
             if (!isFocused) {
-                updateCellValue(cell, student, date, comboBox.getValue(), attendanceLog);
+                updateCellValue(cell, student, date, comboBox.getValue(), attendanceLogs);
                 if (onComplete != null) {
                     onComplete.run();
                 }
             }
         });
 
-        // Handle selection
         comboBox.setOnAction(event -> {
-            updateCellValue(cell, student, date, comboBox.getValue(), attendanceLog);
+            updateCellValue(cell, student, date, comboBox.getValue(), attendanceLogs);
             if (onComplete != null) {
                 onComplete.run();
             }
@@ -66,32 +66,46 @@ public class AttendanceEditUtil {
             Student student, 
             LocalDate date,
             String newValue,
-            ObservableList<AttendanceLog> attendanceLog) {
+            ObservableList<AttendanceLog> attendanceLogs) {
             
         if (newValue != null) {
-            if (newValue.equals(AttendanceUtil.EXCUSED_MARK)) {
-                DataUtil.createExcusedAttendance(student, date);
-            } else {
-                updateAttendanceRecord(student, date, newValue, attendanceLog);
+            try {
+                AttendanceLog log;
+                if (newValue.equals(AttendanceUtil.EXCUSED_MARK)) {
+                    log = DataUtil.createExcusedAttendance(student, date);
+                } else {
+                    log = updateAttendanceRecord(student, date, newValue, attendanceLogs);
+                }
+                cell.setGraphic(null);
+                cell.setText(newValue);
+            } catch (Exception e) {
+                System.err.println("Error updating attendance: " + e.getMessage());
+                cell.setGraphic(null);
+                cell.setText(AttendanceUtil.ABSENT_MARK);
             }
-            cell.setGraphic(null);
-            cell.setText(newValue);
         }
     }
     
-    private static void updateAttendanceRecord(
+    private static AttendanceLog updateAttendanceRecord(
             Student student,
             LocalDate date,
             String attendanceValue,
-            ObservableList<AttendanceLog> attendanceLog) {
+            ObservableList<AttendanceLog> attendanceLogs) {
             
-        AttendanceLog log = AttendanceUtil.findOrCreateAttendanceLog(
-            student,
-            date,
-            attendanceLog,
-            DataUtil.createAttendanceRecordList()
-        );
+        // Get or create the AttendanceRecord
+        AttendanceRecord record = getOrCreateRecord(date);
         
+        // Find existing log or create a new one
+        AttendanceLog log = attendanceLogs.stream()
+            .filter(l -> l.getStudentID().getStudentID() == student.getStudentID() &&
+                         l.getRecordID().getRecordID() == record.getRecordID())
+            .findFirst()
+            .orElseGet(() -> {
+                int nextLogId = getNextLogId(attendanceLogs);
+                return new AttendanceLog(nextLogId, record, student, 0, 0, 0, 0);
+            });
+        
+        // Update log times
         switch (attendanceValue) {
             case AttendanceUtil.PRESENT_MARK:
                 log.setTimeInAM(AttendanceUtil.TIME_IN_AM);
@@ -118,5 +132,40 @@ public class AttendanceEditUtil {
                 log.setTimeOutPM(AttendanceUtil.TIME_EXCUSED);
                 break;
         }
+
+        // Persist to database
+        if (attendanceLogs.contains(log)) {
+            AttendanceLogDAO.update(log);
+        } else {
+            AttendanceLogDAO.insert(log);
+            attendanceLogs.add(log);
+        }
+
+        return log;
+    }
+
+    private static AttendanceRecord getOrCreateRecord(LocalDate date) {
+        AttendanceRecord record = AttendanceRecordDAO.getRecordList().stream()
+            .filter(r -> r.getYear() == date.getYear() && 
+                        r.getMonth() == date.getMonthValue() && 
+                        r.getDay() == date.getDayOfMonth())
+            .findFirst()
+            .orElse(null);
+        if (record == null) {
+            int nextId = AttendanceRecordDAO.getRecordList().stream()
+                .mapToInt(AttendanceRecord::getRecordID)
+                .max()
+                .orElse(0) + 1;
+            record = new AttendanceRecord(nextId, date.getMonthValue(), date.getDayOfMonth(), date.getYear());
+            AttendanceRecordDAO.insert(record);
+        }
+        return record;
+    }
+
+    private static int getNextLogId(ObservableList<AttendanceLog> attendanceLogs) {
+        return Math.max(
+            AttendanceLogDAO.getAttendanceLogList().stream().mapToInt(AttendanceLog::getLogID).max().orElse(0),
+            attendanceLogs.stream().mapToInt(AttendanceLog::getLogID).max().orElse(0)
+        ) + 1;
     }
 }

@@ -204,16 +204,13 @@ public class SchoolYearDialogController {
     }
 
     public SchoolYear createSchoolYear() {
-        int yearId = existingSchoolYear != null ? 
-                    existingSchoolYear.getYearID() : 
-                    getNextYearId();
-        
+        int yearId = existingSchoolYear != null ? existingSchoolYear.getYearID() : getNextYearId();
+
         // Get the last day of the end month
         int endDay = getLastDayOfMonth(
-            endYearCombo.getValue(),
-            endMonthCombo.getValue()
-        );
-        
+                endYearCombo.getValue(),
+                endMonthCombo.getValue());
+
         return new SchoolYear(
                 yearId,
                 startYearCombo.getValue(),
