@@ -24,6 +24,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import sms.admin.app.attendance.AttendanceController;
 import sms.admin.app.attendance.AttendanceLoader;
+import sms.admin.app.attendance.attendancev2.AttendanceV2Controller;
+import sms.admin.app.attendance.attendancev2.AttendanceV2Loader;
 import sms.admin.app.enrollment.EnrollmentController;
 import sms.admin.app.enrollment.EnrollmentLoader;
 import sms.admin.app.payroll.PayrollController;
@@ -39,6 +41,8 @@ public class RootController extends FXController {
 
     @FXML
     private Button attendanceButton;
+    @FXML
+    private Button attendanceV2Button;
     @FXML
     private Button payrollButton;
     @FXML
@@ -62,8 +66,7 @@ public class RootController extends FXController {
     @FXML
     private MenuItem newSchoolYearMenuItem;
     @FXML
-    private MenuItem editSchoolYearMenuItem;
-  
+  private MenuItem editSchoolYearMenuItem;
 
     @FXML
     private void handleStudentButton() {
@@ -96,14 +99,14 @@ public class RootController extends FXController {
     private void handlePayrollButton() {
         highlightButton(payrollButton);
         Map<String, Object> params = new HashMap<>();
-        String currentMonth = getCurrentControllerMonth();
+String currentMonth = getCurrentControllerMonth();
         
         if (currentMonth == null) {
             currentMonth = selectedMonth;
-        }
+}
         
         params.put("selectedYear", yearComboBox.getValue());
-        params.put("selectedMonth", currentMonth);
+params.put("selectedMonth", currentMonth);
         
         // Get attendance logs from current attendance controller if it exists
         if (currentController instanceof AttendanceController attendanceController) {
@@ -115,7 +118,7 @@ public class RootController extends FXController {
                 getClass(),
                 PayrollLoader.class,
                 params,
-                contentPane);
+contentPane);
                 
         if (currentController instanceof PayrollController controller) {
             controller.initializeWithYear(yearComboBox.getValue());
@@ -129,11 +132,11 @@ public class RootController extends FXController {
     private void handleAttendanceButton() {
         highlightButton(attendanceButton);
         Map<String, Object> params = new HashMap<>();
-        String currentMonth = getCurrentControllerMonth();
+String currentMonth = getCurrentControllerMonth();
         
         if (currentMonth == null) {
             currentMonth = selectedMonth;
-        }
+}
         
         params.put("selectedYear", yearComboBox.getValue());
         params.put("selectedMonth", currentMonth);
@@ -144,9 +147,42 @@ public class RootController extends FXController {
                     getClass(),
                     AttendanceLoader.class,
                     params,
-                    contentPane);
+contentPane);
                     
             if (currentController instanceof AttendanceController controller) {
+                String finalMonth = currentMonth;
+                Platform.runLater(() -> {
+                    controller.initializeWithYear(yearComboBox.getValue());
+                    controller.setSelectedMonth(finalMonth);
+                });
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleAttendanceV2Button() {
+        highlightButton(attendanceV2Button);
+        Map<String, Object> params = new HashMap<>();
+String currentMonth = getCurrentControllerMonth();
+        
+        if (currentMonth == null) {
+            currentMonth = selectedMonth;
+}
+        
+        params.put("selectedYear", yearComboBox.getValue());
+        params.put("selectedMonth", currentMonth);
+
+        try {
+            currentController = SceneLoaderUtil.loadScene(
+                    "/sms/admin/app/attendance/attendancev2/attendancev2.fxml",
+                    getClass(),
+                    AttendanceV2Loader.class,
+                    params,
+contentPane);
+                    
+            if (currentController instanceof AttendanceV2Controller controller) {
                 String finalMonth = currentMonth;
                 Platform.runLater(() -> {
                     controller.initializeWithYear(yearComboBox.getValue());
@@ -189,7 +225,7 @@ public class RootController extends FXController {
 
     @Override
     protected void load_fields() {
-        schoolYearList = FXCollections.observableArrayList(App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR"));
+schoolYearList = FXCollections.observableArrayList(App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR"));
         
         yearComboBox.setItems(SchoolYearUtil.convertToStringList(schoolYearList));
 
@@ -219,6 +255,7 @@ public class RootController extends FXController {
 
         payrollButton.setOnAction(event -> handlePayrollButton());
         attendanceButton.setOnAction(event -> handleAttendanceButton());
+        attendanceV2Button.setOnAction(event -> handleAttendanceV2Button());
         studentButton.setOnAction(event -> handleStudentButton());
         enrollmentButton.setOnAction(event -> handleEnrollmentButton());
         generateKeyMenuItem.setOnAction(event -> handleGenerateKeyMenuItem());
@@ -226,7 +263,7 @@ public class RootController extends FXController {
         // Use FXML injected menu items directly
         if (newSchoolYearMenuItem != null) {
             newSchoolYearMenuItem.setOnAction(event -> handleNewSchoolYear());
-        }
+}
         
         if (editSchoolYearMenuItem != null) {
             editSchoolYearMenuItem.setOnAction(event -> handleEditSchoolYear());
@@ -235,7 +272,7 @@ public class RootController extends FXController {
 
     private void highlightButton(Button button) {
         String defaultStyle = "-fx-background-color: #800000; -fx-text-fill: white;";
-        Arrays.asList(attendanceButton, payrollButton, studentButton, enrollmentButton)
+        Arrays.asList(attendanceButton, attendanceV2Button, payrollButton, studentButton, enrollmentButton)
                 .forEach(btn -> btn.setStyle(defaultStyle));
         button.setStyle("-fx-background-color: #ADD8E6; -fx-text-fill: black;");
     }
@@ -315,17 +352,21 @@ public class RootController extends FXController {
             controller.initializeWithYear(newYear);
         } else if (currentController instanceof AttendanceController controller) {
             controller.initializeWithYear(newYear);
+        } else if (currentController instanceof AttendanceV2Controller controller) {
+            controller.initializeWithYear(newYear);
         }
     }
 
     public void setSelectedMonth(String monthYear) {
         if (monthYear != null && !monthYear.equals(this.selectedMonth)) {
-            this.selectedMonth = monthYear;
+this.selectedMonth = monthYear;
             
             Platform.runLater(() -> {
                 if (currentController instanceof AttendanceController controller) {
                     controller.setSelectedMonth(monthYear);
                 } else if (currentController instanceof PayrollController controller) {
+                    controller.setSelectedMonth(monthYear);
+                } else if (currentController instanceof AttendanceV2Controller controller) {
                     controller.setSelectedMonth(monthYear);
                 }
             });

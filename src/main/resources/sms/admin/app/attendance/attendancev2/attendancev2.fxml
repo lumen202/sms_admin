@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane fx:id="rootPane" xmlns:fx="http://javafx.com/fxml"
+    fx:controller="sms.admin.app.attendance.attendancev2.AttendanceV2Controller">
+    <top>
+        <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10;">
+            <ComboBox fx:id="monthYearComboBox" />
+            <Label fx:id="statusLabel" />
+        </HBox>
+    </top>
+    <center>
+        <ScrollPane fx:id="scrollPane"
+            style="-fx-background-color: transparent;"
+            hbarPolicy="NEVER"
+            vbarPolicy="AS_NEEDED">
+            <GridPane fx:id="attendanceGrid"
+                style="-fx-background-color: white;"
+                maxWidth="Infinity" maxHeight="Infinity"
+                gridLinesVisible="true">
+                <padding>
+                    <Insets top="1" right="1" bottom="1" left="1" />
+                </padding>
+            </GridPane>
+        </ScrollPane>
+    </center>
+</BorderPane>

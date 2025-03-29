@@ -66,6 +66,11 @@
                      <FontIcon iconLiteral="mdi2c-calendar-clock" iconSize="20" />
                   </graphic>
                </Button>
+               <Button fx:id="attendanceV2Button" styleClass="nav-button" text="AttendanceV2">
+                  <graphic>
+                     <FontIcon iconLiteral="mdi2c-calendar-check" iconSize="20" />
+                  </graphic>
+               </Button>
                <Button fx:id="payrollButton" styleClass="nav-button" text="Payroll Summary">
                   <graphic>
                      <FontIcon iconLiteral="mdi2c-cash" iconSize="20" />

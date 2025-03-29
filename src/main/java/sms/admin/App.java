@@ -32,16 +32,29 @@ import sms.admin.util.db.DatabaseChangeListener;
 import sms.admin.util.db.DatabaseConnection;
 
 public class App extends FXApplication {
+
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 
-    public static final String REMOTE_HOST = buildJdbcUrl("192.168.254.108");
-    public static final String LOCAL_HOST = buildJdbcUrl("localhost");
+    // public static final String REMOTE_HOST = buildJdbcUrl("192.168.254.108");
+    // public static final String LOCAL_HOST = buildJdbcUrl("localhost");
+    // public static final String LAB_HOST = "jdbc:mysql://192.168.254.108:3306/student_management_system_db?user=remote_user&allowPublicKeyRetrieval=true&useSSL=false";
+
+    // public static final FXControllerRegister CONTROLLER_REGISTRY = FXControllerRegister.INSTANCE;
+    // public static final FXCollectionsRegister COLLECTIONS_REGISTRY = FXCollectionsRegister.INSTANCE;
+    // public static final FXNodeRegister NODE_REGISTER = FXNodeRegister.INSTANCE;
+    // public static final DBService DB_SMS = DBService.INSTANCE.initialize(LOCAL_HOST);
+
+    
+    public static final String REMOTE_HOST = "jdbc:mysql://192.168.254.108:3306/student_management_system_db?user=root&password=admin&allowPublicKeyRetrieval=true&useSSL=false";
+    public static final String LOCAL_HOST = "jdbc:mysql://localhost:3306/student_management_system_db?user=root&password=admin&allowPublicKeyRetrieval=true&useSSL=false";
     public static final String LAB_HOST = "jdbc:mysql://192.168.254.108:3306/student_management_system_db?user=remote_user&allowPublicKeyRetrieval=true&useSSL=false";
 
     public static final FXControllerRegister CONTROLLER_REGISTRY = FXControllerRegister.INSTANCE;
     public static final FXCollectionsRegister COLLECTIONS_REGISTRY = FXCollectionsRegister.INSTANCE;
     public static final FXNodeRegister NODE_REGISTER = FXNodeRegister.INSTANCE;
-    public static final DBService DB_SMS = DBService.INSTANCE.initialize(LOCAL_HOST);
+
+    public static final DBService DB_SMS = DBService.INSTANCE
+.initialize(LOCAL_HOST);
 
     private DatabaseChangeListener dbChangeListener;
 
@@ -109,7 +122,8 @@ public class App extends FXApplication {
                     var newList = FXCollections.observableArrayList(SchoolYearDAO.getSchoolYearList());
                     COLLECTIONS_REGISTRY.register("SCHOOL_YEAR", newList);
                 }
-                default -> LOGGER.warning("Unknown table for refresh: " + tableName);
+                default ->
+                    LOGGER.warning("Unknown table for refresh: " + tableName);
             }
             LOGGER.info("Successfully refreshed collection for table: " + tableName);
         } catch (Exception e) {
@@ -220,10 +234,11 @@ public class App extends FXApplication {
     }
 
     /**
-     * A simple lazy-loading wrapper for an ObservableList.
-     * The data is loaded only on first access.
+     * A simple lazy-loading wrapper for an ObservableList. The data is loaded
+     * only on first access.
      */
     private static class LazyObservableList<T> extends ObservableListBase<T> {
+
         private ObservableList<T> backing;
         private final Supplier<java.util.List<T>> supplier;
 
@@ -248,6 +263,6 @@ public class App extends FXApplication {
             load();
             return backing.size();
         }
-        
+
     }
 }
