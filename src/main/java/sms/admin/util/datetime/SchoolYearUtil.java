@@ -1,4 +1,4 @@
-package sms.admin.util;
+package sms.admin.util.datetime;
 
 import dev.finalproject.models.SchoolYear;
 import javafx.collections.FXCollections;

@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import atlantafx.base.controls.ModalPane;
 import dev.finalproject.data.StudentDAO;
-import dev.finalproject.datbase.DataManager;
+import dev.finalproject.database.DataManager;
 import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;

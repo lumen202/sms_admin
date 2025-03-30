@@ -12,7 +12,7 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 
 import dev.finalproject.data.StudentDAO;
-import dev.finalproject.datbase.DataManager;
+import dev.finalproject.database.DataManager;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;

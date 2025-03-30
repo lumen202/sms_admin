@@ -1,4 +1,4 @@
-package sms.admin.util;
+package sms.admin.util.datetime;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

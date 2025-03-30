@@ -9,7 +9,7 @@ import dev.finalproject.data.AttendanceLogDAO;
 import dev.finalproject.data.GuardianDAO;
 import dev.finalproject.data.SchoolYearDAO;
 import dev.finalproject.data.StudentDAO;
-import dev.finalproject.datbase.DataManager;
+import dev.finalproject.database.DataManager;
 import dev.sol.core.application.FXApplication;
 import dev.sol.core.application.loader.FXLoaderFactory;
 import dev.sol.core.registry.FXCollectionsRegister;

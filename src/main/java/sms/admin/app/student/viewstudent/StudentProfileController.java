@@ -6,7 +6,7 @@ import java.util.Optional;
 import dev.finalproject.data.AddressDAO;
 import dev.finalproject.data.StudentDAO;
 import dev.finalproject.data.StudentGuardianDAO;
-import dev.finalproject.datbase.DataManager;
+import dev.finalproject.database.DataManager;
 import dev.finalproject.models.Address;
 import dev.finalproject.models.Cluster;
 import dev.finalproject.models.Guardian;

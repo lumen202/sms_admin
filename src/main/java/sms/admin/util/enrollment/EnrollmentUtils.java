@@ -7,15 +7,13 @@ import java.util.List;
 import dev.finalproject.data.AddressDAO;
 import dev.finalproject.data.ClusterDAO;
 import dev.finalproject.data.StudentDAO;
-import dev.finalproject.datbase.DataManager;
+import dev.finalproject.database.DataManager;
 import dev.finalproject.models.Address;
 import dev.finalproject.models.Cluster;
 import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 
 public class EnrollmentUtils {
-    private static final Object ID_LOCK = new Object();
-    private static int lastGeneratedId = -1;
 
     // Constants matching DB schema column sizes
     private static final int MAX_NAME_LENGTH = 20;
@@ -27,30 +25,34 @@ public class EnrollmentUtils {
     private static final int MAX_MUNICIPALITY_LENGTH = 50;
     private static final int MAX_BARANGAY_LENGTH = 50;
 
+    // For manual ID generation since DAO does not support auto-increment.
+    private static final Object STUDENT_ID_LOCK = new Object();
+    private static int lastGeneratedStudentId = -1;
+
     /**
-     * Enrolls a student by creating a new cluster (using the provided clusterName
-     * if available),
-     * inserting the student record, and then creating an address record.
+     * Enrolls a student by creating a new cluster (using the provided
+     * clusterName if available), inserting the student record, and then
+     * creating an address record.
+     *
+     * Now, if a valid studentId (nonzero) is passed in, it will be used.
      */
     public static Student enrollStudent(
-            String studentId,
+            String studentId, // if provided and > 0, it will be used.
             String firstName, String middleName, String lastName, String nameExt,
             String email, String status, String contact, Date dateOfBirth,
             double fare, String street, String barangay, String city, String municipality,
             String postalCode, String guardianName, String guardianContact,
             String clusterName, SchoolYear schoolYear) throws Exception {
 
-        // Generate new ID if not provided or invalid.
+        // Use provided studentId if valid; otherwise generate one.
         int studentIdInt;
         try {
             studentIdInt = Integer.parseInt(studentId);
-        } catch (NumberFormatException e) {
-            studentIdInt = generateNextId();
-        }
-
-        // Validate the ID doesn't already exist.
-        if (studentExists(studentIdInt)) {
-            throw new Exception("Student ID " + studentIdInt + " already exists");
+            if (studentIdInt <= 0) {  // treat 0 as invalid
+                throw new NumberFormatException();
+            }
+        } catch (Exception e) {
+            studentIdInt = generateNextStudentId();
         }
 
         // Truncate and sanitize fields.
@@ -70,9 +72,9 @@ public class EnrollmentUtils {
         java.sql.Date sqlDate = new java.sql.Date(dateOfBirth.getTime());
 
         // 1. Create and insert cluster.
-        int nextClusterId = generateNextClusterId();
+        int clusterId = generateNextClusterId();
         String clusterLabel = (clusterName != null && !clusterName.isEmpty()) ? clusterName : "Default";
-        Cluster cluster = new Cluster(nextClusterId, clusterLabel);
+        Cluster cluster = new Cluster(clusterId, clusterLabel);
         ClusterDAO.insert(cluster);
         DataManager.getInstance().getCollectionsRegistry().getList("CLUSTER").add(cluster);
 
@@ -84,43 +86,23 @@ public class EnrollmentUtils {
                 cluster,
                 schoolYear, 0);
 
-        try {
-            StudentDAO.insert(student);
-            DataManager.getInstance().getCollectionsRegistry().getList("STUDENT").add(student);
+        StudentDAO.insert(student);
+        DataManager.getInstance().getCollectionsRegistry().getList("STUDENT").add(student);
 
-            // 3. Create and insert address only after successful student insertion.
-            Address address = new Address(
-                    student,
-                    generateNextAddressId(),
-                    city,
-                    municipality,
-                    street,
-                    barangay,
-                    Integer.parseInt(postalCode));
-            AddressDAO.insert(address);
-            DataManager.getInstance().getCollectionsRegistry().getList("ADDRESS").add(address);
+        // 3. Create and insert address.
+        int addressId = generateNextAddressId();
+        Address address = new Address(
+                student,
+                addressId,
+                city,
+                municipality,
+                street,
+                barangay,
+                Integer.parseInt(postalCode));
+        AddressDAO.insert(address);
+        DataManager.getInstance().getCollectionsRegistry().getList("ADDRESS").add(address);
 
-            return student;
-        } catch (Exception e) {
-            // Cleanup on failure.
-            try {
-                if (studentExists(studentIdInt)) {
-                    StudentDAO.delete(student);
-                }
-            } catch (Exception ex) {
-                // Optionally log cleanup failure.
-            }
-            throw e;
-        }
-    }
-
-    private static String sanitizeAddressField(String field, int maxLength) {
-        if (field == null)
-            return "";
-        field = field.replaceAll("[\\r\\n]", " ")
-                .trim()
-                .replaceAll("\\s+", " ");
-        return truncateString(field, maxLength);
+        return student;
     }
 
     /**
@@ -141,24 +123,20 @@ public class EnrollmentUtils {
     }
 
     /**
-     * Enrolls a student from CSV data by mapping the CSV fields to the enrollment
-     * parameters.
+     * Enrolls a student from CSV data by mapping the CSV fields to the
+     * enrollment parameters.
      */
     public static Student enrollStudentFromCsv(CsvStudent csvStudent, SchoolYear schoolYear) throws Exception {
+        // Generate a new student ID once here.
         int studentId;
-        synchronized (ID_LOCK) {
-            studentId = generateNextId();
-            if (studentExists(studentId)) {
-                throw new Exception("Failed to generate unique student ID");
-            }
+        synchronized (STUDENT_ID_LOCK) {
+            studentId = generateNextStudentId();
         }
-
-        // Pass CsvStudent instance so that parseAddress can use its middle and last
-        // names if needed.
+        // Parse address components from CSV.
         String[] addressParts = parseAddress(csvStudent.getAddress(), csvStudent);
 
         return enrollStudent(
-                String.valueOf(studentId),
+                String.valueOf(studentId), // pass the generated ID
                 csvStudent.getFirstName(),
                 csvStudent.getMiddleName(),
                 csvStudent.getLastName(),
@@ -172,7 +150,7 @@ public class EnrollmentUtils {
                 addressParts[1], // barangay
                 addressParts[2], // city
                 addressParts[3], // municipality
-                "0",
+                "0", // postalCode (adjust as needed)
                 "",
                 "",
                 csvStudent.getCluster(),
@@ -189,8 +167,8 @@ public class EnrollmentUtils {
                 Student student = enrollStudentFromCsv(csvStudent, schoolYear);
                 enrolledStudents.add(student);
             } catch (Exception e) {
-                System.err.println("Failed to enroll student with email " + csvStudent.getEmail() +
-                        ": " + e.getMessage());
+                System.err.println("Failed to enroll student with email " + csvStudent.getEmail()
+                        + ": " + e.getMessage());
             }
         }
         return enrolledStudents;
@@ -201,7 +179,7 @@ public class EnrollmentUtils {
      */
     private static String[] parseAddress(String address, CsvStudent csvStudent) {
         if (address == null || address.trim().isEmpty()) {
-            return new String[] { "", "", "", "" };
+            return new String[]{"", "", "", ""};
         }
         if (address.contains(",")) {
             String[] parts = address.split(",");
@@ -278,63 +256,77 @@ public class EnrollmentUtils {
                 city = "";
                 municipality = "";
             }
-            return new String[] {
-                    truncateString(street, MAX_STREET_LENGTH),
-                    truncateString(barangay, MAX_BARANGAY_LENGTH),
-                    truncateString(city, MAX_CITY_LENGTH),
-                    truncateString(municipality, MAX_MUNICIPALITY_LENGTH)
+            return new String[]{
+                truncateString(street, MAX_STREET_LENGTH),
+                truncateString(barangay, MAX_BARANGAY_LENGTH),
+                truncateString(city, MAX_CITY_LENGTH),
+                truncateString(municipality, MAX_MUNICIPALITY_LENGTH)
             };
         } else {
             String[] tokens = address.trim().split("\\s+");
             if (tokens.length == 4 && tokens[0].equalsIgnoreCase("Barangay")) {
-                return new String[] {
-                        "", // street is empty
-                        tokens[0] + " " + tokens[1],
-                        tokens[2],
-                        tokens[3]
+                return new String[]{
+                    "", // street is empty
+                    tokens[0] + " " + tokens[1],
+                    tokens[2],
+                    tokens[3]
                 };
             } else if (tokens.length == 2) {
-                return new String[] {
-                        csvStudent.getMiddleName(),
-                        csvStudent.getLastName(),
-                        tokens[0],
-                        tokens[1]
+                return new String[]{
+                    csvStudent.getMiddleName(),
+                    csvStudent.getLastName(),
+                    tokens[0],
+                    tokens[1]
                 };
             } else if (tokens.length == 3) {
-                return new String[] {
-                        "", // street is empty
-                        tokens[0],
-                        tokens[1],
-                        tokens[2]
+                return new String[]{
+                    "", // street is empty
+                    tokens[0],
+                    tokens[1],
+                    tokens[2]
                 };
             } else {
-                return new String[] { address.trim(), "", "", "" };
+                return new String[]{address.trim(), "", "", ""};
             }
         }
     }
 
     private static String truncateString(String str, int maxLength) {
-        if (str == null)
+        if (str == null) {
             return "";
+        }
         return str.length() > maxLength ? str.substring(0, maxLength) : str;
     }
 
-    private static int generateNextId() {
-        synchronized (ID_LOCK) {
-            if (lastGeneratedId == -1) {
-                lastGeneratedId = DataManager.getInstance().getCollectionsRegistry().getList("STUDENT").stream()
+    private static String sanitizeAddressField(String field, int maxLength) {
+        if (field == null) {
+            return "";
+        }
+        field = field.replaceAll("[\\r\\n]", " ")
+                .trim()
+                .replaceAll("\\s+", " ");
+        return truncateString(field, maxLength);
+    }
+
+    // Manual ID generation methods
+    private static int generateNextStudentId() {
+        synchronized (STUDENT_ID_LOCK) {
+            if (lastGeneratedStudentId == -1) {
+                lastGeneratedStudentId = DataManager.getInstance().getCollectionsRegistry().getList("STUDENT")
+                        .stream()
                         .filter(s -> s instanceof Student)
                         .map(s -> ((Student) s).getStudentID())
                         .mapToInt(id -> id)
                         .max()
                         .orElse(0);
             }
-            return ++lastGeneratedId;
+            return ++lastGeneratedStudentId;
         }
     }
 
     private static int generateNextClusterId() {
-        return DataManager.getInstance().getCollectionsRegistry().getList("CLUSTER").stream()
+        return DataManager.getInstance().getCollectionsRegistry().getList("CLUSTER")
+                .stream()
                 .filter(c -> c instanceof Cluster)
                 .map(c -> ((Cluster) c).getClusterID())
                 .mapToInt(id -> id)
@@ -343,18 +335,12 @@ public class EnrollmentUtils {
     }
 
     private static int generateNextAddressId() {
-        return DataManager.getInstance().getCollectionsRegistry().getList("ADDRESS").stream()
+        return DataManager.getInstance().getCollectionsRegistry().getList("ADDRESS")
+                .stream()
                 .filter(a -> a instanceof Address)
                 .map(a -> ((Address) a).getAddressID())
                 .mapToInt(id -> id)
                 .max()
                 .orElse(0) + 1;
-    }
-
-    private static boolean studentExists(int id) {
-        return DataManager.getInstance().getCollectionsRegistry().getList("STUDENT").stream()
-                .filter(s -> s instanceof Student)
-                .map(s -> ((Student) s).getStudentID())
-                .anyMatch(sid -> sid == id);
     }
 }

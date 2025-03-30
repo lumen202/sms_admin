@@ -1,4 +1,4 @@
-package sms.admin.util;
+package sms.admin.util.dialog;
 
 import javafx.scene.control.TextField;
 import javafx.scene.control.Control;

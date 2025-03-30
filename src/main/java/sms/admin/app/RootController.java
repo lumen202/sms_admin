@@ -9,7 +9,7 @@ import java.util.Map;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
-import dev.finalproject.datbase.DataManager;
+import dev.finalproject.database.DataManager;
 import dev.finalproject.models.SchoolYear;
 import dev.sol.core.application.FXController;
 import javafx.application.Platform;
@@ -31,8 +31,8 @@ import sms.admin.app.payroll.PayrollLoader;
 import sms.admin.app.schoolyear.SchoolYearDialog;
 import sms.admin.app.student.StudentController;
 import sms.admin.app.student.StudentLoader;
-import sms.admin.util.SchoolYearUtil;
 import sms.admin.util.datetime.DateTimeUtils;
+import sms.admin.util.datetime.SchoolYearUtil;
 import sms.admin.util.scene.SceneLoaderUtil;
 
 public class RootController extends FXController {
@@ -263,8 +263,9 @@ public class RootController extends FXController {
     }
 
     private void updateCurrentController(String newYear) {
-        if (currentController == null)
+        if (currentController == null) {
             return;
+        }
         if (currentController instanceof PayrollController controller) {
             controller.initializeWithYear(newYear);
             String currentMonth = getCurrentControllerMonth();

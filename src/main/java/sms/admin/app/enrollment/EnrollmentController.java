@@ -17,10 +17,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import dev.finalproject.App;
 import dev.finalproject.models.*;
-import sms.admin.util.ValidationUtils;
 import sms.admin.util.enrollment.CsvStudent;
 import sms.admin.util.enrollment.EnrollmentUtils;
 import sms.admin.util.DialogUtils;
+import sms.admin.util.dialog.ValidationUtils;
 import sms.admin.util.enrollment.CsvImporter;
 import javafx.stage.Stage;
 
@@ -144,11 +144,11 @@ public class EnrollmentController extends FXController {
                 }
 
                 String nextStudentId = generateNextStudentId();
-                
+
                 // Convert LocalDate to java.sql.Date
-                Date dateOfBirth = dateOfBirthPicker.getValue() != null ?
-                    Date.valueOf(dateOfBirthPicker.getValue()) :
-                    null;
+                Date dateOfBirth = dateOfBirthPicker.getValue() != null
+                        ? Date.valueOf(dateOfBirthPicker.getValue())
+                        : null;
 
                 Student student = EnrollmentUtils.enrollStudent(
                         nextStudentId,
@@ -159,7 +159,7 @@ public class EnrollmentController extends FXController {
                         emailField.getText(),
                         statusComboBox.getValue(),
                         contactNumberField.getText(),
-                        dateOfBirth,  // Use the converted date
+                        dateOfBirth, // Use the converted date
                         Double.parseDouble(fareField.getText()),
                         streetField.getText(),
                         barangayField.getText(),
@@ -172,12 +172,12 @@ public class EnrollmentController extends FXController {
                         currentSchoolYear);
 
                 handleClear();
-                
+
                 // If we're in dialog mode, close the dialog
                 if (dialogStage != null) {
                     dialogStage.close();
                 }
-                
+
                 showSuccessMessage("Student enrolled successfully!");
 
             } catch (Exception e) {
@@ -358,14 +358,14 @@ public class EnrollmentController extends FXController {
             try {
                 int startYear = Integer.parseInt(years[0].trim());
                 int endYear = Integer.parseInt(years[1].trim());
-                
+
                 // Find the school year from the collection
                 this.currentSchoolYear = App.COLLECTIONS_REGISTRY.getList("SCHOOL_YEAR").stream()
-                    .filter(sy -> sy instanceof SchoolYear)
-                    .map(sy -> (SchoolYear) sy)
-                    .filter(sy -> sy.getYearStart() == startYear && sy.getYearEnd() == endYear)
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("School year not found: " + year));
+                        .filter(sy -> sy instanceof SchoolYear)
+                        .map(sy -> (SchoolYear) sy)
+                        .filter(sy -> sy.getYearStart() == startYear && sy.getYearEnd() == endYear)
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("School year not found: " + year));
 
                 System.out.println("Selected school year: " + startYear + "-" + endYear);
             } catch (NumberFormatException e) {
