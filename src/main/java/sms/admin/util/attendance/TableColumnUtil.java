@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TableColumnUtil {
+
     private static final double MIN_COLUMN_WIDTH = 30.0;
     public static final double DEFAULT_COLUMN_WIDTH = 120.0;
     public static final double MIN_WEEK_WIDTH = 100.0;
@@ -25,8 +26,9 @@ public class TableColumnUtil {
             LocalDate date,
             ObservableList<AttendanceLog> logs,
             double width) {
-        if (date == null || logs == null)
+        if (date == null || logs == null) {
             return null;
+        }
 
         double effectiveWidth = (width <= 0) ? DEFAULT_COLUMN_WIDTH : width;
 
@@ -60,8 +62,8 @@ public class TableColumnUtil {
     }
 
     /**
-     * Dynamically configures basic columns.
-     * For full screen widths, the name column will have a larger width.
+     * Dynamically configures basic columns. For full screen widths, the name
+     * column will have a larger width.
      */
     public static void configureBasicColumns(
             TableColumn<Student, Integer> idColumn,
@@ -95,16 +97,18 @@ public class TableColumnUtil {
             TableColumn<Student, ?> nameColumn,
             TableColumn<Student, ?> monthColumn) {
         double totalWidth = table.getWidth();
-        if (totalWidth <= 0)
+        if (totalWidth <= 0) {
             return;
+        }
 
         // Use actual widths instead of prefWidth to reflect current state
         double fixedWidth = idColumn.getWidth() + nameColumn.getWidth() + 20;
         double availableWidth = Math.max(0, totalWidth - fixedWidth);
 
         int totalLeafColumns = countLeafColumns(monthColumn);
-        if (totalLeafColumns == 0)
+        if (totalLeafColumns == 0) {
             return;
+        }
 
         double baseWidth = availableWidth / totalLeafColumns;
         double minWidth = Math.max(MIN_DAY_WIDTH, baseWidth * 0.9);
@@ -153,13 +157,13 @@ public class TableColumnUtil {
     }
 
     /**
-     * Dynamically updates column styles.
-     * In full screen mode, the name column font size is increased.
+     * Dynamically updates column styles. In full screen mode, the name column
+     * font size is increased.
      */
     public static void updateColumnStyles(TableView<Student> table, double baseFontSize) {
-        int totalColumns = countLeafColumns(table.getColumns().get(0)) +
-                countLeafColumns(table.getColumns().get(1)) +
-                countLeafColumns(table.getColumns().get(2));
+        int totalColumns = countLeafColumns(table.getColumns().get(0))
+                + countLeafColumns(table.getColumns().get(1))
+                + countLeafColumns(table.getColumns().get(2));
         double fontSize = calculateDynamicFontSize(table.getWidth(), totalColumns);
         double nameFontSize = fontSize * 1.2;
         if (table.getWidth() >= 1200) {
@@ -190,10 +194,11 @@ public class TableColumnUtil {
             }
             if (column instanceof TableColumn) {
                 String nestedStyle = defaultStyle;
-                if (column == table.getColumns().get(1))
-                    nestedStyle = nameStyle;
-                else if (column == table.getColumns().get(2))
+                if (column == table.getColumns().get(1)) {
+                    nestedStyle = nameStyle; 
+                }else if (column == table.getColumns().get(2)) {
                     nestedStyle = monthStyle;
+                }
                 applyStyleToNestedColumns((TableColumn<?, ?>) column, nestedStyle, cellHeight);
             }
         });
@@ -216,8 +221,9 @@ public class TableColumnUtil {
     }
 
     public static double calculateDynamicFontSize(double tableWidth, int columnCount) {
-        if (tableWidth <= 0 || columnCount <= 0)
+        if (tableWidth <= 0 || columnCount <= 0) {
             return MIN_FONT_SIZE;
+        }
 
         double availableWidthPerColumn = tableWidth / columnCount;
         double scaleFactor = availableWidthPerColumn / 100.0;

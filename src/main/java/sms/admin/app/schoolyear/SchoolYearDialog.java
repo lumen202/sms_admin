@@ -11,9 +11,9 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.beans.property.ObjectProperty;
-import sms.admin.util.dialog.DialogManager;
 
 public class SchoolYearDialog extends Dialog<SchoolYear> {
+
     private SchoolYearDialogController controller;
 
     public SchoolYearDialog(SchoolYear schoolYear) {
@@ -23,26 +23,29 @@ public class SchoolYearDialog extends Dialog<SchoolYear> {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("SCHOOL_YEAR_DIALOG.fxml"));
             getDialogPane().setContent(loader.load());
-            
+
             controller = loader.getController();
             controller.setDialog(this);
-            controller.setDialogStage((Stage)getDialogPane().getScene().getWindow());
+            controller.setDialogStage((Stage) getDialogPane().getScene().getWindow());
             controller.setExistingSchoolYear(schoolYear);
 
             getDialogPane().getStylesheets().add(
-                getClass().getResource("/sms/admin/app/styles/dialog.css").toExternalForm()
+                    getClass().getResource("/sms/admin/app/styles/dialog.css").toExternalForm()
             );
             getDialogPane().setStyle("-fx-background-color: transparent; -fx-padding: 0;");
             getDialogPane().getScene().setFill(null);
 
             // Add dialog button types
             getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            
-            // Set result converter
+
+            // Set result converter with logging
             setResultConverter(buttonType -> {
                 if (buttonType == ButtonType.OK) {
-                    return controller.createSchoolYear();
+                    SchoolYear result = controller.schoolYearProperty().get();
+                    System.out.println("Dialog converting result: " + result);
+                    return result;
                 }
+                System.out.println("Dialog returning null (cancelled)");
                 return null;
             });
 

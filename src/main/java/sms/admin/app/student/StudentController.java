@@ -168,8 +168,9 @@ public class StudentController extends FXController {
     }
 
     public void initializeWithYear(String year) {
-        if (year == null)
+        if (year == null) {
             return;
+        }
         updateYear(year); // Delegate to updateYear for consistency
     }
 
@@ -179,14 +180,14 @@ public class StudentController extends FXController {
      */
     private void initializeStudentList(String year) {
         int startYear = Integer.parseInt(year.split("-")[0]);
+        // Use the new DataManager to get fresh data.
         ObservableList<Student> students = DataManager.getInstance()
-                .getCollectionsRegistry()
-                .getList("STUDENT");
+                .getCollectionsRegistry().getList("STUDENT");
         masterStudentList.setAll(
                 students.stream()
                         .filter(s -> s != null && s.getYearID() != null
-                                && s.getYearID().getYearStart() == startYear
-                                && s.isDeleted() == 0)
+                        && s.getYearID().getYearStart() == startYear
+                        && s.isDeleted() == 0)
                         .collect(Collectors.toList()));
     }
 
@@ -195,15 +196,15 @@ public class StudentController extends FXController {
      */
     private void updateFilter() {
         filteredList.setPredicate(student -> {
-            boolean matchesYear = student.getYearID() != null &&
-                    student.getYearID().getYearStart() == Integer.parseInt(selectedYear.split("-")[0]);
-            boolean matchesSearch = searchText == null || searchText.isEmpty() ||
-                    student.getFirstName().toLowerCase().contains(searchText) ||
-                    student.getLastName().toLowerCase().contains(searchText) ||
-                    student.getMiddleName().toLowerCase().contains(searchText) ||
-                    student.getEmail().toLowerCase().contains(searchText) ||
-                    student.getContact().toLowerCase().contains(searchText) ||
-                    String.valueOf(student.getStudentID()).contains(searchText);
+            boolean matchesYear = student.getYearID() != null
+                    && student.getYearID().getYearStart() == Integer.parseInt(selectedYear.split("-")[0]);
+            boolean matchesSearch = searchText == null || searchText.isEmpty()
+                    || student.getFirstName().toLowerCase().contains(searchText)
+                    || student.getLastName().toLowerCase().contains(searchText)
+                    || student.getMiddleName().toLowerCase().contains(searchText)
+                    || student.getEmail().toLowerCase().contains(searchText)
+                    || student.getContact().toLowerCase().contains(searchText)
+                    || String.valueOf(student.getStudentID()).contains(searchText);
             return matchesYear && matchesSearch;
         });
     }
@@ -253,8 +254,9 @@ public class StudentController extends FXController {
     private void openStudentProfileInEditMode() {
         try {
             Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
-            if (selectedStudent == null)
+            if (selectedStudent == null) {
                 return;
+            }
 
             StudentProfileLoader loader = new StudentProfileLoader();
             loader.addParameter("SELECTED_STUDENT", selectedStudent);
@@ -282,9 +284,12 @@ public class StudentController extends FXController {
             String outputPath = getExportPath(type.equals("excel") ? "xlsx" : type.toLowerCase());
             StudentTableExporter exporter = new StudentTableExporter();
             switch (type) {
-                case "excel" -> exporter.exportToExcel(studentTableView, title, outputPath);
-                case "pdf" -> exporter.exportToPdf(studentTableView, title, outputPath);
-                case "csv" -> exporter.exportToCsv(studentTableView, title, outputPath);
+                case "excel" ->
+                    exporter.exportToExcel(studentTableView, title, outputPath);
+                case "pdf" ->
+                    exporter.exportToPdf(studentTableView, title, outputPath);
+                case "csv" ->
+                    exporter.exportToCsv(studentTableView, title, outputPath);
             }
             System.out.println("Export completed: " + outputPath);
         } catch (Exception e) {
@@ -356,13 +361,15 @@ public class StudentController extends FXController {
     }
 
     private SchoolYear getCurrentSchoolYear() {
-        if (selectedYear == null)
+        if (selectedYear == null) {
             return null;
+        }
         String[] years = selectedYear.split("-");
         int startYear = Integer.parseInt(years[0].trim());
         int endYear = Integer.parseInt(years[1].trim());
 
-        return DataManager.getInstance().getCollectionsRegistry().getList("SCHOOL_YEAR").stream()
+        return DataManager.getInstance().getCollectionsRegistry().getList("SCHOOL_YEAR")
+                .stream()
                 .filter(sy -> sy instanceof SchoolYear)
                 .map(sy -> (SchoolYear) sy)
                 .filter(sy -> sy.getYearStart() == startYear && sy.getYearEnd() == endYear)
@@ -372,8 +379,8 @@ public class StudentController extends FXController {
 
     private String getDefaultYear() {
         int currentYear = LocalDate.now().getYear();
-        return (LocalDate.now().getMonthValue() >= 6 ? currentYear : currentYear - 1) + "-" +
-                (LocalDate.now().getMonthValue() >= 6 ? currentYear + 1 : currentYear);
+        return (LocalDate.now().getMonthValue() >= 6 ? currentYear : currentYear - 1) + "-"
+                + (LocalDate.now().getMonthValue() >= 6 ? currentYear + 1 : currentYear);
     }
 
     private void showErrorAlert(String title, String header, String content) {

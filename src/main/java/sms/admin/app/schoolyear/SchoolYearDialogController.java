@@ -16,6 +16,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import java.time.YearMonth;
 
 public class SchoolYearDialogController {
+
     @FXML
     private Label headerLabel;
     @FXML
@@ -43,8 +44,8 @@ public class SchoolYearDialogController {
     }
 
     // Define months as a class field for reuse
-    private final String[] months = { "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-            "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER" };
+    private final String[] months = {"JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+        "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"};
 
     public void initialize() {
         int currentYear = LocalDate.now().getYear();
@@ -162,31 +163,31 @@ public class SchoolYearDialogController {
             SchoolYear schoolYear = createSchoolYear();
             if (schoolYear != null) {
                 try {
+                    System.out.println("Created school year: " + schoolYear);
+
                     if (existingSchoolYear == null) {
-                        // Insert new school year
                         SchoolYearDAO.insert(schoolYear);
-                        // Refresh from database to ensure all fields are properly set
-                        List<SchoolYear> updatedList = SchoolYearDAO.getSchoolYearList();
-                        SchoolYear newSchoolYear = updatedList.stream()
-                                .filter(sy -> sy.getYearID() == schoolYear.getYearID())
-                                .findFirst()
-                                .orElse(schoolYear);
-                        schoolYearProperty.set(newSchoolYear);
+                        System.out.println("Inserted new school year");
                     } else {
-                        // Update existing school year
                         SchoolYearDAO.update(schoolYear);
-                        // Refresh from database to ensure all fields are properly updated
-                        List<SchoolYear> updatedList = SchoolYearDAO.getSchoolYearList();
-                        SchoolYear updatedSchoolYear = updatedList.stream()
-                                .filter(sy -> sy.getYearID() == schoolYear.getYearID())
-                                .findFirst()
-                                .orElse(schoolYear);
-                        schoolYearProperty.set(updatedSchoolYear);
+                        System.out.println("Updated existing school year");
                     }
+
+                    // Set property and prepare to close dialog
+                    schoolYearProperty.set(schoolYear);
+                    System.out.println("Set school year property: " + schoolYear);
+
                     isSaveClicked = true;
                     DialogManager.setOverlayEffect((Stage) dialogStage.getOwner(), false);
+                    // Just close the dialog, the result will be handled by the converter
                     dialogStage.close();
+
+                    // Fire dialog close event with OK button type
+                    if (dialog != null) {
+                        dialog.resultProperty().set(schoolYear);
+                    }
                 } catch (Exception e) {
+                    schoolYearProperty.set(null); // Reset on error
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle("Error");
                     alert.setHeaderText("Database Error");
@@ -258,9 +259,9 @@ public class SchoolYearDialogController {
         if (startYearCombo.getValue() != null && endYearCombo.getValue() != null) {
             if (endYearCombo.getValue() < startYearCombo.getValue()) {
                 errorMessage += "End year must be greater than or equal to start year!\n";
-            } else if (endYearCombo.getValue().equals(startYearCombo.getValue()) &&
-                    Month.valueOf(endMonthCombo.getValue()).getValue() <= Month.valueOf(startMonthCombo.getValue())
-                            .getValue()) {
+            } else if (endYearCombo.getValue().equals(startYearCombo.getValue())
+                    && Month.valueOf(endMonthCombo.getValue()).getValue() <= Month.valueOf(startMonthCombo.getValue())
+                    .getValue()) {
                 errorMessage += "End month must be after start month for the same year!\n";
             }
         }

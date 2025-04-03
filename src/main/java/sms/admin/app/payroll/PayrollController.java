@@ -2,16 +2,13 @@ package sms.admin.app.payroll;
 
 import java.text.DecimalFormat;
 import java.time.YearMonth;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 
-import dev.finalproject.data.StudentDAO;
 import dev.finalproject.database.DataManager;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.Student;
@@ -37,9 +34,8 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
-import sms.admin.App;
 import sms.admin.app.RootController;
-import sms.admin.util.attendance.AttendanceUtil;
+import sms.admin.util.attendance.CommonAttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
 import sms.admin.util.exporter.PayrollTableExporter;
 import sms.admin.util.exporter.exporterv2.DetailedPayrollExporter;
@@ -122,7 +118,7 @@ public class PayrollController extends FXController {
         filteredStudentList = new FilteredList<>(FXCollections.observableArrayList(
                 students.stream()
                         .filter(student -> student.getYearID() != null
-                                && student.getYearID().getYearStart() == startYear && student.isDeleted() == 0)
+                        && student.getYearID().getYearStart() == startYear && student.isDeleted() == 0)
                         .collect(Collectors.toList())));
 
         // Initialize attendance logs from shared DataManager if not provided as a
@@ -249,22 +245,21 @@ public class PayrollController extends FXController {
             double totalDays = 0;
 
             List<AttendanceLog> studentLogs = attendanceLog.stream()
-                    .filter(log -> log != null &&
-                            log.getStudentID() != null &&
-                            log.getStudentID().getStudentID() == student.getStudentID() &&
-                            log.getRecordID() != null &&
-                            YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth())
-                                    .equals(selectedMonth))
+                    .filter(log -> log != null
+                    && log.getStudentID() != null
+                    && log.getStudentID().getStudentID() == student.getStudentID()
+                    && log.getRecordID() != null
+                    && YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth())
+                            .equals(selectedMonth))
                     .collect(Collectors.toList());
 
             for (AttendanceLog log : studentLogs) {
-                String status = AttendanceUtil.getAttendanceStatus(log);
+                String status = CommonAttendanceUtil.computeAttendanceStatus(log);
                 switch (status) {
-                    case AttendanceUtil.PRESENT_MARK,
-                            AttendanceUtil.EXCUSED_MARK,
-                            AttendanceUtil.HOLIDAY_MARK ->
+                    case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK, CommonAttendanceUtil.HOLIDAY_MARK ->
                         totalDays += 1.0;
-                    case AttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
+                    case CommonAttendanceUtil.HALF_DAY_MARK ->
+                        totalDays += 0.5;
                 }
             }
             return totalDays;
@@ -290,8 +285,9 @@ public class PayrollController extends FXController {
     @Override
     protected void load_listeners() {
         yearMonthComboBox.setOnAction(event -> {
-            if (!yearMonthComboBox.isFocused())
+            if (!yearMonthComboBox.isFocused()) {
                 return;
+            }
             String newValue = yearMonthComboBox.getValue();
             System.out.println("PayrollController: Month changed to " + newValue);
             payrollTable.refresh();
@@ -316,8 +312,9 @@ public class PayrollController extends FXController {
     private void handleExport(String type) {
         try {
             String selectedMonthYear = yearMonthComboBox.getValue();
-            if (selectedMonthYear == null)
+            if (selectedMonthYear == null) {
                 return;
+            }
 
             String title = "Payroll Report - " + selectedMonthYear;
             String fileName = String.format("payroll_%s.%s",
@@ -327,9 +324,12 @@ public class PayrollController extends FXController {
 
             PayrollTableExporter exporter = new PayrollTableExporter();
             switch (type) {
-                case "excel" -> exporter.exportToExcel(payrollTable, title, outputPath);
-                case "pdf" -> exporter.exportToPdf(payrollTable, title, outputPath);
-                case "csv" -> exporter.exportToCsv(payrollTable, title, outputPath);
+                case "excel" ->
+                    exporter.exportToExcel(payrollTable, title, outputPath);
+                case "pdf" ->
+                    exporter.exportToPdf(payrollTable, title, outputPath);
+                case "csv" ->
+                    exporter.exportToCsv(payrollTable, title, outputPath);
             }
             System.out.println("Export completed: " + outputPath);
         } catch (Exception e) {
@@ -340,8 +340,9 @@ public class PayrollController extends FXController {
     private void handleDetailedExport(String type) {
         try {
             String selectedMonthYear = yearMonthComboBox.getValue();
-            if (selectedMonthYear == null || selectedMonthYear.trim().isEmpty())
+            if (selectedMonthYear == null || selectedMonthYear.trim().isEmpty()) {
                 return;
+            }
 
             YearMonth selectedMonth = DateTimeUtils.parseMonthYear(selectedMonthYear);
             String fileName = String.format("detailed_payroll_%s.%s",
@@ -375,10 +376,11 @@ public class PayrollController extends FXController {
     }
 
     private double getFareMultiplier() {
-        if (fourWayRadio.isSelected())
-            return 4.0;
-        else if (twoWayRadio.isSelected())
+        if (fourWayRadio.isSelected()) {
+            return 4.0; 
+        }else if (twoWayRadio.isSelected()) {
             return 2.0;
+        }
         return 1.0; // one way
     }
 
@@ -387,8 +389,9 @@ public class PayrollController extends FXController {
     }
 
     public void initializeWithYear(String year) {
-        if (year == null || year.equals(currentYear))
+        if (year == null || year.equals(currentYear)) {
             return;
+        }
         currentYear = year;
         initializeData(year);
         DateTimeUtils.updateMonthYearComboBox(yearMonthComboBox, year);
@@ -423,8 +426,8 @@ public class PayrollController extends FXController {
         String year = (String) getParameter("selectedYear");
         if (year == null) {
             int currentYear = java.time.LocalDate.now().getYear();
-            year = (java.time.LocalDate.now().getMonthValue() >= 6 ? currentYear : currentYear - 1) + "-" +
-                    (java.time.LocalDate.now().getMonthValue() >= 6 ? currentYear + 1 : currentYear);
+            year = (java.time.LocalDate.now().getMonthValue() >= 6 ? currentYear : currentYear - 1) + "-"
+                    + (java.time.LocalDate.now().getMonthValue() >= 6 ? currentYear + 1 : currentYear);
         }
         return year;
     }

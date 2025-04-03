@@ -4,13 +4,16 @@ import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import javax.crypto.KeyGenerator;
+import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import dev.finalproject.database.DataManager;
 import dev.finalproject.models.SchoolYear;
+import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -25,7 +28,6 @@ import javafx.scene.layout.StackPane;
 import sms.admin.app.attendance.AttendanceController;
 import sms.admin.app.attendance.AttendanceLoader;
 import sms.admin.app.enrollment.EnrollmentController;
-import sms.admin.app.enrollment.EnrollmentLoader;
 import sms.admin.app.payroll.PayrollController;
 import sms.admin.app.payroll.PayrollLoader;
 import sms.admin.app.schoolyear.SchoolYearDialog;
@@ -112,7 +114,7 @@ public class RootController extends FXController {
         Map<String, Object> params = new HashMap<>();
         params.put("selectedYear", yearComboBox.getValue());
         params.put("selectedMonth", selectedMonth);
-
+        DataManager.getInstance().refreshData();
         currentController = SceneLoaderUtil.loadScene(
                 "/sms/admin/app/student/STUDENT.fxml",
                 getClass(),
@@ -131,6 +133,7 @@ public class RootController extends FXController {
         String currentMonth = getCurrentControllerMonth();
         params.put("selectedYear", yearComboBox.getValue());
         params.put("selectedMonth", currentMonth);
+        DataManager.getInstance().refreshData();
 
         if (currentController instanceof AttendanceController attendanceController) {
             params.put("attendanceLogs", attendanceController.getAttendanceLogs());
@@ -157,6 +160,7 @@ public class RootController extends FXController {
         String currentMonth = getCurrentControllerMonth();
         params.put("selectedYear", yearComboBox.getValue());
         params.put("selectedMonth", currentMonth);
+        DataManager.getInstance().refreshData();
 
         try {
             currentController = SceneLoaderUtil.loadScene(
@@ -195,18 +199,82 @@ public class RootController extends FXController {
         button.setStyle("-fx-background-color: #ADD8E6; -fx-text-fill: black;");
     }
 
+    private List<Student> getStudentsForYear(String schoolYear) {
+        ObservableList<?> rawList = DataManager.getInstance()
+                .getCollectionsRegistry()
+                .getList("STUDENT");
+
+        // Parse the year string (e.g., "2024-2025")
+        int startYear = Integer.parseInt(schoolYear.split("-")[0]);
+
+        return rawList.stream()
+                .filter(obj -> obj instanceof Student)
+                .map(obj -> (Student) obj)
+                .filter(student -> student.getYearID() != null
+                && student.getYearID().getYearStart() == startYear)
+                .toList();
+    }
+
     @FXML
     private void handleGenerateKeyMenuItem() {
         try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-            keyGen.init(128);
-            SecretKey secretKey = keyGen.generateKey();
-            byte[] encodedKey = secretKey.getEncoded();
-            String encryptedKey = Base64.getEncoder().encodeToString(encodedKey);
-            System.out.println("Generated Encrypted Key: " + encryptedKey);
+            String currentYear = yearComboBox.getValue();
+            List<Student> students = getStudentsForYear(currentYear);
+
+            byte[] fixedKey = "MySuperSecretKey".getBytes();
+            SecretKey secretKey = new SecretKeySpec(fixedKey, "AES");
+
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+
+            System.out.println("Generated keys for school year " + currentYear + ":");
+            for (Student student : students) {
+                String dataToEncrypt = student.getStudentID() + "|" + currentYear; // Changed from getId() to getStudentID()
+                byte[] encryptedBytes = cipher.doFinal(dataToEncrypt.getBytes());
+                String encryptedKey = Base64.getEncoder().encodeToString(encryptedBytes);
+                System.out.println("Student: " + student.getFullName() + " - Key: " + encryptedKey);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static String decryptStudentKey(String encryptedKey) {
+        try {
+            byte[] fixedKey = "MySuperSecretKey".getBytes();
+            SecretKey secretKey = new SecretKeySpec(fixedKey, "AES");
+
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+
+            byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedKey));
+            String decryptedString = new String(decryptedBytes);
+            
+            String[] parts = decryptedString.split("\\|");
+            int studentId = Integer.parseInt(parts[0]);
+            Student student = findStudentByStudentId(studentId);
+            
+            String studentInfo = student != null ? 
+                String.format("Student: %s (Student ID: %d)", student.getFullName(), studentId) :
+                "Unknown Student (Student ID: " + studentId + ")";
+            
+            return studentInfo + ", School Year: " + parts[1];
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Invalid key";
+        }
+    }
+
+    private static Student findStudentByStudentId(int studentId) {
+        return DataManager.getInstance()
+                .getCollectionsRegistry()
+                .getList("STUDENT")
+                .stream()
+                .filter(obj -> obj instanceof Student)
+                .map(obj -> (Student) obj)
+                .filter(student -> student.getStudentID() == studentId)
+                .findFirst()
+                .orElse(null);
     }
 
     private void setOverlayVisible(boolean visible) {
@@ -226,11 +294,38 @@ public class RootController extends FXController {
     private void handleNewSchoolYear() {
         setOverlayVisible(true);
         SchoolYearDialog dialog = new SchoolYearDialog(null);
+
+        System.out.println("Opening new school year dialog...");
+
         dialog.showAndWait().ifPresent(newSchoolYear -> {
-            schoolYearList.add(newSchoolYear);
-            yearComboBox.setValue(SchoolYearUtil.formatSchoolYear(newSchoolYear));
-            updateCurrentController(yearComboBox.getValue());
+            System.out.println("Dialog returned school year: " + newSchoolYear);
+            if (newSchoolYear != null) {
+                // Ensure UI updates happen on JavaFX thread
+                Platform.runLater(() -> {
+                    System.out.println("Refreshing data from database...");
+                    DataManager.getInstance().refreshData();
+                    List<SchoolYear> updatedList = DataManager.getInstance().getCollectionsRegistry().getList("SCHOOL_YEAR");
+                    System.out.println("Found " + updatedList.size() + " school years");
+
+                    schoolYearList.clear();
+                    schoolYearList.addAll(updatedList);
+
+                    ObservableList<String> formattedYears = SchoolYearUtil.convertToStringList(schoolYearList);
+                    System.out.println("Formatted years: " + formattedYears);
+                    yearComboBox.setItems(formattedYears);
+
+                    String formattedNewYear = SchoolYearUtil.formatSchoolYear(newSchoolYear);
+                    System.out.println("Setting combo box to: " + formattedNewYear);
+                    yearComboBox.setValue(formattedNewYear);
+
+                    // Verify the value was set
+                    System.out.println("Current combo box value: " + yearComboBox.getValue());
+
+                    updateCurrentController(formattedNewYear);
+                });
+            }
         });
+
         setOverlayVisible(false);
     }
 

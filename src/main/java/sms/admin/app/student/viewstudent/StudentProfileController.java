@@ -17,7 +17,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -210,7 +209,7 @@ public class StudentProfileController extends FXController {
     private void loadAddressInfo() {
         // Reload address list if needed
         if (addressMasterList == null || addressMasterList.isEmpty()) {
-            AddressDAO.initialize(DataManager.getInstance().getCollectionsRegistry().getList("STUDENT"));
+            // AddressDAO.initialize(DataManager.getInstance().getCollectionsRegistry().getList("STUDENT"));
             addressMasterList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
         }
         Optional<Address> studentAddress = addressMasterList.stream()
