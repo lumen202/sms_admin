@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20" styleClass="dialog-container" style="-fx-background-color: white; -fx-background-radius: 5;" 
+      xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="sms.admin.app.attendance.dialog.AttendanceSettingsDialogController">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    
+    <Label text="Calendar Range Settings" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+    
+    <GridPane hgap="15" vgap="15">
+        <columnConstraints>
+            <ColumnConstraints hgrow="NEVER"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="150"/>
+        </columnConstraints>
+        
+        <Label text="Start From Day:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="startDayCombo" prefWidth="150" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+        
+        <Label text="End At Day:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="endDayCombo" prefWidth="150" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+    </GridPane>
+    
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button fx:id="cancelButton" text="Cancel" styleClass="dialog-button"/>
+        <Button fx:id="saveButton" text="Save" styleClass="dialog-button, primary-button" defaultButton="true"/>
+    </HBox>
+</VBox>

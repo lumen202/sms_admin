@@ -1,5 +1,6 @@
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\attendance\AttendanceUtil.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\exporter\ITableExporter.java
+c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\enrollment\EnrollmentControllerV2.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\App.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\db\DatabaseRetryHelper.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\exporter\PayrollTableExporter.java
@@ -19,6 +20,7 @@ c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\datetime
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\attendance\dialog\AttendanceLogDialogLoader.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\enrollment\CsvStudent.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\datetime\DateTimeUtils.java
+c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\attendance\model\AttendanceSettings.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\student\StudentController.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\profile\ProfileDataManager.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\exporter\BaseTableExporter.java
@@ -26,15 +28,19 @@ c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\module-info.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\loader\BaseLoader.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\attendance\AttendanceEditUtil.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\schoolyear\SchoolYearDialogController.java
+c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\attendance\dialog\AttendanceSettingsDialogLoader.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\attendance\AttendanceLoader.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\enrollment\EnrollmentUtils.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\attendance\dialog\AttendanceLogDialogController.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\datetime\YearData.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\profile\ProfileFieldManager.java
+c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\enrollment\EnrollmentV2Loader.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\RootController.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\profile\ProfilePhotoManager.java
+c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\attendance\dialog\DayOfWeekStringConverter.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\db\DatabaseConnection.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\mock\DataUtil.java
+c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\app\attendance\dialog\AttendanceSettingsDialogController.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\dialog\DialogManager.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\DialogUtils.java
 c:\Users\user\Desktop\New Folder\sms_admin\src\main\java\sms\admin\util\enrollment\CsvImporter.java

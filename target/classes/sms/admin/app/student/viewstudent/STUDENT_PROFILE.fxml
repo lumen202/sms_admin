@@ -12,14 +12,11 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox fx:id="contentBox" spacing="15" styleClass="profile-container" stylesheets="@../../styles/main.css,@../../styles/dialog.css,@profile.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.student.viewstudent.StudentProfileController">
+<VBox fx:id="contentBox" spacing="15.0" styleClass="profile-container" stylesheets="@../../styles/main.css,@../../styles/dialog.css,@profile.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.student.viewstudent.StudentProfileController">
 
     <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="profile-content" VBox.vgrow="ALWAYS">
         <content>
-            <VBox spacing="15">
-                <padding>
-                    <Insets bottom="15.0" left="20.0" right="20.0" top="10.0" />
-                </padding>
+            <VBox spacing="10.0">
                 <VBox alignment="CENTER" spacing="5">
                     <children>
                         <ImageView fx:id="profileImageView" fitHeight="150.0" fitWidth="150.0" pickOnBounds="true" preserveRatio="true" styleClass="profile-image">
@@ -31,7 +28,7 @@
                     </padding>
                 </VBox>
                 <!-- Personal Information Section -->
-                <VBox spacing="8" styleClass="profile-section">
+                <VBox spacing="8.0" styleClass="profile-section">
                     <Label styleClass="section-header" text="Personal Information" />
                     <GridPane hgap="15" vgap="10">
                         <columnConstraints>
@@ -170,6 +167,9 @@
                         </rowConstraints>
                     </GridPane>
                 </VBox>
+            <padding>
+               <Insets top="10.0" />
+            </padding>
             </VBox>
         </content>
         <VBox.margin>

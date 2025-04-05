@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.ComboBox?>
+
+<VBox fx:id="contentBox" spacing="15" styleClass="profile-container" stylesheets="@../styles/main.css,@../styles/dialog.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.enrollment.EnrollmentControllerV2">
+    <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="profile-content" VBox.vgrow="ALWAYS">
+        <content>
+            <VBox spacing="15">
+                <padding>
+                    <Insets bottom="15.0" left="20.0" right="20.0" top="10.0" />
+                </padding>
+
+                <!-- Personal Information Section -->
+                <VBox spacing="8" styleClass="profile-section">
+                    <Label styleClass="section-header" text="Personal Information" />
+                    <GridPane hgap="15" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" />
+                            <ColumnConstraints hgrow="ALWAYS" />
+                        </columnConstraints>
+
+                        <Label text="First Name:" GridPane.rowIndex="0" />
+                        <TextField fx:id="firstNameField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                        <Label text="Middle Name:" GridPane.rowIndex="1" />
+                        <TextField fx:id="middleNameField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                        <Label text="Last Name:" GridPane.rowIndex="2" />
+                        <TextField fx:id="lastNameField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                        <Label text="Name Extension:" GridPane.rowIndex="3" />
+                        <TextField fx:id="nameExtField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                        <Label text="Date of Birth:" GridPane.rowIndex="4" />
+                        <DatePicker fx:id="dateOfBirthPicker" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
+                        <Label text="Status:" GridPane.rowIndex="5" />
+                        <ComboBox fx:id="statusComboBox" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+
+                        <Label text="Fare:" GridPane.rowIndex="6" />
+                        <TextField fx:id="fareField" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                    </GridPane>
+                </VBox>
+
+                <!-- Address Information Section -->
+                <VBox spacing="8" styleClass="profile-section">
+                    <Label styleClass="section-header" text="Address Information" />
+                    <GridPane hgap="15" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" />
+                            <ColumnConstraints hgrow="ALWAYS" />
+                        </columnConstraints>
+
+                        <Label text="Street Address:" GridPane.rowIndex="0" />
+                        <TextField fx:id="streetField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                        <Label text="Barangay:" GridPane.rowIndex="1" />
+                        <TextField fx:id="barangayField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                        <Label text="Municipality:" GridPane.rowIndex="2" />
+                        <TextField fx:id="municipalityField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                        <Label text="City:" GridPane.rowIndex="3" />
+                        <TextField fx:id="cityField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                        <Label text="Postal Code:" GridPane.rowIndex="4" />
+                        <TextField fx:id="postalCodeField" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                    </GridPane>
+                </VBox>
+
+                <!-- Contact Information Section -->
+                <VBox spacing="8" styleClass="profile-section">
+                    <Label styleClass="section-header" text="Contact Information" />
+                    <GridPane hgap="15" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" />
+                            <ColumnConstraints hgrow="ALWAYS" />
+                        </columnConstraints>
+
+                        <Label text="Contact Number:" GridPane.rowIndex="0" />
+                        <TextField fx:id="contactNumberField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                        <Label text="Email Address:" GridPane.rowIndex="1" />
+                        <TextField fx:id="emailField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    </GridPane>
+                </VBox>
+
+                <!-- Guardian Information Section -->
+                <VBox spacing="8" styleClass="profile-section">
+                    <Label styleClass="section-header" text="Guardian Information" />
+                    <GridPane fx:id="guardianEditGrid" hgap="15" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" />
+                            <ColumnConstraints hgrow="ALWAYS" />
+                        </columnConstraints>
+                        <Label text="Guardian Name:" GridPane.rowIndex="0" />
+                        <TextField fx:id="guardianNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <Label text="Contact Number:" GridPane.rowIndex="1" />
+                        <TextField fx:id="guardianContactField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    </GridPane>
+                </VBox>
+            </VBox>
+        </content>
+    </ScrollPane>
+    
+    <HBox alignment="CENTER_RIGHT" spacing="10" styleClass="profile-footer">
+        <padding>
+            <Insets bottom="10.0" right="15.0" top="10.0" />
+        </padding>
+        <Button fx:id="clearButton" minHeight="30" minWidth="70" onAction="#handleClear" styleClass="secondary-button" text="Clear" />
+        <Button fx:id="submitButton" minHeight="30" minWidth="70" onAction="#handleSubmit" styleClass="action-button" text="Submit" />
+    </HBox>
+</VBox>

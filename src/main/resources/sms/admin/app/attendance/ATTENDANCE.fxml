@@ -14,6 +14,8 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Button?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <StackPane minHeight="400.0" minWidth="600.0" stylesheets="@../styles/main.css,@../styles/dialog.css,@../styles/attendance.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.AttendanceController">
     <children>
@@ -32,6 +34,11 @@
                                 </padding>
                                 <Label styleClass="section-header" text="Select Period" />
                                 <ComboBox fx:id="monthYearComboBox" prefWidth="200" promptText="Select Month and Year" />
+                                <Button fx:id="settingsButton" mnemonicParsing="false" styleClass="icon-button">
+                                    <graphic>
+                                        <FontIcon iconLiteral="fas-cog" iconSize="16" />
+                                    </graphic>
+                                </Button>
                                 <Region HBox.hgrow="ALWAYS" />
                                 
                                 <!-- Remove RadioButton group section -->

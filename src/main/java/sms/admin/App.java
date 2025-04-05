@@ -2,6 +2,7 @@ package sms.admin;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import dev.finalproject.database.DataManager;
 import dev.sol.core.application.FXApplication;
 import dev.sol.core.application.loader.FXLoaderFactory;
@@ -85,7 +86,7 @@ public class App extends FXApplication {
         FXCollectionsRegister collectionsRegistry = DataManager.getInstance().getCollectionsRegistry();
         String[] knownCollections = {
             "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
-            "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG"
+            "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG","SETTINGS"
         };
 
         for (String key : knownCollections) {

@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.Student;
@@ -228,6 +229,17 @@ public class WeeklyAttendanceUtil {
         public boolean hasWorkingDays() {
             return getDates().stream()
                     .anyMatch(date -> !CommonAttendanceUtil.isWeekend(date));
+        }
+
+        public WeekDates filterDatesInRange(LocalDate startDate, LocalDate endDate) {
+            List<LocalDate> filteredDates = getDates().stream()
+                    .filter(date -> !date.isBefore(startDate) && !date.isAfter(endDate))
+                    .collect(Collectors.toList());
+            
+            return new WeekDates(
+                filteredDates.isEmpty() ? start : filteredDates.get(0),
+                filteredDates.isEmpty() ? end : filteredDates.get(filteredDates.size() - 1)
+            );
         }
     }
 }
