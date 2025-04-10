@@ -49,10 +49,13 @@ public class AttendanceSettingsDialogController {
             return;
         }
 
-        // Get all days of the month, not just weekdays
+        // Get only weekdays of the month
         List<Integer> allDays = new ArrayList<>();
         for (int day = 1; day <= selectedMonth.lengthOfMonth(); day++) {
-            allDays.add(day);
+            LocalDate date = selectedMonth.withDayOfMonth(day);
+            if (!CommonAttendanceUtil.isWeekend(date)) {
+                allDays.add(day);
+            }
         }
 
         startDayCombo.setItems(FXCollections.observableArrayList(allDays));
@@ -94,18 +97,27 @@ public class AttendanceSettingsDialogController {
 
     public void setSettings(AttendanceSettings settings, String currentMonthYear) {
         this.settings = settings.copy();
-        setSelectedMonthYear(currentMonthYear);
+        setSelectedMonthYear(currentMonthYear); // Populates ComboBox items
 
-        System.out.println("Loading settings - Start: " + settings.getStartDay() + ", End: " + settings.getEndDay());
+        // Ensure startDay exists in ComboBox items
+        List<Integer> startDays = startDayCombo.getItems();
+        int validatedStartDay = startDays.contains(settings.getStartDay())
+                ? settings.getStartDay()
+                : startDays.get(0); // Default to first weekday
 
-        // Set values based on saved settings
-        startDayCombo.setValue(settings.getStartDay());
-        endDayCombo.setValue(settings.getEndDay());
+        // Ensure endDay exists in ComboBox items
+        List<Integer> endDays = endDayCombo.getItems();
+        int validatedEndDay = endDays.contains(settings.getEndDay())
+                ? settings.getEndDay()
+                : endDays.get(endDays.size() - 1); // Default to last weekday
+
+        startDayCombo.setValue(validatedStartDay);
+        endDayCombo.setValue(validatedEndDay);
     }
 
     private int getFirstWeekday() {
-        LocalDate date = selectedMonth;
-        while (CommonAttendanceUtil.isWeekend(date)) {
+        LocalDate date = selectedMonth.withDayOfMonth(1); // Start from day 1
+        while (CommonAttendanceUtil.isWeekend(date) && date.getMonthValue() == selectedMonth.getMonthValue()) {
             date = date.plusDays(1);
         }
         return date.getDayOfMonth();
@@ -113,7 +125,7 @@ public class AttendanceSettingsDialogController {
 
     private int getLastWeekday() {
         LocalDate date = selectedMonth.withDayOfMonth(selectedMonth.lengthOfMonth());
-        while (CommonAttendanceUtil.isWeekend(date)) {
+        while (CommonAttendanceUtil.isWeekend(date) && date.getDayOfMonth() > 1) {
             date = date.minusDays(1);
         }
         return date.getDayOfMonth();
@@ -123,7 +135,7 @@ public class AttendanceSettingsDialogController {
         if (startDayCombo.getValue() != null && endDayCombo.getValue() != null) {
             int startDay = startDayCombo.getValue();
             int endDay = endDayCombo.getValue();
-            
+
             if (endDay >= startDay) {
                 // Update settings and handle change
                 settings.loadForMonth(selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")));

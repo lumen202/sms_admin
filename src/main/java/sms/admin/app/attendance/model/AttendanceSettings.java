@@ -13,30 +13,30 @@ public class AttendanceSettings {
     private int endDay;
     private Settings dbSettings;
     private String monthYear;
-    
+
     public AttendanceSettings() {
         this.startDay = 1;
         this.endDay = LocalDate.now().lengthOfMonth();
     }
-    
+
     // Add constructor with parameters
     public AttendanceSettings(int startDay, int endDay) {
         this.startDay = startDay;
         this.endDay = endDay;
     }
-    
+
     public void loadForMonth(String monthYear) {
         this.monthYear = monthYear;
         try {
             LocalDate firstDay = WeeklyAttendanceUtil.getFirstDayOfMonth(monthYear);
             int lastDayOfMonth = firstDay.lengthOfMonth();
-            
+
             List<Settings> settingsList = SettingsDAO.getSettingsList();
             dbSettings = settingsList.stream()
-                .filter(s -> monthYear.equals(s.getSettingsID()))
-                .findFirst()
-                .orElse(null);
-            
+                    .filter(s -> monthYear.equals(s.getSettingsID()))
+                    .findFirst()
+                    .orElse(null);
+
             if (dbSettings != null) {
                 this.startDay = dbSettings.getStart();
                 this.endDay = dbSettings.getEnd();
@@ -53,27 +53,27 @@ public class AttendanceSettings {
             e.printStackTrace();
         }
     }
-    
+
     public int getStartDay() {
         return startDay;
     }
-    
+
     public void setStartDay(int startDay) {
         System.out.println("Setting startDay to: " + startDay + " for " + monthYear);
         this.startDay = startDay;
         updateDatabase();
     }
-    
+
     public int getEndDay() {
         return endDay;
     }
-    
+
     public void setEndDay(int endDay) {
         System.out.println("Setting endDay to: " + endDay + " for " + monthYear);
         this.endDay = endDay;
         updateDatabase();
     }
-    
+
     private void updateDatabase() {
         try {
             if (dbSettings == null) {
@@ -90,7 +90,7 @@ public class AttendanceSettings {
             e.printStackTrace();
         }
     }
-    
+
     public AttendanceSettings copy() {
         AttendanceSettings copy = new AttendanceSettings(this.startDay, this.endDay);
         copy.monthYear = this.monthYear;

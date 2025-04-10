@@ -29,8 +29,8 @@ import com.itextpdf.layout.element.Table;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.Student;
 import javafx.collections.ObservableList;
-import sms.admin.util.attendance.AttendanceUtil;
-import sms.admin.util.mock.DataUtil;
+import sms.admin.util.attendance.CommonAttendanceUtil;
+import dev.finalproject.database.DataManager;
 
 public class AttendanceTableExporter extends BaseTableExporter<Student> {
 
@@ -59,7 +59,7 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
         // Use selectedMonth instead of currentMonth
         for (int day = 1; day <= selectedMonth.lengthOfMonth(); day++) {
             LocalDate date = selectedMonth.atDay(day);
-            if (!AttendanceUtil.isWeekend(date)) {
+            if (!CommonAttendanceUtil.isWeekend(date)) {
                 headers.add(String.format("%02d", day));
             }
         }
@@ -74,7 +74,7 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
 
     @Override
     public List<String> getRowData(Student student) {
-        ObservableList<AttendanceLog> logs = DataUtil.createAttendanceLogList();
+        ObservableList<AttendanceLog> logs = DataManager.getInstance().getCollectionsRegistry().getList("ATTENDANCE_LOG");
         List<String> rowData = new ArrayList<>();
         LocalDate today = LocalDate.now();
 
@@ -85,16 +85,16 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
         // Update the daily attendance loop to use selectedMonth
         for (int day = 1; day <= selectedMonth.lengthOfMonth(); day++) {
             LocalDate date = selectedMonth.atDay(day);
-            if (!AttendanceUtil.isWeekend(date)) {
+            if (!CommonAttendanceUtil.isWeekend(date)) {
                 if (date.isAfter(today)) {
                     rowData.add(""); // Future date - leave empty
                 } else {
-                    String status = AttendanceUtil.getAttendanceStatus(student, date, logs);
+                    String status = CommonAttendanceUtil.computeAttendanceStatus(findLogForStudentOnDate(student, date, logs));
                     String symbol = switch (status) {
-                        case AttendanceUtil.PRESENT_MARK -> PRESENT_SYMBOL;
-                        case AttendanceUtil.ABSENT_MARK -> ABSENT_SYMBOL;
-                        case AttendanceUtil.HALF_DAY_MARK -> HALF_DAY_SYMBOL;
-                        case AttendanceUtil.EXCUSED_MARK -> EXCUSED_SYMBOL;
+                        case CommonAttendanceUtil.PRESENT_MARK -> PRESENT_SYMBOL;
+                        case CommonAttendanceUtil.ABSENT_MARK -> ABSENT_SYMBOL;
+                        case CommonAttendanceUtil.HALF_DAY_MARK -> HALF_DAY_SYMBOL;
+                        case CommonAttendanceUtil.EXCUSED_MARK -> EXCUSED_SYMBOL;
                         default -> ""; // Changed from ABSENT_SYMBOL to empty for missing/future records
                     };
                     rowData.add(symbol);
@@ -112,6 +112,13 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
         return rowData;
     }
 
+    private AttendanceLog findLogForStudentOnDate(Student student, LocalDate date, ObservableList<AttendanceLog> logs) {
+        return logs.stream()
+            .filter(log -> CommonAttendanceUtil.isMatchingLog(log, student, date))
+            .findFirst()
+            .orElse(null);
+    }
+
     private Map<String, Long> calculateAttendanceSummary(Student student, ObservableList<AttendanceLog> logs,
             YearMonth month) {
         Map<String, Long> summary = new HashMap<>();
@@ -121,13 +128,13 @@ public class AttendanceTableExporter extends BaseTableExporter<Student> {
         // Count weekdays only up to current date
         for (int day = 1; day <= month.lengthOfMonth(); day++) {
             LocalDate date = month.atDay(day);
-            if (!AttendanceUtil.isWeekend(date) && !date.isAfter(today)) {
-                String status = AttendanceUtil.getAttendanceStatus(student, date, logs);
+            if (!CommonAttendanceUtil.isWeekend(date) && !date.isAfter(today)) {
+                String status = CommonAttendanceUtil.computeAttendanceStatus(findLogForStudentOnDate(student, date, logs));
                 switch (status) {
-                    case AttendanceUtil.PRESENT_MARK -> present++;
-                    case AttendanceUtil.ABSENT_MARK -> absent++;
-                    case AttendanceUtil.HALF_DAY_MARK -> halfDay++;
-                    case AttendanceUtil.EXCUSED_MARK -> excused++;
+                    case CommonAttendanceUtil.PRESENT_MARK -> present++;
+                    case CommonAttendanceUtil.ABSENT_MARK -> absent++;
+                    case CommonAttendanceUtil.HALF_DAY_MARK -> halfDay++;
+                    case CommonAttendanceUtil.EXCUSED_MARK -> excused++;
                     default -> absent++; // Count missing records as absent
                 }
             }

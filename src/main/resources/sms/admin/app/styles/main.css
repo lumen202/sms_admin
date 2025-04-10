@@ -378,13 +378,13 @@ menu-button {
 .icon-menu-button > .arrow-button {
   -fx-padding: 0;
   -fx-background-color: transparent;
-  visibility: hidden;  /* Hide the arrow */
+  visibility: hidden; /* Hide the arrow */
 }
 
 .icon-menu-button > .arrow-button > .arrow {
   -fx-padding: 0;
   -fx-shape: "";
-  visibility: hidden;  /* Hide the arrow */
+  visibility: hidden; /* Hide the arrow */
 }
 
 .menu-icon {

@@ -98,14 +98,12 @@ public class AttendanceController extends FXController {
             updateStudentCountLabels();
         }
 
-        rootPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) {
-                newScene.widthProperty().addListener((o, oldVal, newVal) -> {
-                    double stableWidth = rootPane.getWidth();
-                    TableColumnUtil.configureBasicColumns(colNo, colFullName, stableWidth);
-                    setupMonthColumns();
-                    attendanceTable.refresh();
-                });
+        // Add listener for scene width changes to handle column resizing
+        rootPane.widthProperty().addListener((obs, oldWidth, newWidth) -> {
+            if (newWidth.doubleValue() > 0) {
+                TableColumnUtil.configureBasicColumns(colNo, colFullName, newWidth.doubleValue());
+                setupMonthColumns();
+                attendanceTable.refresh();
             }
         });
     }
@@ -115,8 +113,8 @@ public class AttendanceController extends FXController {
             int startYear = Integer.parseInt(year.split("-")[0]);
             List<Student> students = StudentDAO.getStudentList().stream()
                     .filter(s -> s != null && s.getYearID() != null
-                    && s.getYearID().getYearStart() == startYear
-                    && s.isDeleted() == 0)
+                            && s.getYearID().getYearStart() == startYear
+                            && s.isDeleted() == 0)
                     .collect(Collectors.toList());
 
             studentList.setAll(students);
@@ -168,24 +166,23 @@ public class AttendanceController extends FXController {
     /**
      * Filters attendance logs based on student IDs, date range, and validity.
      *
-     * @param allLogs List of all attendance logs to filter
+     * @param allLogs    List of all attendance logs to filter
      * @param studentIds List of student IDs to include
-     * @param startDate Start of the academic year
-     * @param endDate End of the academic year
+     * @param startDate  Start of the academic year
+     * @param endDate    End of the academic year
      * @return Filtered list of attendance logs
      */
     private List<AttendanceLog> filterLogs(List<AttendanceLog> allLogs, List<Integer> studentIds,
             LocalDate startDate, LocalDate endDate) {
         return allLogs.stream()
                 .filter(log -> log != null && log.getStudentID() != null
-                && studentIds.contains(log.getStudentID().getStudentID()))
+                        && studentIds.contains(log.getStudentID().getStudentID()))
                 .filter(log -> {
                     try {
                         LocalDate logDate = LocalDate.of(
                                 log.getRecordID().getYear(),
                                 log.getRecordID().getMonth(),
-                                log.getRecordID().getDay()
-                        );
+                                log.getRecordID().getDay());
                         return !logDate.isBefore(startDate) && !logDate.isAfter(endDate);
                     } catch (DateTimeException e) {
                         return false; // Exclude logs with invalid dates
@@ -233,8 +230,7 @@ public class AttendanceController extends FXController {
             LocalDate logDate = LocalDate.of(
                     log.getRecordID().getYear(),
                     log.getRecordID().getMonth(),
-                    log.getRecordID().getDay()
-            );
+                    log.getRecordID().getDay());
             return logDate.isAfter(LocalDate.now());
         } catch (DateTimeException e) {
             return true;
@@ -251,8 +247,7 @@ public class AttendanceController extends FXController {
                 LocalDate date = LocalDate.of(
                         log.getRecordID().getYear(),
                         log.getRecordID().getMonth(),
-                        log.getRecordID().getDay()
-                );
+                        log.getRecordID().getDay());
                 dateToStudentLogs.computeIfAbsent(date, k -> new HashMap<>())
                         .put(log.getStudentID().getStudentID(), log);
             }
@@ -284,26 +279,35 @@ public class AttendanceController extends FXController {
     }
 
     private void setupTable() {
+        // Configure basic columns with responsive behavior
         colNo.setCellValueFactory(new PropertyValueFactory<>("studentID"));
         colFullName.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue() != null
-                ? String.format("%s, %s %s",
-                        c.getValue().getLastName(),
-                        c.getValue().getFirstName(),
-                        c.getValue().getMiddleName())
-                : ""));
-        TableColumnUtil.configureBasicColumns(colNo, colFullName, rootPane.getWidth());
-        monthAttendanceColumn.setMinWidth(500);
-        monthAttendanceColumn.setPrefWidth(800);
+                        ? String.format("%s, %s %s",
+                                c.getValue().getLastName(),
+                                c.getValue().getFirstName(),
+                                c.getValue().getMiddleName())
+                        : ""));
+
+        // Initialize responsive layout system
+        TableColumnUtil.configureResponsiveLayout(
+                attendanceTable,
+                colNo,
+                colFullName,
+                monthAttendanceColumn);
+
+        // Configure selection
         attendanceTable.setItems(studentList);
         attendanceTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        attendanceTable.setTableMenuButtonVisible(true);
+
+        // Initial style application
         Platform.runLater(() -> attendanceTable.refresh());
     }
 
     private void setupMonthColumns() {
-        if (isMonthChanging) return;
-        
+        if (isMonthChanging)
+            return;
+
         isMonthChanging = true;
         monthAttendanceColumn.getColumns().clear();
         String monthYear = monthYearComboBox.getValue();
@@ -314,21 +318,21 @@ public class AttendanceController extends FXController {
 
         // Load settings for current month
         settings.loadForMonth(monthYear);
-        
+
         LocalDate firstDayOfMonth = WeeklyAttendanceUtil.getFirstDayOfMonth(monthYear);
         LocalDate startDate = firstDayOfMonth.withDayOfMonth(settings.getStartDay());
         LocalDate endDate = firstDayOfMonth.withDayOfMonth(settings.getEndDay());
-        
+
         System.out.println("Rendering columns from " + startDate + " to " + endDate);
 
         // Get only the dates within our range
         List<WeeklyAttendanceUtil.WeekDates> allWeeks = WeeklyAttendanceUtil.splitIntoWeeks(startDate, endDate);
-        
+
         // Calculate widths
         double availableWidth = attendanceTable.getWidth() - colNo.getWidth() - colFullName.getWidth() - 20;
         int totalDays = allWeeks.stream().mapToInt(WeeklyAttendanceUtil::calculateWorkingDays).sum();
         double dayWidth = Math.max(30, availableWidth / Math.max(totalDays, 1));
-        
+
         // Create columns
         AtomicInteger weekNum = new AtomicInteger(1);
         List<TableColumn<Student, String>> weekColumns = allWeeks.stream()
@@ -337,7 +341,7 @@ public class AttendanceController extends FXController {
                 .collect(Collectors.toList());
 
         monthAttendanceColumn.getColumns().addAll(weekColumns);
-        
+
         if (monthAttendanceColumn.getPrefWidth() == 0 || availableWidth > monthAttendanceColumn.getPrefWidth()) {
             monthAttendanceColumn.setPrefWidth(availableWidth);
         }
@@ -464,7 +468,7 @@ public class AttendanceController extends FXController {
                 Platform.runLater(() -> {
                     DataManager.getInstance().refreshData();
                     loadAttendanceLogs();
-                    setupMonthColumns();  // Refresh all columns
+                    setupMonthColumns(); // Refresh all columns
                 });
             }
             cell.setGraphic(null);
@@ -477,7 +481,7 @@ public class AttendanceController extends FXController {
                 Platform.runLater(() -> {
                     DataManager.getInstance().refreshData();
                     loadAttendanceLogs();
-                    setupMonthColumns();  // Refresh all columns
+                    setupMonthColumns(); // Refresh all columns
                 });
             }
         });
@@ -506,8 +510,9 @@ public class AttendanceController extends FXController {
 
     private void showSettingsDialog() {
         try {
-            System.out.println("Opening settings dialog with - Start: " + settings.getStartDay() + ", End: " + settings.getEndDay());
-            
+            System.out.println("Opening settings dialog with - Start: " + settings.getStartDay() + ", End: "
+                    + settings.getEndDay());
+
             AttendanceSettingsDialogLoader loader = new AttendanceSettingsDialogLoader(settings);
             loader.addParameter("OWNER_STAGE", rootPane.getScene().getWindow());
             loader.addParameter("CURRENT_MONTH", monthYearComboBox.getValue());

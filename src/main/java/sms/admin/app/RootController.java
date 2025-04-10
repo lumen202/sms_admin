@@ -1,5 +1,9 @@
 package sms.admin.app;
 
+import java.io.File;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.Base64;
@@ -10,6 +14,21 @@ import java.util.Map;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.imageio.ImageIO;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+
+import java.io.IOException;
+import java.awt.image.BufferedImage;
+import java.awt.Graphics2D;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 
 import dev.finalproject.database.DataManager;
 import dev.finalproject.models.SchoolYear;
@@ -25,6 +44,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.MenuItem;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
+import javafx.stage.DirectoryChooser;
 import sms.admin.app.attendance.AttendanceController;
 import sms.admin.app.attendance.AttendanceLoader;
 import sms.admin.app.enrollment.EnrollmentController;
@@ -211,28 +231,94 @@ public class RootController extends FXController {
                 .filter(obj -> obj instanceof Student)
                 .map(obj -> (Student) obj)
                 .filter(student -> student.getYearID() != null
-                && student.getYearID().getYearStart() == startYear)
+                        && student.getYearID().getYearStart() == startYear
+                        && student.isDeleted() == 0) // Add filter for non-deleted students
                 .toList();
     }
 
+    // Updated generateQRCode method with student name parameter
+    private void generateQRCode(String data, String filePath, int width, int height, String studentName)
+            throws WriterException, IOException {
+        try {
+            QRCodeWriter qrCodeWriter = new QRCodeWriter();
+            Map<EncodeHintType, Object> hints = new HashMap<>();
+            hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+            BitMatrix bitMatrix = qrCodeWriter.encode(data, BarcodeFormat.QR_CODE, width, height, hints);
+
+            // Create image with space for text (30px extra height)
+            int textHeight = 40;
+            BufferedImage qrImage = new BufferedImage(width, height + textHeight, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = qrImage.createGraphics();
+
+            // Draw white background
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, width, height + textHeight);
+
+            // Draw QR code
+            graphics.setColor(Color.BLACK);
+            for (int x = 0; x < width; x++) {
+                for (int y = 0; y < height; y++) {
+                    if (bitMatrix.get(x, y)) {
+                        graphics.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+
+            // Draw student name
+            graphics.setColor(Color.BLACK);
+            graphics.setFont(new Font("Arial", Font.BOLD, 14));
+            FontMetrics metrics = graphics.getFontMetrics();
+            int x = (width - metrics.stringWidth(studentName)) / 2;
+            int y = height + (textHeight - metrics.getHeight()) / 2 + metrics.getAscent();
+            graphics.drawString(studentName, x, y);
+
+            // Save image
+            ImageIO.write(qrImage, "PNG", new File(filePath));
+            graphics.dispose();
+        } catch (IOException e) {
+            throw new IOException("Failed to write QR code to file: " + e.getMessage(), e);
+        }
+    }
+
+    // Updated handleGenerateKeyMenuItem with proper method call
     @FXML
     private void handleGenerateKeyMenuItem() {
         try {
+            // Show directory chooser using contentPane's window
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("Choose Directory to Save QR Codes");
+            directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+            File selectedDirectory = directoryChooser.showDialog(contentPane.getScene().getWindow());
+
+            if (selectedDirectory == null) {
+                return; // User cancelled directory selection
+            }
+
             String currentYear = yearComboBox.getValue();
             List<Student> students = getStudentsForYear(currentYear);
-
             byte[] fixedKey = "MySuperSecretKey".getBytes();
             SecretKey secretKey = new SecretKeySpec(fixedKey, "AES");
-
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
 
-            System.out.println("Generated keys for school year " + currentYear + ":");
+            // Create QR codes directory inside selected directory
+            File qrDir = new File(selectedDirectory, "qr_codes");
+            qrDir.mkdirs();
+
             for (Student student : students) {
-                String dataToEncrypt = student.getStudentID() + "|" + currentYear; // Changed from getId() to getStudentID()
+                String dataToEncrypt = student.getStudentID() + "|" + currentYear;
                 byte[] encryptedBytes = cipher.doFinal(dataToEncrypt.getBytes());
                 String encryptedKey = Base64.getEncoder().encodeToString(encryptedBytes);
-                System.out.println("Student: " + student.getFullName() + " - Key: " + encryptedKey);
+
+                String cleanName = student.getFullName()
+                        .replaceAll("[^a-zA-Z0-9]", "_")
+                        .replaceAll("\\s+", "_");
+
+                File qrFile = new File(qrDir, cleanName + ".png");
+                generateQRCode(encryptedKey, qrFile.getAbsolutePath(), 300, 300, student.getFullName());
+
+                System.out.println("Generated for: " + student.getFullName() +
+                        " (" + qrFile.getAbsolutePath() + ")");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -249,15 +335,15 @@ public class RootController extends FXController {
 
             byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedKey));
             String decryptedString = new String(decryptedBytes);
-            
+
             String[] parts = decryptedString.split("\\|");
             int studentId = Integer.parseInt(parts[0]);
             Student student = findStudentByStudentId(studentId);
-            
-            String studentInfo = student != null ? 
-                String.format("Student: %s (Student ID: %d)", student.getFullName(), studentId) :
-                "Unknown Student (Student ID: " + studentId + ")";
-            
+
+            String studentInfo = student != null
+                    ? String.format("Student: %s (Student ID: %d)", student.getFullName(), studentId)
+                    : "Unknown Student (Student ID: " + studentId + ")";
+
             return studentInfo + ", School Year: " + parts[1];
         } catch (Exception e) {
             e.printStackTrace();
@@ -304,7 +390,8 @@ public class RootController extends FXController {
                 Platform.runLater(() -> {
                     System.out.println("Refreshing data from database...");
                     DataManager.getInstance().refreshData();
-                    List<SchoolYear> updatedList = DataManager.getInstance().getCollectionsRegistry().getList("SCHOOL_YEAR");
+                    List<SchoolYear> updatedList = DataManager.getInstance().getCollectionsRegistry()
+                            .getList("SCHOOL_YEAR");
                     System.out.println("Found " + updatedList.size() + " school years");
 
                     schoolYearList.clear();

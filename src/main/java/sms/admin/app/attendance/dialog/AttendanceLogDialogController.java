@@ -24,7 +24,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import sms.admin.util.attendance.AttendanceUtil;
 import sms.admin.util.attendance.CommonAttendanceUtil;
 import sms.admin.util.dialog.DialogManager;
 
@@ -132,10 +131,10 @@ public class AttendanceLogDialogController extends FXController {
                 AttendanceRecord record = new AttendanceRecord(-1, currentDate.getMonthValue(), day,
                         currentDate.getYear());
                 AttendanceLog absentLog = new AttendanceLog(-1, record, currentStudent,
-                        AttendanceUtil.TIME_ABSENT,
-                        AttendanceUtil.TIME_ABSENT,
-                        AttendanceUtil.TIME_ABSENT,
-                        AttendanceUtil.TIME_ABSENT);
+                        CommonAttendanceUtil.TIME_ABSENT,
+                        CommonAttendanceUtil.TIME_ABSENT,
+                        CommonAttendanceUtil.TIME_ABSENT,
+                        CommonAttendanceUtil.TIME_ABSENT);
                 logList.add(absentLog);
             } else {
                 logList.add(log);
@@ -257,7 +256,7 @@ public class AttendanceLogDialogController extends FXController {
             return "";
         if (log.getLogID() == -1)
             return "--:--"; // Dummy log for absent
-        return AttendanceUtil.formatTime(timeGetter.apply(log));
+        return CommonAttendanceUtil.formatTime(timeGetter.apply(log));
     }
 
     @FXML

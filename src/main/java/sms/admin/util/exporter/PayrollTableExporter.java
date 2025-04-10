@@ -1,113 +1,205 @@
 package sms.admin.util.exporter;
 
-import dev.finalproject.models.Student;
-import dev.finalproject.models.AttendanceLog;
-import javafx.collections.ObservableList;
-import org.apache.poi.ss.usermodel.*;
-import com.itextpdf.layout.Document;
-import java.io.PrintWriter;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.util.Arrays;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
-import sms.admin.util.attendance.AttendanceUtil;
-import sms.admin.util.mock.DataUtil;
+import java.util.Map;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
+import dev.finalproject.models.Student;
+import javafx.scene.control.TableView;
 
-public class PayrollTableExporter extends BaseTableExporter<Student> {
+public class PayrollTableExporter {
+    private double fareMultiplier = 1.0;
+    private final Map<Integer, Double> consolidatedDays = new HashMap<>();
 
-    private static final String PESO = "₱";
-    private static final String DAY_SUFFIX = " Day/s";
-    private static final String HALF_DAY_TEXT = " 1/2 Day/s";
-
-    @Override
-    public String getSheetName() {
-        return "Payroll";
+    public void setFareMultiplier(double multiplier) {
+        this.fareMultiplier = multiplier;
     }
 
-    @Override
-    public List<String> getHeaders() {
-        return Arrays.asList("ID", "Full Name", "Total Days", "Fare", "Total Amount");
+    public void setConsolidatedDays(int studentId, double days) {
+        consolidatedDays.put(studentId, days);
     }
 
-    @Override
-    public List<String> getRowData(Student student) {
-        ObservableList<AttendanceLog> logs = DataUtil.createAttendanceLogList();
-        YearMonth currentMonth = YearMonth.now();
-        double totalDays = calculateMonthTotalDays(student, logs, currentMonth);
-        double fare = student.getFare();
-        double totalAmount = totalDays * fare;
+    public void exportToExcel(TableView<Student> table, String title, String outputPath, List<Student> consolidatedData) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet(title);
+            
+            // Create styles
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+            
+            CellStyle currencyStyle = workbook.createCellStyle();
+            DataFormat format = workbook.createDataFormat();
+            currencyStyle.setDataFormat(format.getFormat("₱#,##0.00"));
 
-        return Arrays.asList(
-                String.valueOf(student.getStudentID()),
-                String.format("%s, %s %s", student.getLastName(), student.getFirstName(), student.getMiddleName()),
-                formatDays(totalDays),
-                PESO + String.format("%,.2f", fare), // Added peso sign and thousands separator
-                PESO + String.format("%,.2f", totalAmount) // Added peso sign and thousands separator
-        );
-    }
+            // Create header row
+            Row headerRow = sheet.createRow(0);
+            createExcelHeaderCell(headerRow, 0, "Student ID", headerStyle);
+            createExcelHeaderCell(headerRow, 1, "Full Name", headerStyle);
+            createExcelHeaderCell(headerRow, 2, "Total Days", headerStyle);
+            createExcelHeaderCell(headerRow, 3, "Fare", headerStyle);
+            createExcelHeaderCell(headerRow, 4, "Total Amount", headerStyle);
 
-    private String formatDays(double days) {
-        if (days == Math.floor(days)) {
-            // For whole numbers, show without decimal plus "Day/s"
-            return String.valueOf((int) days) + DAY_SUFFIX;
-        } else {
-            // For half days, show as "X 1/2 Day/s"
-            int wholePart = (int) Math.floor(days);
-            return wholePart + HALF_DAY_TEXT;
-        }
-    }
+            // Create data rows
+            int rowNum = 1;
+            double totalAmount = 0;
+            for (Student student : consolidatedData) {
+                Row row = sheet.createRow(rowNum++);
+                createExcelCell(row, 0, String.valueOf(student.getStudentID()));
+                createExcelCell(row, 1, formatFullName(student));
+                
+                // Get consolidated days
+                double totalDays = consolidatedDays.getOrDefault(student.getStudentID(), 0.0);
+                createExcelCell(row, 2, String.format("%.1f day(s)", totalDays));
+                
+                double fare = student.getFare() * fareMultiplier;
+                org.apache.poi.ss.usermodel.Cell fareCell = row.createCell(3);
+                fareCell.setCellValue(fare);
+                fareCell.setCellStyle(currencyStyle);
+                
+                double amount = totalDays * fare;
+                totalAmount += amount;
+                org.apache.poi.ss.usermodel.Cell amountCell = row.createCell(4);
+                amountCell.setCellValue(amount);
+                amountCell.setCellStyle(currencyStyle);
+            }
 
-    private double calculateMonthTotalDays(Student student, ObservableList<AttendanceLog> logs, YearMonth month) {
-        double totalDays = 0;
+            // Add total row
+            Row totalRow = sheet.createRow(rowNum);
+            createExcelCell(totalRow, 3, "Total Amount:");
+            org.apache.poi.ss.usermodel.Cell totalAmountCell = totalRow.createCell(4);
+            totalAmountCell.setCellValue(totalAmount);
+            totalAmountCell.setCellStyle(currencyStyle);
 
-        for (int day = 1; day <= month.lengthOfMonth(); day++) {
-            LocalDate date = month.atDay(day);
-            if (!AttendanceUtil.isWeekend(date)) {
-                String status = AttendanceUtil.getAttendanceStatus(student, date, logs);
-                switch (status) {
-                    case AttendanceUtil.PRESENT_MARK, AttendanceUtil.EXCUSED_MARK -> totalDays += 1.0;
-                    case AttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
-                }
+            // Auto-size columns
+            for (int i = 0; i < 5; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            // Write to file
+            try (FileOutputStream fileOut = new FileOutputStream(outputPath)) {
+                workbook.write(fileOut);
             }
         }
-
-        return totalDays;
     }
 
-    @Override
-    public void writeDataToWorkbook(Workbook workbook, ObservableList<Student> items, String title) {
-        Sheet sheet = workbook.createSheet(getSheetName());
+    private void createExcelHeaderCell(Row row, int column, String value, CellStyle style) {
+        org.apache.poi.ss.usermodel.Cell cell = row.createCell(column);
+        cell.setCellValue(value);
+        cell.setCellStyle(style);
+    }
 
-        // Create currency style
-        CellStyle currencyStyle = workbook.createCellStyle();
-        DataFormat format = workbook.createDataFormat();
-        currencyStyle.setDataFormat(format.getFormat("₱#,##0.00"));
+    private void createExcelCell(Row row, int column, String value) {
+        org.apache.poi.ss.usermodel.Cell cell = row.createCell(column);
+        cell.setCellValue(value);
+    }
 
-        writeBasicSheet(workbook, sheet, items, title);
+    public void exportToPdf(TableView<Student> table, String title, String outputPath, List<Student> consolidatedData) throws IOException {
+        try (PdfWriter writer = new PdfWriter(outputPath);
+             PdfDocument pdf = new PdfDocument(writer);
+             Document document = new Document(pdf)) {
 
-        // Post-process to apply currency formatting
-        int fareColumnIndex = 3; // Index of Fare column
-        int amountColumnIndex = 4; // Index of Total Amount column
+            // Add title
+            document.add(new Paragraph(title)
+                .setFontSize(16)
+                .setBold()
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginBottom(20));
 
-        for (Row row : sheet) {
-            if (row.getRowNum() > 1) { // Skip header and title rows
-                Cell fareCell = row.getCell(fareColumnIndex);
-                Cell amountCell = row.getCell(amountColumnIndex);
-                if (fareCell != null)
-                    fareCell.setCellStyle(currencyStyle);
-                if (amountCell != null)
-                    amountCell.setCellStyle(currencyStyle);
+            // Create table with 5 columns
+            Table pdfTable = new Table(UnitValue.createPercentArray(new float[]{15, 35, 15, 15, 20}))
+                .useAllAvailableWidth();
+
+            // Add header row
+            pdfTable.addCell(createPdfHeaderCell("Student ID"));
+            pdfTable.addCell(createPdfHeaderCell("Full Name"));
+            pdfTable.addCell(createPdfHeaderCell("Total Days"));
+            pdfTable.addCell(createPdfHeaderCell("Fare"));
+            pdfTable.addCell(createPdfHeaderCell("Total Amount"));
+
+            // Add data rows
+            double totalAmount = 0;
+            for (Student student : consolidatedData) {
+                double totalDays = consolidatedDays.getOrDefault(student.getStudentID(), 0.0);
+                double fare = student.getFare() * fareMultiplier;
+                double amount = totalDays * fare;
+                totalAmount += amount;
+
+                pdfTable.addCell(createPdfCell(String.valueOf(student.getStudentID())));
+                pdfTable.addCell(createPdfCell(formatFullName(student)));
+                pdfTable.addCell(createPdfCell(String.format("%.1f day(s)", totalDays)));
+                pdfTable.addCell(createPdfCell(String.format("₱%.2f", fare)));
+                pdfTable.addCell(createPdfCell(String.format("₱%.2f", amount)));
             }
+
+            // Add total row
+            for (int i = 0; i < 3; i++) {
+                pdfTable.addCell(createPdfCell(""));
+            }
+            pdfTable.addCell(createPdfHeaderCell("Total Amount:"));
+            pdfTable.addCell(createPdfHeaderCell(String.format("₱%.2f", totalAmount)));
+
+            document.add(pdfTable);
         }
     }
 
-    @Override
-    public void writeDataToPdf(Document document, ObservableList<Student> items, String title) {
-        writeBasicPdf(document, items, title);
+    public void exportToCsv(TableView<Student> table, String title, String outputPath, List<Student> consolidatedData) throws IOException {
+        try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(outputPath), StandardCharsets.UTF_8)) {
+            // Write header
+            writer.write("Student ID,Full Name,Total Days,Fare,Total Amount\n");
+
+            // Write data rows
+            double totalAmount = 0;
+            for (Student student : consolidatedData) {
+                double totalDays = consolidatedDays.getOrDefault(student.getStudentID(), 0.0);
+                double fare = student.getFare() * fareMultiplier;
+                double amount = totalDays * fare;
+                totalAmount += amount;
+
+                writer.write(String.format("%d,\"%s\",%.1f,₱%.2f,₱%.2f\n",
+                    student.getStudentID(),
+                    formatFullName(student),
+                    totalDays,
+                    fare,
+                    amount));
+            }
+
+            // Write total
+            writer.write(String.format(",,,,₱%.2f\n", totalAmount));
+        }
     }
 
-    @Override
-    public void writeDataToCsv(PrintWriter writer, ObservableList<Student> items, String title) {
-        writeBasicCsv(writer, items, title);
+    private Cell createPdfHeaderCell(String text) {
+        return new Cell()
+            .add(new Paragraph(text))
+            .setBold()
+            .setTextAlignment(TextAlignment.CENTER);
+    }
+
+    private Cell createPdfCell(String text) {
+        return new Cell()
+            .add(new Paragraph(text))
+            .setTextAlignment(TextAlignment.CENTER);
+    }
+
+    private String formatFullName(Student student) {
+        return String.format("%s, %s %s",
+            student.getLastName(),
+            student.getFirstName(),
+            student.getMiddleName());
     }
 }

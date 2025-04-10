@@ -1,13 +1,12 @@
 package sms.admin.app.payroll;
 
 import java.text.DecimalFormat;
+import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
 
 import dev.finalproject.database.DataManager;
 import dev.finalproject.models.AttendanceLog;
@@ -35,11 +34,13 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
 import sms.admin.app.RootController;
+import sms.admin.app.attendance.model.AttendanceSettings;
+import sms.admin.app.payroll.dialog.PayrollExportDialogController;
+import sms.admin.app.payroll.dialog.PayrollExportDialogLoader;
 import sms.admin.util.attendance.CommonAttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
 import sms.admin.util.exporter.PayrollTableExporter;
 import sms.admin.util.exporter.exporterv2.DetailedPayrollExporter;
-import sms.admin.util.exporter.exporterv2.DetailedPayrollPdfExporter;
 
 public class PayrollController extends FXController {
 
@@ -68,11 +69,7 @@ public class PayrollController extends FXController {
     @FXML
     private MenuItem exportCsv;
     @FXML
-    private MenuItem exportPdf;
-    @FXML
     private MenuItem exportDetailedExcel;
-    @FXML
-    private MenuItem exportDetailedPdf;
     @FXML
     private RadioButton oneWayRadio;
     @FXML
@@ -118,7 +115,7 @@ public class PayrollController extends FXController {
         filteredStudentList = new FilteredList<>(FXCollections.observableArrayList(
                 students.stream()
                         .filter(student -> student.getYearID() != null
-                        && student.getYearID().getYearStart() == startYear && student.isDeleted() == 0)
+                                && student.getYearID().getYearStart() == startYear && student.isDeleted() == 0)
                         .collect(Collectors.toList())));
 
         // Initialize attendance logs from shared DataManager if not provided as a
@@ -246,20 +243,25 @@ public class PayrollController extends FXController {
 
             List<AttendanceLog> studentLogs = attendanceLog.stream()
                     .filter(log -> log != null
-                    && log.getStudentID() != null
-                    && log.getStudentID().getStudentID() == student.getStudentID()
-                    && log.getRecordID() != null
-                    && YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth())
-                            .equals(selectedMonth))
+                            && log.getStudentID() != null
+                            && log.getStudentID().getStudentID() == student.getStudentID()
+                            && log.getRecordID() != null
+                            && YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth())
+                                    .equals(selectedMonth)
+                            && !CommonAttendanceUtil.isWeekend(LocalDate.of(
+                                    log.getRecordID().getYear(),
+                                    log.getRecordID().getMonth(),
+                                    log.getRecordID().getDay())))
                     .collect(Collectors.toList());
 
             for (AttendanceLog log : studentLogs) {
                 String status = CommonAttendanceUtil.computeAttendanceStatus(log);
                 switch (status) {
-                    case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK, CommonAttendanceUtil.HOLIDAY_MARK ->
+                    case CommonAttendanceUtil.PRESENT_MARK,
+                            CommonAttendanceUtil.EXCUSED_MARK,
+                            CommonAttendanceUtil.HOLIDAY_MARK ->
                         totalDays += 1.0;
-                    case CommonAttendanceUtil.HALF_DAY_MARK ->
-                        totalDays += 0.5;
+                    case CommonAttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
                 }
             }
             return totalDays;
@@ -297,9 +299,7 @@ public class PayrollController extends FXController {
 
         exportExcel.setOnAction(event -> handleExport("excel"));
         exportCsv.setOnAction(event -> handleExport("csv"));
-        exportPdf.setOnAction(event -> handleExport("pdf"));
-        exportDetailedExcel.setOnAction(event -> handleDetailedExport("excel"));
-        exportDetailedPdf.setOnAction(event -> handleDetailedExport("pdf"));
+        exportDetailedExcel.setOnAction(event -> handleExport("xlsx"));
 
         fareTypeGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
@@ -313,57 +313,172 @@ public class PayrollController extends FXController {
         try {
             String selectedMonthYear = yearMonthComboBox.getValue();
             if (selectedMonthYear == null) {
+                System.err.println("No month/year selected");
                 return;
             }
 
-            String title = "Payroll Report - " + selectedMonthYear;
-            String fileName = String.format("payroll_%s.%s",
-                    selectedMonthYear.replace(" ", "_").toLowerCase(),
-                    type.equals("excel") ? "xlsx" : type);
+            // Show export dialog
+            PayrollExportDialogLoader dialogLoader = new PayrollExportDialogLoader(currentYear, selectedMonthYear,
+                    type);
+            dialogLoader.addParameter("OWNER_STAGE", rootPane.getScene().getWindow());
+            dialogLoader.load();
+
+            PayrollExportDialogController dialogController = dialogLoader.getController();
+            if (dialogController == null || !dialogController.isConfirmed()) {
+                System.out.println("Export cancelled by user");
+                return;
+            }
+
+            // Get date range from dialog
+            YearMonth startMonth = dialogController.getStartMonth();
+            YearMonth endMonth = dialogController.getEndMonth();
+
+            if (startMonth == null || endMonth == null) {
+                System.err.println("Invalid date range selected");
+                return;
+            }
+
+            // Continue with export...
+            String title = String.format("Payroll Report - %s to %s",
+                    startMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
+                    endMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
+
+            String fileName = String.format("payroll_%s_to_%s.%s",
+                    startMonth.format(DateTimeFormatter.ofPattern("MMM_yyyy")).toLowerCase(),
+                    endMonth.format(DateTimeFormatter.ofPattern("MMM_yyyy")).toLowerCase(),
+                    type);
+
             String outputPath = System.getProperty("user.home") + "/Downloads/" + fileName;
 
-            PayrollTableExporter exporter = new PayrollTableExporter();
             switch (type) {
-                case "excel" ->
-                    exporter.exportToExcel(payrollTable, title, outputPath);
-                case "pdf" ->
-                    exporter.exportToPdf(payrollTable, title, outputPath);
-                case "csv" ->
-                    exporter.exportToCsv(payrollTable, title, outputPath);
+                case "excel" -> handleBasicExport(type, title, outputPath, startMonth, endMonth);
+                case "csv" -> handleBasicExport(type, title, outputPath, startMonth, endMonth);
+                case "xlsx" -> handleDetailedExport("detailed-excel", title, outputPath, startMonth, endMonth);
             }
+
             System.out.println("Export completed: " + outputPath);
         } catch (Exception e) {
+            System.err.println("Export failed: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private void handleDetailedExport(String type) {
+    private void handleBasicExport(String type, String title, String outputPath, YearMonth startMonth,
+            YearMonth endMonth) throws Exception {
         try {
-            String selectedMonthYear = yearMonthComboBox.getValue();
-            if (selectedMonthYear == null || selectedMonthYear.trim().isEmpty()) {
-                return;
+            PayrollTableExporter exporter = new PayrollTableExporter();
+            exporter.setFareMultiplier(getFareMultiplier());
+
+            // Create consolidated payroll data for the date range
+            List<Student> consolidatedData = consolidatePayrollData(startMonth, endMonth);
+
+            switch (type) {
+                case "excel" -> exporter.exportToExcel(payrollTable, title, outputPath, consolidatedData);
+                case "csv" -> exporter.exportToCsv(payrollTable, title, outputPath, consolidatedData);
             }
 
-            YearMonth selectedMonth = DateTimeUtils.parseMonthYear(selectedMonthYear);
-            String fileName = String.format("detailed_payroll_%s.%s",
-                    selectedMonthYear.replace(" ", "_").toLowerCase(),
-                    type.equals("excel") ? "xlsx" : "pdf");
-            String outputPath = System.getProperty("user.home") + "/Downloads/" + fileName;
-
-            if (type.equals("excel")) {
-                DetailedPayrollExporter exporter = new DetailedPayrollExporter(selectedMonth, attendanceLog);
-                exporter.exportToExcel(payrollTable, "Detailed Payroll", outputPath);
-            } else {
-                DetailedPayrollPdfExporter exporter = new DetailedPayrollPdfExporter(selectedMonth, attendanceLog);
-                PdfWriter writer = new PdfWriter(outputPath);
-                PdfDocument pdf = new PdfDocument(writer);
-                Document document = new Document(pdf);
-                exporter.exportToPdf(document, payrollTable.getItems(), "Detailed Payroll");
-                document.close();
-            }
-            System.out.println("Detailed " + type + " export completed: " + outputPath);
+            System.out.println("Export completed successfully: " + outputPath);
         } catch (Exception e) {
+            System.err.println("Error during basic export: " + e.getMessage());
             e.printStackTrace();
+            throw e; // Rethrow the exception to ensure it is handled upstream
+        }
+    }
+
+    private void handleDetailedExport(String type, String title, String outputPath, YearMonth startMonth,
+            YearMonth endMonth) throws Exception {
+        try {
+            YearMonth currentMonth = startMonth;
+            while (!currentMonth.isAfter(endMonth)) {
+                String monthTitle = String.format("Payroll Report - %s",
+                        currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
+
+                String monthFileName = String.format("payroll_%s.xlsx",
+                        currentMonth.format(DateTimeFormatter.ofPattern("MMM_yyyy")).toLowerCase());
+
+                String monthOutputPath = System.getProperty("user.home") + "/Downloads/" + monthFileName;
+
+                DetailedPayrollExporter exporter = new DetailedPayrollExporter(currentMonth, currentMonth,
+                        attendanceLog);
+                exporter.setFareMultiplier(getFareMultiplier());
+                exporter.exportToExcel(payrollTable, monthTitle, monthOutputPath);
+                System.out.println("Detailed export completed successfully for "
+                        + currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")) + ": " + monthOutputPath);
+
+                currentMonth = currentMonth.plusMonths(1);
+            }
+        } catch (Exception e) {
+            System.err.println("Error during detailed export: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    private List<Student> consolidatePayrollData(YearMonth startMonth, YearMonth endMonth) {
+        List<Student> consolidatedStudents = new ArrayList<>(filteredStudentList);
+        PayrollTableExporter exporter = new PayrollTableExporter();
+        exporter.setFareMultiplier(getFareMultiplier());
+
+        // For each student, accumulate attendance across the date range
+        for (Student student : consolidatedStudents) {
+            double totalDays = 0;
+            YearMonth currentMonth = startMonth;
+
+            while (!currentMonth.isAfter(endMonth)) {
+                // Load attendance settings for the month
+                AttendanceSettings settings = new AttendanceSettings();
+                settings.loadForMonth(currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
+
+                // Calculate days for the month within settings range
+                double monthDays = calculateTotalDaysInRange(student, currentMonth, settings);
+                totalDays += monthDays;
+
+                currentMonth = currentMonth.plusMonths(1);
+            }
+
+            // Store the total days in the exporter
+            exporter.setConsolidatedDays(student.getStudentID(), totalDays);
+        }
+
+        return consolidatedStudents;
+    }
+
+    private double calculateTotalDaysInRange(Student student, YearMonth month, AttendanceSettings settings) {
+        try {
+            double totalDays = 0;
+            int startDay = settings.getStartDay();
+            int endDay = settings.getEndDay();
+
+            List<AttendanceLog> studentLogs = attendanceLog.stream()
+                    .filter(log -> log != null
+                            && log.getStudentID() != null
+                            && log.getStudentID().getStudentID() == student.getStudentID()
+                            && log.getRecordID() != null
+                            && log.getRecordID().getYear() == month.getYear()
+                            && log.getRecordID().getMonth() == month.getMonthValue()
+                            && log.getRecordID().getDay() >= startDay
+                            && log.getRecordID().getDay() <= endDay
+                            && !CommonAttendanceUtil.isWeekend(LocalDate.of(
+                                    log.getRecordID().getYear(),
+                                    log.getRecordID().getMonth(),
+                                    log.getRecordID().getDay())))
+                    .collect(Collectors.toList());
+
+            for (AttendanceLog log : studentLogs) {
+                String status = CommonAttendanceUtil.computeAttendanceStatus(log);
+                switch (status) {
+                    case CommonAttendanceUtil.PRESENT_MARK,
+                            CommonAttendanceUtil.EXCUSED_MARK,
+                            CommonAttendanceUtil.HOLIDAY_MARK ->
+                        totalDays += 1.0;
+                    case CommonAttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
+                }
+            }
+            return totalDays;
+        } catch (Exception e) {
+            System.err.println("Error calculating days for student " + student.getStudentID());
+            e.printStackTrace();
+            return 0;
         }
     }
 
@@ -377,8 +492,8 @@ public class PayrollController extends FXController {
 
     private double getFareMultiplier() {
         if (fourWayRadio.isSelected()) {
-            return 4.0; 
-        }else if (twoWayRadio.isSelected()) {
+            return 4.0;
+        } else if (twoWayRadio.isSelected()) {
             return 2.0;
         }
         return 1.0; // one way

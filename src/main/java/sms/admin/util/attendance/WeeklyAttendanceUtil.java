@@ -92,7 +92,7 @@ public class WeeklyAttendanceUtil {
 
         weekColumns.clear();
         while (!date.isAfter(endDate)) {
-            if (!AttendanceUtil.isWeekend(date)) {
+            if (!CommonAttendanceUtil.isWeekend(date)) {
                 TableColumn<Student, String> dayColumn = createDayColumn(date, attendanceLogs);
                 if (dayColumn != null) {
                     weekColumns.add(dayColumn);
@@ -235,11 +235,10 @@ public class WeeklyAttendanceUtil {
             List<LocalDate> filteredDates = getDates().stream()
                     .filter(date -> !date.isBefore(startDate) && !date.isAfter(endDate))
                     .collect(Collectors.toList());
-            
+
             return new WeekDates(
-                filteredDates.isEmpty() ? start : filteredDates.get(0),
-                filteredDates.isEmpty() ? end : filteredDates.get(filteredDates.size() - 1)
-            );
+                    filteredDates.isEmpty() ? start : filteredDates.get(0),
+                    filteredDates.isEmpty() ? end : filteredDates.get(filteredDates.size() - 1));
         }
     }
 }

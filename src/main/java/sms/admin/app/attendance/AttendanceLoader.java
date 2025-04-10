@@ -3,6 +3,7 @@ package sms.admin.app.attendance;
 import sms.admin.util.loader.BaseLoader;
 import javafx.application.Platform;
 
+@SuppressWarnings("rawtypes")
 public class AttendanceLoader extends BaseLoader {
     @Override
     public void load() {
