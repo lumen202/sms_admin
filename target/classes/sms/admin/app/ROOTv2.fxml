@@ -35,7 +35,7 @@
                   <items>
                      <MenuItem fx:id="newSchoolYearMenuItem" onAction="#handleNewSchoolYear" text="New School Year" />
                      <MenuItem fx:id="editSchoolYearMenuItem" onAction="#handleEditSchoolYear" text="Edit School Year" />
-                     <MenuItem fx:id="generateKeyMenuItem" text="Generate Key Code" />
+                     <MenuItem fx:id="generateKeyMenuItem" text="Generate QR Key Code" />
                   </items>
                   <graphic>
                      <FontIcon iconLiteral="mdi2c-cog" iconSize="24" styleClass="menu-icon" />
