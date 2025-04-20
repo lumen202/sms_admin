@@ -13,7 +13,7 @@
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.ComboBox?>
 
-<VBox fx:id="contentBox" spacing="15" styleClass="profile-container" stylesheets="@../styles/main.css,@../styles/dialog.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.enrollment.EnrollmentControllerV2">
+<VBox fx:id="contentBox" spacing="15" styleClass="profile-container" stylesheets="@../styles/main.css,@enrollment.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.enrollment.EnrollmentControllerV2">
     <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="profile-content" VBox.vgrow="ALWAYS">
         <content>
             <VBox spacing="15">
@@ -31,25 +31,25 @@
                         </columnConstraints>
 
                         <Label text="First Name:" GridPane.rowIndex="0" />
-                        <TextField fx:id="firstNameField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="firstNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Middle Name:" GridPane.rowIndex="1" />
-                        <TextField fx:id="middleNameField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <TextField fx:id="middleNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                         <Label text="Last Name:" GridPane.rowIndex="2" />
-                        <TextField fx:id="lastNameField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <TextField fx:id="lastNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                         <Label text="Name Extension:" GridPane.rowIndex="3" />
-                        <TextField fx:id="nameExtField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <TextField fx:id="nameExtField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                         <Label text="Date of Birth:" GridPane.rowIndex="4" />
-                        <DatePicker fx:id="dateOfBirthPicker" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                        <DatePicker fx:id="dateOfBirthPicker" styleClass="date-picker" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
                         <Label text="Status:" GridPane.rowIndex="5" />
-                        <ComboBox fx:id="statusComboBox" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                        <ComboBox fx:id="statusComboBox" styleClass="combo-box" GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
                         <Label text="Fare:" GridPane.rowIndex="6" />
-                        <TextField fx:id="fareField" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                        <TextField fx:id="fareField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="6" />
                     </GridPane>
                 </VBox>
 
@@ -63,19 +63,19 @@
                         </columnConstraints>
 
                         <Label text="Street Address:" GridPane.rowIndex="0" />
-                        <TextField fx:id="streetField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="streetField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Barangay:" GridPane.rowIndex="1" />
-                        <TextField fx:id="barangayField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <TextField fx:id="barangayField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                         <Label text="Municipality:" GridPane.rowIndex="2" />
-                        <TextField fx:id="municipalityField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <TextField fx:id="municipalityField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                         <Label text="City:" GridPane.rowIndex="3" />
-                        <TextField fx:id="cityField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <TextField fx:id="cityField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                         <Label text="Postal Code:" GridPane.rowIndex="4" />
-                        <TextField fx:id="postalCodeField" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                        <TextField fx:id="postalCodeField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                     </GridPane>
                 </VBox>
 
@@ -89,10 +89,10 @@
                         </columnConstraints>
 
                         <Label text="Contact Number:" GridPane.rowIndex="0" />
-                        <TextField fx:id="contactNumberField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <TextField fx:id="contactNumberField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Email Address:" GridPane.rowIndex="1" />
-                        <TextField fx:id="emailField" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <TextField fx:id="emailField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                     </GridPane>
                 </VBox>
 
