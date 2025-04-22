@@ -90,11 +90,11 @@ public class TableColumnUtil {
 
         double minTableWidth = 800; // Minimum expected table width
         double maxTableWidth = 2000; // Maximum expected table width
-        
+
         // ID Column - Fixed width
-        idColumn.setPrefWidth(30);
-        idColumn.setMinWidth(30);
-        idColumn.setMaxWidth(50);
+        idColumn.setPrefWidth(40);
+        idColumn.setMinWidth(40);
+        idColumn.setMaxWidth(80);
         idColumn.setStyle("-fx-alignment: CENTER;");
 
         // Name Column - Dynamic width based on table width

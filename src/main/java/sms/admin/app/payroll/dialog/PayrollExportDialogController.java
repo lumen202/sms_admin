@@ -42,7 +42,7 @@ public class PayrollExportDialogController {
 
     public void initData(String currentYear, String currentMonth, String exportType) {
         this.selectedExportType = exportType;
-        
+
         // Only allow Excel, CSV, and Detailed Excel export types
         if (!exportType.equals("excel") && !exportType.equals("csv") && !exportType.equals("xlsx")) {
             errorLabel.setText("Invalid export type selected");

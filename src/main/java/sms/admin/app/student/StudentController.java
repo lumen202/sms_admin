@@ -19,6 +19,7 @@ import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
@@ -191,8 +192,8 @@ public class StudentController extends FXController {
         masterStudentList.setAll(
                 students.stream()
                         .filter(s -> s != null && s.getYearID() != null
-                        && s.getYearID().getYearStart() == startYear
-                        && s.isDeleted() == 0)
+                                && s.getYearID().getYearStart() == startYear
+                                && s.isDeleted() == 0)
                         .collect(Collectors.toList()));
     }
 
@@ -232,16 +233,44 @@ public class StudentController extends FXController {
      * master list.
      */
     private void deleteStudent(Student student) {
-        try {
-            student.setDeleted(1);
-            StudentDAO.update(student);
-            masterStudentList.remove(student);
-            studentTableView.refresh();
-            updateStatusLabel();
-        } catch (Exception e) {
-            e.printStackTrace();
-            showErrorAlert("Error", "Failed to delete student", e.getMessage());
-        }
+        Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmDialog.setTitle("Confirm Student Deletion");
+        confirmDialog.setHeaderText("Are you sure you want to delete this student?");
+        confirmDialog.setContentText(
+                "Student Details:\n" +
+                        "ID: " + student.getStudentID() + "\n" +
+                        "Name: " + student.getFullName() + "\n");
+
+        // Style the dialog buttons
+        Button okButton = (Button) confirmDialog.getDialogPane().lookupButton(ButtonType.OK);
+        okButton.setText("Delete");
+        okButton.setStyle("-fx-background-color: #800000; -fx-text-fill: white;");
+
+        Button cancelButton = (Button) confirmDialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        cancelButton.setStyle("-fx-background-color: #003366; -FX-text-fill: white;");
+
+        confirmDialog.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                try {
+                    student.setDeleted(1);
+                    StudentDAO.update(student);
+                    masterStudentList.remove(student);
+                    studentTableView.refresh();
+                    updateStatusLabel();
+
+                    // Show success message
+                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                    successAlert.setTitle("Success");
+                    successAlert.setHeaderText(null);
+                    successAlert.setContentText("Student has been successfully deleted.");
+                    successAlert.show();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    showErrorAlert("Error", "Failed to delete student", e.getMessage());
+                }
+            }
+        });
     }
 
     private void openStudentProfile(Student student) {

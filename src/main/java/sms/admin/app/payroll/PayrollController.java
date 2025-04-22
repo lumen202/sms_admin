@@ -1,5 +1,6 @@
 package sms.admin.app.payroll;
 
+import java.io.File;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -33,6 +34,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
+import javafx.stage.FileChooser;
 import sms.admin.app.RootController;
 import sms.admin.app.attendance.model.AttendanceSettings;
 import sms.admin.app.payroll.dialog.PayrollExportDialogController;
@@ -64,8 +66,6 @@ public class PayrollController extends FXController {
     private Label totalAmountLabel;
     @FXML
     private MenuButton exportButton;
-    @FXML
-    private MenuItem exportExcel;
     @FXML
     private MenuItem exportCsv;
     @FXML
@@ -297,7 +297,6 @@ public class PayrollController extends FXController {
             updateRootController(newValue);
         });
 
-        exportExcel.setOnAction(event -> handleExport("excel"));
         exportCsv.setOnAction(event -> handleExport("csv"));
         exportDetailedExcel.setOnAction(event -> handleExport("xlsx"));
 
@@ -317,7 +316,7 @@ public class PayrollController extends FXController {
                 return;
             }
 
-            // Show export dialog
+            // Show export dialog for date range
             PayrollExportDialogLoader dialogLoader = new PayrollExportDialogLoader(currentYear, selectedMonthYear,
                     type);
             dialogLoader.addParameter("OWNER_STAGE", rootPane.getScene().getWindow());
@@ -329,7 +328,6 @@ public class PayrollController extends FXController {
                 return;
             }
 
-            // Get date range from dialog
             YearMonth startMonth = dialogController.getStartMonth();
             YearMonth endMonth = dialogController.getEndMonth();
 
@@ -338,25 +336,43 @@ public class PayrollController extends FXController {
                 return;
             }
 
-            // Continue with export...
+            // Configure file chooser
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save Payroll Report");
+            fileChooser.setInitialDirectory(new File(System.getProperty("user.home") + "/Downloads"));
+
+            String fileName = String.format("payroll_%s",
+                    startMonth.format(DateTimeFormatter.ofPattern("MMM_yyyy")).toLowerCase());
+
+            fileChooser.setInitialFileName(fileName + ("xlsx".equals(type) ? ".xlsx" : ".csv"));
+
+            // Set file extension filter
+            FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter(
+                    "xlsx".equals(type) ? "Excel files (*.xlsx)" : "CSV files (*.csv)",
+                    "xlsx".equals(type) ? "*.xlsx" : "*.csv");
+            fileChooser.getExtensionFilters().add(extFilter);
+
+            // Show save dialog
+            File file = fileChooser.showSaveDialog(rootPane.getScene().getWindow());
+            if (file == null) {
+                System.out.println("Export cancelled by user");
+                return;
+            }
+
             String title = String.format("Payroll Report - %s to %s",
                     startMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
                     endMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
 
-            String fileName = String.format("payroll_%s_to_%s.%s",
-                    startMonth.format(DateTimeFormatter.ofPattern("MMM_yyyy")).toLowerCase(),
-                    endMonth.format(DateTimeFormatter.ofPattern("MMM_yyyy")).toLowerCase(),
-                    type);
-
-            String outputPath = System.getProperty("user.home") + "/Downloads/" + fileName;
-
-            switch (type) {
-                case "excel" -> handleBasicExport(type, title, outputPath, startMonth, endMonth);
-                case "csv" -> handleBasicExport(type, title, outputPath, startMonth, endMonth);
-                case "xlsx" -> handleDetailedExport("detailed-excel", title, outputPath, startMonth, endMonth);
+            // Type xlsx will use DetailedPayrollExporter
+            if ("xlsx".equals(type)) {
+                DetailedPayrollExporter exporter = new DetailedPayrollExporter(startMonth, endMonth, attendanceLog);
+                exporter.setFareMultiplier(getFareMultiplier());
+                exporter.exportToExcel(payrollTable, title, file.getAbsolutePath());
+            } else {
+                handleBasicExport(type, title, file.getAbsolutePath(), startMonth, endMonth);
             }
 
-            System.out.println("Export completed: " + outputPath);
+            System.out.println("Export completed: " + file.getAbsolutePath());
         } catch (Exception e) {
             System.err.println("Export failed: " + e.getMessage());
             e.printStackTrace();
@@ -382,35 +398,6 @@ public class PayrollController extends FXController {
             System.err.println("Error during basic export: " + e.getMessage());
             e.printStackTrace();
             throw e; // Rethrow the exception to ensure it is handled upstream
-        }
-    }
-
-    private void handleDetailedExport(String type, String title, String outputPath, YearMonth startMonth,
-            YearMonth endMonth) throws Exception {
-        try {
-            YearMonth currentMonth = startMonth;
-            while (!currentMonth.isAfter(endMonth)) {
-                String monthTitle = String.format("Payroll Report - %s",
-                        currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
-
-                String monthFileName = String.format("payroll_%s.xlsx",
-                        currentMonth.format(DateTimeFormatter.ofPattern("MMM_yyyy")).toLowerCase());
-
-                String monthOutputPath = System.getProperty("user.home") + "/Downloads/" + monthFileName;
-
-                DetailedPayrollExporter exporter = new DetailedPayrollExporter(currentMonth, currentMonth,
-                        attendanceLog);
-                exporter.setFareMultiplier(getFareMultiplier());
-                exporter.exportToExcel(payrollTable, monthTitle, monthOutputPath);
-                System.out.println("Detailed export completed successfully for "
-                        + currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")) + ": " + monthOutputPath);
-
-                currentMonth = currentMonth.plusMonths(1);
-            }
-        } catch (Exception e) {
-            System.err.println("Error during detailed export: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
         }
     }
 

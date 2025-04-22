@@ -34,12 +34,10 @@
                <HBox spacing="5">
                   <MenuButton fx:id="exportButton" prefHeight="35.0" prefWidth="90.0" styleClass="payroll-export-button" text="Export">
                      <items>
-                        <MenuItem fx:id="exportExcel" text="Excel" />
+                        <MenuItem fx:id="exportDetailedExcel" text="Excel" />
                         <MenuItem fx:id="exportCsv" text="CSV" />
-                        <MenuItem fx:id="exportDetailedExcel" text="Detailed Excel" />
                      </items>
                   </MenuButton>
-                  <!-- Removed management MenuButton -->
                </HBox>
             </HBox>
          </VBox>

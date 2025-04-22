@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<BorderPane stylesheets="@styles/main.css,@styles/sidebar.css" xmlns="http://javafx.com/javafx/22"
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.RootController">
+    <left>
+        <VBox fx:id="sidebar" styleClass="sidebar">
+            <!-- Logo and Toggle Section -->
+            <VBox alignment="TOP_CENTER" spacing="5" styleClass="sidebar-header">
+                <ImageView fitHeight="40.0" fitWidth="40.0" preserveRatio="true">
+                    <Image url="@../assets/img/logo.png" />
+                </ImageView>
+                <Button fx:id="toggleSidebarBtn" styleClass="toggle-sidebar-btn">
+                    <graphic>
+                        <FontIcon iconLiteral="mdi2m-menu" iconSize="20" />
+                    </graphic>
+                </Button>
+            </VBox>
+
+            <!-- Settings and School Year Section -->
+            <VBox spacing="5" styleClass="top-controls">
+                <ComboBox fx:id="yearComboBox" promptText="Select School Year"
+                    styleClass="header-combo-box" maxWidth="200" />
+                <Button styleClass="settings-button" maxWidth="200">
+                    <graphic>
+                        <FontIcon iconLiteral="mdi2c-cog" iconSize="20" styleClass="nav-icon" />
+                    </graphic>
+                    <contextMenu>
+                        <ContextMenu>
+                            <items>
+                                <MenuItem fx:id="newSchoolYearMenuItem" text="New School Year" />
+                                <MenuItem fx:id="editSchoolYearMenuItem" text="Edit School Year" />
+                                <MenuItem fx:id="generateKeyMenuItem" text="Generate QR Key" />
+                            </items>
+                        </ContextMenu>
+                    </contextMenu>
+                </Button>
+            </VBox>
+
+            <!-- Navigation Section -->
+            <VBox spacing="5" styleClass="nav-items" VBox.vgrow="ALWAYS">
+                <Button fx:id="studentButton" styleClass="nav-button" text="Students" maxWidth="200">
+                    <graphic>
+                        <FontIcon iconLiteral="mdi2a-account-multiple" iconSize="20"
+                            styleClass="nav-icon" />
+                    </graphic>
+                </Button>
+                <Button fx:id="attendanceButton" styleClass="nav-button" text="Attendance"
+                    maxWidth="200">
+                    <graphic>
+                        <FontIcon iconLiteral="mdi2c-calendar-clock" iconSize="20"
+                            styleClass="nav-icon" />
+                    </graphic>
+                </Button>
+                <Button fx:id="payrollButton" styleClass="nav-button" text="Payroll" maxWidth="200">
+                    <graphic>
+                        <FontIcon iconLiteral="mdi2c-cash" iconSize="20" styleClass="nav-icon" />
+                    </graphic>
+                </Button>
+            </VBox>
+        </VBox>
+    </left>
+
+    <center>
+        <StackPane fx:id="contentPane" styleClass="content-area" />
+    </center>
+</BorderPane>

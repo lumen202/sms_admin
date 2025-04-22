@@ -16,10 +16,6 @@ import sms.admin.util.attendance.CommonAttendanceUtil;
 
 public class DetailedPayrollExporter {
     // Constants
-    private static final String CHECKMARK = "✓";
-    private static final String ABSENT_MARK = "✗";
-    private static final String HALF_DAY_MARK = "½";
-    private static final double MEAL_DAILY_RATE = 1300.00;
     private static final double MAX_TOTAL_AMOUNT = 1300.00;
 
     // Instance variables
@@ -49,7 +45,6 @@ public class DetailedPayrollExporter {
             CellStyle headerStyle = createHeaderStyle(workbook);
             CellStyle dataStyle = createDataStyle(workbook);
             CellStyle currencyStyle = createCurrencyStyle(workbook);
-            CellStyle totalStyle = createTotalStyle(workbook);
             CellStyle centerStyle = createCenterStyle(workbook);
 
             // Create a new style for subtotal label (left-aligned)
@@ -62,30 +57,31 @@ public class DetailedPayrollExporter {
             subtotalLabelStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             addBorders(subtotalLabelStyle);
 
-            // Set initial column widths
-            sheet.setColumnWidth(0, 12 * 256); // No. column
-            sheet.setColumnWidth(1, 65 * 256); // Name column
+            // Set initial column widths with consistent small values
+            sheet.setColumnWidth(0, 5 * 256); // No. column
+            sheet.setColumnWidth(1, 40 * 256); // Name column
 
             // Get weeks and total days
             List<List<LocalDate>> weeks = getWorkWeeks();
             int totalDays = weeks.stream().mapToInt(List::size).sum();
 
-            // Set day columns width
+            // Set ALL day columns to exactly the same small width
+            final int DAY_COLUMN_WIDTH = 3 * 256; // Very small width for day columns
             for (int i = 2; i < 2 + totalDays; i++) {
-                sheet.setColumnWidth(i, 7 * 256); // Width for day columns
+                sheet.setColumnWidth(i, DAY_COLUMN_WIDTH);
             }
 
-            // Set subsequent column widths dynamically
+            // Set other columns with consistent values
             int totalDaysCol = 2 + totalDays;
-            sheet.setColumnWidth(totalDaysCol, 10 * 256); // Total Days
-            sheet.setColumnWidth(totalDaysCol + 1, 12 * 256); // Trans Daily Rate
-            sheet.setColumnWidth(totalDaysCol + 2, 13 * 256); // Trans Amount Due
-            sheet.setColumnWidth(totalDaysCol + 3, 12 * 256); // Meal Daily Rate
-            sheet.setColumnWidth(totalDaysCol + 4, 13 * 256); // Meal Amount Due
+            sheet.setColumnWidth(totalDaysCol, 5 * 256); // Total Days
+            sheet.setColumnWidth(totalDaysCol + 1, 7 * 256); // Trans Daily Rate
+            sheet.setColumnWidth(totalDaysCol + 2, 7 * 256); // Trans Amount Due
+            sheet.setColumnWidth(totalDaysCol + 3, 7 * 256); // Meal Daily Rate
+            sheet.setColumnWidth(totalDaysCol + 4, 7 * 256); // Meal Amount Due
             int totalAmountCol = totalDaysCol + 5;
-            sheet.setColumnWidth(totalAmountCol, 15 * 256); // Total Amount
-            sheet.setColumnWidth(totalAmountCol + 1, 12 * 256); // No. for signature
-            sheet.setColumnWidth(totalAmountCol + 2, 40 * 256); // Signature
+            sheet.setColumnWidth(totalAmountCol, 8 * 256); // Total Amount
+            sheet.setColumnWidth(totalAmountCol + 1, 4 * 256); // No. for signature
+            sheet.setColumnWidth(totalAmountCol + 2, 20 * 256); // Signature
 
             // Increase row heights
             short normalRowHeight = (short) (25 * 20);
@@ -124,13 +120,14 @@ public class DetailedPayrollExporter {
             CellStyle periodStyle = workbook.createCellStyle();
             Font periodFont = workbook.createFont();
             periodFont.setBold(true);
-            periodFont.setFontHeightInPoints((short) 14);
+            periodFont.setFontHeightInPoints((short) 13);
             periodStyle.setFont(periodFont);
             periodStyle.setAlignment(HorizontalAlignment.CENTER);
             periodStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             periodCell.setCellValue(
-                    "For labor on Baybay Data Center at Baybay National High School, Baybay City, Leyte, Philippines, for the period,    "
+                    "For labor on _________ - Baybay Data Center, at Baybay National High School, Baybay City, Leyte, Philippines, for the period,    "
                             + month.getMonth().toString() + " " + month.getYear());
+
             periodCell.setCellStyle(periodStyle);
             sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 34));
 
@@ -251,10 +248,7 @@ public class DetailedPayrollExporter {
         Row headerRow3 = sheet.createRow(startRow + 2);
         Row headerRow4 = sheet.createRow(startRow + 3);
 
-        // Basic columns
-        sheet.setColumnWidth(0, 8 * 256); // No. column
-        sheet.setColumnWidth(1, 40 * 256); // Name column
-
+        // Basic column headers (No. and Name)
         Cell noHeader = headerRow1.createCell(0);
         noHeader.setCellValue("No.");
         noHeader.setCellStyle(headerStyle);
@@ -265,24 +259,18 @@ public class DetailedPayrollExporter {
         nameHeader.setCellStyle(headerStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, 1, 1));
 
-        // Time roll section with consistent widths
+        // Time roll section setup
         int currentCol = 2;
         Cell timeRollHeader = headerRow1.createCell(currentCol);
         timeRollHeader.setCellValue("TIME ROLL");
         timeRollHeader.setCellStyle(headerStyle);
 
-        // Calculate total days first
-        int totalDays = 0;
-        int maxDaysPerWeek = 5;
-        for (List<LocalDate> week : weeks) {
-            totalDays += Math.min(week.size(), maxDaysPerWeek);
-        }
-
-        // Calculate dynamic width based on max day digits
+        // Calculate total days and max day digits for width
+        int totalDays = weeks.stream().mapToInt(List::size).sum();
         int maxDayDigits = String.valueOf(month.lengthOfMonth()).length();
-        final int TIME_ROLL_WIDTH = (maxDayDigits + 2) * 256; // Add padding for better readability
+        final int TIME_ROLL_WIDTH = (maxDayDigits + 2) * 256;
 
-        // Pre-set TIME ROLL column widths consistently
+        // Set consistent width for all day columns
         for (int i = 0; i < totalDays; i++) {
             sheet.setColumnWidth(currentCol + i, TIME_ROLL_WIDTH);
         }
@@ -290,21 +278,30 @@ public class DetailedPayrollExporter {
         // Merge TIME ROLL header
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, currentCol, currentCol + totalDays - 1));
 
-        // Process each week
+        // Process weeks consistently
         int weekStartCol = currentCol;
-        for (int weekNum = 0; weekNum < weeks.size(); weekNum++) {
-            List<LocalDate> week = weeks.get(weekNum);
+        int weekNum = 1;
+        for (List<LocalDate> week : weeks) {
             if (!week.isEmpty()) {
-                int daysInWeek = Math.min(week.size(), maxDaysPerWeek);
+                int daysInWeek = week.size();
 
+                // Week header
                 Cell weekHeader = headerRow2.createCell(weekStartCol);
-                weekHeader.setCellValue("Week " + (weekNum + 1));
+                weekHeader.setCellValue("Week " + weekNum++);
                 weekHeader.setCellStyle(centerStyle);
 
-                // Process days with consistent styling
+                // Merge week header if multiple days
+                if (daysInWeek > 1) {
+                    sheet.addMergedRegion(new CellRangeAddress(
+                            startRow + 1,
+                            startRow + 1,
+                            weekStartCol,
+                            weekStartCol + daysInWeek - 1));
+                }
+
+                // Add days for this week
                 for (int i = 0; i < daysInWeek; i++) {
                     LocalDate date = week.get(i);
-
                     Cell dayNameCell = headerRow3.createCell(weekStartCol + i);
                     dayNameCell.setCellValue(formatDayName(date));
                     dayNameCell.setCellStyle(centerStyle);
@@ -314,26 +311,23 @@ public class DetailedPayrollExporter {
                     dayCell.setCellStyle(centerStyle);
                 }
 
-                // Merge week header with exact column range
-                if (daysInWeek > 1) {
-                    sheet.addMergedRegion(new CellRangeAddress(
-                            startRow + 1,
-                            startRow + 1,
-                            weekStartCol,
-                            weekStartCol + daysInWeek - 1));
-                }
-
                 weekStartCol += daysInWeek;
             }
         }
 
-        // Rest of the columns with reduced widths
+        // Rest of the columns
         int remainingCol = weekStartCol;
         sheet.setColumnWidth(remainingCol, 6 * 256); // Total Days
-        sheet.setColumnWidth(remainingCol + 1, 8 * 256); // Trans Daily Rate
-        sheet.setColumnWidth(remainingCol + 2, 8 * 256); // Trans Amount Due
-        sheet.setColumnWidth(remainingCol + 3, 8 * 256); // Meal Daily Rate
-        sheet.setColumnWidth(remainingCol + 4, 8 * 256); // Meal Amount Due
+
+        // Set larger widths for allowance columns
+        int allowanceWidth = 9 * 256; // Increased width for allowance columns
+
+        sheet.setColumnWidth(remainingCol + 1, allowanceWidth); // Trans Daily Rate
+        sheet.setColumnWidth(remainingCol + 2, allowanceWidth); // Trans Amount Due
+        sheet.setColumnWidth(remainingCol + 3, allowanceWidth); // Meal Daily Rate
+        sheet.setColumnWidth(remainingCol + 4, allowanceWidth); // Meal Amount Due
+
+        // Merge regions should match the new widths
         sheet.setColumnWidth(remainingCol + 5, 10 * 256); // Total Amount
         sheet.setColumnWidth(remainingCol + 6, 4 * 256); // No. for signature
         sheet.setColumnWidth(remainingCol + 7, 20 * 256); // Signature
@@ -486,7 +480,7 @@ public class DetailedPayrollExporter {
         Font certFont = sheet.getWorkbook().createFont();
         certFont.setFontHeightInPoints((short) 10);
         certStyle.setFont(certFont);
-        certStyle.setAlignment(HorizontalAlignment.LEFT);
+        certStyle.setAlignment(HorizontalAlignment.CENTER);
         certStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         certStyle.setWrapText(true);
 
@@ -508,6 +502,7 @@ public class DetailedPayrollExporter {
         roleStyle.setVerticalAlignment(VerticalAlignment.TOP);
         roleStyle.setWrapText(true);
 
+        // Certification section with fixed column ranges
         Row certRow = sheet.createRow(startRow);
         certRow.setHeight((short) (50 * 20));
 
@@ -515,69 +510,87 @@ public class DetailedPayrollExporter {
         cert1.setCellValue(
                 "1. I HEREBY CERTIFY on my official oath to the correctness of the above roll. Payment is hereby approved from the appropriation indicated.");
         cert1.setCellStyle(certStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, 0, 6));
+        // Reduce merge region to about one-third of totalDaysColumn
+        int cert1EndColumn = Math.max(7, totalDaysColumn / 3);
+        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, 0, cert1EndColumn));
 
-        Cell cert2 = certRow.createCell(8);
+        // Calculate end columns for certifications
+        int cert2StartColumn = cert1EndColumn + 1;
+        int cert2EndColumn = cert2StartColumn + 8; // Give cert2 a fixed width of 8 columns
+
+        // Adjust cert2
+        Cell cert2 = certRow.createCell(cert2StartColumn);
         cert2.setCellValue("2. APPROVED");
         cert2.setCellStyle(certStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, 8, 9));
+        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, cert2StartColumn, cert2EndColumn));
 
-        Cell cert3 = certRow.createCell(11);
-        cert3.setCellValue(
-                "3. I HEREBY CERTIFY on my official oath that I have this ___ day of ____ paid in cash to each man whose name appears on the above roll, the amount set opposite his name, he having presented himself, established his identity and affixed his signature or thumbmark on the space provided therefor.");
-        cert3.setCellStyle(certStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, 11, 31));
-
-        // Create name and role rows with minimal spacing
+        // Adjust name2/role2 merged regions to match cert2's width
         Row nameRow = sheet.createRow(startRow + 3);
         Row roleRow = sheet.createRow(startRow + 4);
-        nameRow.setHeight((short) (20 * 20)); // Reduced height
-        roleRow.setHeight((short) (15 * 20)); // Reduced height for role
+        nameRow.setHeight((short) (20 * 20));
+        roleRow.setHeight((short) (15 * 20));
 
-        // First signatory
         Cell name1 = nameRow.createCell(0);
         Cell role1 = roleRow.createCell(0);
         name1.setCellValue("JESCYN KATE N. RAMOS");
         role1.setCellValue("E2P - ICT Coordinator");
         name1.setCellStyle(nameStyle);
         role1.setCellStyle(roleStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 3, startRow + 3, 0, 6));
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 4, startRow + 4, 0, 6));
+        sheet.addMergedRegion(new CellRangeAddress(startRow + 3, startRow + 3, 0, cert1EndColumn));
+        sheet.addMergedRegion(new CellRangeAddress(startRow + 4, startRow + 4, 0, cert1EndColumn));
 
-        // Second signatory
-        Cell name2 = nameRow.createCell(8);
-        Cell role2 = roleRow.createCell(8);
+        Cell name2 = nameRow.createCell(cert2StartColumn);
+        Cell role2 = roleRow.createCell(cert2StartColumn);
         name2.setCellValue("CARLOS JERICHO L. PETILLA");
         role2.setCellValue("Provincial Governor");
         name2.setCellStyle(nameStyle);
         role2.setCellStyle(roleStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 3, startRow + 3, 8, 9));
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 4, startRow + 4, 8, 9));
+        sheet.addMergedRegion(new CellRangeAddress(startRow + 3, startRow + 3, cert2StartColumn, cert2EndColumn));
+        sheet.addMergedRegion(new CellRangeAddress(startRow + 4, startRow + 4, cert2StartColumn, cert2EndColumn));
 
-        // Third signatory
-        Cell name3 = nameRow.createCell(11);
-        Cell role3 = roleRow.createCell(11);
+        // Adjust cert3 to start after cert2
+        Cell cert3 = certRow.createCell(cert2EndColumn + 1);
+        cert3.setCellValue(
+                "3. I HEREBY CERTIFY on my official oath that I have this ___ day of ____ paid in cash to each man whose name appears on the above roll, the amount set opposite his name, he having presented himself, established his identity and affixed his signature or thumbmark on the space provided therefor.");
+        cert3.setCellStyle(certStyle);
+        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, cert2EndColumn + 1, totalAmountColumn + 2));
+
+        Cell name3 = nameRow.createCell(totalAmountColumn);
+        Cell role3 = roleRow.createCell(totalAmountColumn);
         name3.setCellValue("JOAN FLORLYN JUSTISA");
         role3.setCellValue("E2P - ICT");
         name3.setCellStyle(nameStyle);
         role3.setCellStyle(roleStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 3, startRow + 3, 11, 31));
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 4, startRow + 4, 11, 31));
+        sheet.addMergedRegion(
+                new CellRangeAddress(startRow + 3, startRow + 3, totalAmountColumn, totalAmountColumn + 2));
+        sheet.addMergedRegion(
+                new CellRangeAddress(startRow + 4, startRow + 4, totalAmountColumn, totalAmountColumn + 2));
 
-        sheet.setColumnWidth(8, 25 * 256);
-        sheet.setColumnWidth(9, 25 * 256);
-        sheet.setColumnWidth(11, 30 * 256);
-
+        // Note section
         Row noteRow = sheet.createRow(startRow + 6);
+        noteRow.setHeight((short) (30f * 20)); // Increase row height
         Cell note = noteRow.createCell(0);
-        note.setCellValue(
-                "NOTE: Where thumbmark is to be used in place of signature, and the space available is not sufficient, the thumbmark may be impressed on the back hereof with proper indication of the corresponding student's name and on the corresponding line on the payroll or remark 'see thumbmark on the back' should be written.");
-        note.setCellStyle(certStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 6, startRow + 6, 0, 31));
 
+        // Break text into multiple lines with \n
+        note.setCellValue(
+                "*NOTE: Where thumbmark is to be used in place of signature, and the space available is not sufficient, the thumbmark may be impressed on the back hereof with proper indication of the corresponding student's number and on the corresponding line on the payroll\n"
+                        +
+                        "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0or remark 'see thumbmark on the back' should be written.");
+
+        CellStyle noteStyle = sheet.getWorkbook().createCellStyle();
+        noteStyle.cloneStyleFrom(certStyle);
+        noteStyle.setWrapText(true);
+        noteStyle.setAlignment(HorizontalAlignment.LEFT); // Left align for better readability
+        noteStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        note.setCellStyle(noteStyle);
+
+        sheet.addMergedRegion(new CellRangeAddress(startRow + 6, startRow + 6, 0, totalAmountColumn + 2));
+
+        // Tagline
         Row taglineRow = sheet.createRow(startRow + 7);
         Cell tagline = taglineRow.createCell(0);
-        tagline.setCellValue("IPAKITA SA MUNDO, UMAASENSO NA TAYO");
+        taglineRow.setHeight((short) (30f * 20)); // Increase row height for tagline
+        tagline.setCellValue("\"IPAKITA SA MUNDO, UMAASENSO NA TAYO\"");
 
         CellStyle taglineStyle = sheet.getWorkbook().createCellStyle();
         Font taglineFont = sheet.getWorkbook().createFont();
@@ -588,7 +601,7 @@ public class DetailedPayrollExporter {
         taglineStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
         tagline.setCellStyle(taglineStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 7, startRow + 7, 0, 31));
+        sheet.addMergedRegion(new CellRangeAddress(startRow + 7, startRow + 7, 0, totalAmountColumn + 2));
     }
 
     // Cell style creation methods

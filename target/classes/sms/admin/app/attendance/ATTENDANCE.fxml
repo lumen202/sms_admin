@@ -2,24 +2,24 @@
 
 <?import atlantafx.base.controls.ModalPane?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.control.Button?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <StackPane minHeight="400.0" minWidth="600.0" stylesheets="@../styles/main.css,@../styles/dialog.css,@../styles/attendance.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.attendance.AttendanceController">
     <children>
-        <ScrollPane fitToWidth="true" fitToHeight="true" pannable="true">
+        <ScrollPane fitToHeight="true" fitToWidth="true" pannable="true">
             <content>
                 <BorderPane fx:id="rootPane" stylesheets="@../styles/dialog.css">
                     <padding>
@@ -43,7 +43,7 @@
                                 
                                 <!-- Remove RadioButton group section -->
                                 
-                                <MenuButton fx:id="exportButton" prefHeight="35.0" prefWidth="95.0" text="Export" styleClass="attendance-export-button">
+                                <MenuButton fx:id="exportButton" prefHeight="35.0" prefWidth="95.0" styleClass="attendance-export-button" text="Export">
                                     <items>
                                         <MenuItem fx:id="exportExcel" text="Excel" />
                                         <MenuItem fx:id="exportCsv" text="CSV" />
@@ -55,16 +55,16 @@
                     </top>
                     
                     <center>
-                        <VBox spacing="5" VBox.vgrow="ALWAYS" fillWidth="true">
+                        <VBox fillWidth="true" spacing="5" VBox.vgrow="ALWAYS">
                             <padding>
                                 <Insets bottom="5" left="5" right="5" top="5" />
                             </padding>
                             <Label style="-fx-font-size: 16; -fx-font-weight: bold;" text="Attendance Record" />
-                            <ScrollPane fitToHeight="true" fitToWidth="true" VBox.vgrow="ALWAYS" pannable="true">
+                            <ScrollPane fitToHeight="true" fitToWidth="true" pannable="true" VBox.vgrow="ALWAYS">
                                 <content>
                                     <TableView fx:id="attendanceTable" minHeight="200.0" minWidth="500.0">
                                         <columns>
-                                            <TableColumn fx:id="colNo" resizable="false" text="#" />
+                                            <TableColumn fx:id="colNo" resizable="false" text="ID" />
                                             <TableColumn fx:id="colFullName" text="Student Name" />
                                             <TableColumn fx:id="monthAttendanceColumn" text="Monthly Attendance" />
                                         </columns>
