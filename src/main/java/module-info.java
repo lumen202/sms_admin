@@ -35,7 +35,7 @@ module sms.admin {
     opens sms.admin.app.payroll to core.fx, javafx.fxml;
     opens sms.admin.app.payroll.dialog to core.fx, javafx.fxml; // Add this line
     opens sms.admin.app.student to core.fx, javafx.fxml;
-    opens sms.admin.app.enrollment to core.fx, javafx.fxml;
+    opens sms.admin.app.student.enrollment to core.fx, javafx.fxml;
     opens sms.admin.app.schoolyear to core.fx, javafx.fxml;
     opens sms.admin.app.attendance.dialog to core.fx, javafx.fxml;
     opens sms.admin.util.exporter to core.fx, javafx.fxml;

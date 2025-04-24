@@ -15,6 +15,13 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import java.time.YearMonth;
 
+/**
+ * Controller for the school year dialog, handling both creation and editing of
+ * school years.
+ * This class manages the UI elements and logic for selecting start and end
+ * years and months,
+ * ensuring that the selected dates form a valid school year period.
+ */
 public class SchoolYearDialogController {
 
     @FXML
@@ -39,14 +46,22 @@ public class SchoolYearDialogController {
 
     private final ObjectProperty<SchoolYear> schoolYearProperty = new SimpleObjectProperty<>();
 
+    /**
+     * Returns the property holding the current school year being edited or created.
+     *
+     * @return the school year property
+     */
     public ObjectProperty<SchoolYear> schoolYearProperty() {
         return schoolYearProperty;
     }
 
     // Define months as a class field for reuse
-    private final String[] months = {"JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-        "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"};
+    private final String[] months = { "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+            "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER" };
 
+    /**
+     * Initializes the controller, setting up the UI components and listeners.
+     */
     public void initialize() {
         int currentYear = LocalDate.now().getYear();
 
@@ -85,7 +100,10 @@ public class SchoolYearDialogController {
         // Listener will set endYearCombo to currentYear + 1
     }
 
-    // Update end year options based on start year
+    /**
+     * Updates the end year options based on the selected start year.
+     * Ensures that the end year is at least the start year.
+     */
     private void updateEndYearOptions() {
         Integer startYear = startYearCombo.getValue();
         if (startYear != null) {
@@ -101,7 +119,12 @@ public class SchoolYearDialogController {
         }
     }
 
-    // Update end month options based on start year, start month, and end year
+    /**
+     * Updates the end month options based on the selected start year, start month,
+     * and end year.
+     * Ensures that the end month is after the start month if the years are the
+     * same.
+     */
     private void updateEndMonthOptions() {
         Integer startYear = startYearCombo.getValue();
         String startMonth = startMonthCombo.getValue();
@@ -133,16 +156,31 @@ public class SchoolYearDialogController {
         }
     }
 
+    /**
+     * Sets the dialog stage and applies overlay effects.
+     *
+     * @param dialogStage The stage of the dialog.
+     */
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
         DialogManager.setOverlayEffect((Stage) dialogStage.getOwner(), true);
         dialogStage.setOnCloseRequest(e -> DialogManager.setOverlayEffect((Stage) dialogStage.getOwner(), false));
     }
 
+    /**
+     * Sets the dialog reference.
+     *
+     * @param dialog The dialog instance.
+     */
     public void setDialog(SchoolYearDialog dialog) {
         this.dialog = dialog;
     }
 
+    /**
+     * Sets the existing school year for editing.
+     *
+     * @param schoolYear The school year to edit, or null for a new one.
+     */
     public void setExistingSchoolYear(SchoolYear schoolYear) {
         this.existingSchoolYear = schoolYear;
         headerLabel.setText(schoolYear == null ? "Create New School Year" : "Edit School Year");
@@ -157,6 +195,9 @@ public class SchoolYearDialogController {
         }
     }
 
+    /**
+     * Handles the save action, validating input and saving the school year.
+     */
     @FXML
     private void handleSave() {
         if (isInputValid()) {
@@ -198,12 +239,20 @@ public class SchoolYearDialogController {
         }
     }
 
+    /**
+     * Handles the cancel action, closing the dialog.
+     */
     @FXML
     private void handleCancel() {
         DialogManager.setOverlayEffect((Stage) dialogStage.getOwner(), false);
         dialogStage.close();
     }
 
+    /**
+     * Creates a SchoolYear object based on the selected values.
+     *
+     * @return The created SchoolYear object.
+     */
     public SchoolYear createSchoolYear() {
         int yearId = existingSchoolYear != null ? existingSchoolYear.getYearID() : getNextYearId();
 
@@ -223,6 +272,11 @@ public class SchoolYearDialogController {
         );
     }
 
+    /**
+     * Gets the next available year ID for a new school year.
+     *
+     * @return The next year ID.
+     */
     private int getNextYearId() {
         List<SchoolYear> allYears = SchoolYearDAO.getSchoolYearList();
         return allYears.stream()
@@ -231,15 +285,33 @@ public class SchoolYearDialogController {
                 .orElse(0) + 1;
     }
 
+    /**
+     * Converts a month name to its numerical value.
+     *
+     * @param monthName The name of the month.
+     * @return The numerical value of the month (1-12).
+     */
     private int getMonthNumber(String monthName) {
         return Month.valueOf(monthName.toUpperCase()).getValue();
     }
 
+    /**
+     * Gets the last day of the specified month and year.
+     *
+     * @param year      The year.
+     * @param monthName The name of the month.
+     * @return The last day of the month.
+     */
     private int getLastDayOfMonth(int year, String monthName) {
         Month month = Month.valueOf(monthName.toUpperCase());
         return YearMonth.of(year, month).lengthOfMonth();
     }
 
+    /**
+     * Validates the input fields to ensure a valid school year can be created.
+     *
+     * @return true if input is valid, false otherwise.
+     */
     private boolean isInputValid() {
         String errorMessage = "";
 
@@ -258,10 +330,10 @@ public class SchoolYearDialogController {
 
         if (startYearCombo.getValue() != null && endYearCombo.getValue() != null) {
             if (endYearCombo.getValue() < startYearCombo.getValue()) {
-                errorMessage += "End year must be greater than or equal to start year!\n";
+                errorMessage += "End year must be greater than org equal to start year!\n";
             } else if (endYearCombo.getValue().equals(startYearCombo.getValue())
                     && Month.valueOf(endMonthCombo.getValue()).getValue() <= Month.valueOf(startMonthCombo.getValue())
-                    .getValue()) {
+                            .getValue()) {
                 errorMessage += "End month must be after start month for the same year!\n";
             }
         }

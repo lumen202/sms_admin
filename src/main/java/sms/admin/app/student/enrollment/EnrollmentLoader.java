@@ -1,33 +1,32 @@
-package sms.admin.app.student.viewstudent;
+package sms.admin.app.student.enrollment;
 
-import dev.finalproject.models.Student;
 import dev.sol.core.application.loader.FXLoader;
 import javafx.scene.Scene;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 /**
- * Loader for the student profile dialog, responsible for initializing and
- * displaying the student profile view.
+ * Loader for the student enrollment dialog, responsible for initializing and
+ * displaying the enrollment form.
  * This class sets up the stage, configures the scene with styles, and manages
  * the positioning of multiple open windows.
  */
-public class StudentProfileLoader extends FXLoader {
+public class EnrollmentLoader extends FXLoader {
 
-    private static int openWindowCount = 0; // Tracks the number of open profile windows
+    private static int openWindowCount = 0; // Tracks the number of open enrollment windows
     private static final int WINDOW_OFFSET = 30; // Offset for positioning multiple windows
 
     /**
-     * Constructor for the StudentProfileLoader.
-     * Initializes the loader with the FXML resource for the student profile view.
+     * Constructor for the EnrollmentLoader.
+     * Initializes the loader with the FXML resource for the enrollment form.
      */
-    public StudentProfileLoader() {
-        String fxmlPath = "/sms/admin/app/student/viewstudent/STUDENT_PROFILE.fxml";
-        createInstance(getClass().getResource(fxmlPath));
+    public EnrollmentLoader() {
+        createInstance(getClass().getResource("/sms/admin/app/enrollment/ENROLLMENT.fxml"));
         initialize();
     }
 
     /**
-     * Loads and displays the student profile dialog, setting up the stage and
+     * Loads and displays the enrollment dialog, setting up the stage and
      * controller.
      */
     @Override
@@ -35,28 +34,27 @@ public class StudentProfileLoader extends FXLoader {
         try {
             // Create and configure the scene
             Scene scene = createAndConfigureScene();
-            Stage ownerStage = (Stage) getParameter("OWNER_STAGE");
+            Stage ownerStage = (Stage) getParameter("OWNER_WINDOW");
             Stage stage = new Stage();
 
             // Configure the stage
+            stage.initModality(Modality.WINDOW_MODAL);
             stage.initOwner(ownerStage);
             stage.setScene(scene);
-            stage.setTitle("Student Profile");
+            stage.setTitle("Add New Student");
 
             // Set size and position
             stage.setHeight(ownerStage.getHeight() * 0.9);
             ownerStage.heightProperty()
                     .addListener((obs, oldVal, newVal) -> stage.setHeight(newVal.doubleValue() * 0.9));
 
-            // Center the first window relative to the owner
+            // Center the first window relative to the owner, offset others
             if (openWindowCount == 0) {
-                // Delay positioning until stage is shown to ensure correct width/height
                 stage.setOnShown(e -> {
                     stage.setX(ownerStage.getX() + (ownerStage.getWidth() - stage.getWidth()) / 2);
                     stage.setY(ownerStage.getY() + (ownerStage.getHeight() - stage.getHeight()) / 2);
                 });
             } else {
-                // Offset window position for subsequent windows
                 stage.setX(ownerStage.getX() + WINDOW_OFFSET * (openWindowCount + 1));
                 stage.setY(ownerStage.getY() + WINDOW_OFFSET * (openWindowCount + 1));
             }
@@ -65,23 +63,27 @@ public class StudentProfileLoader extends FXLoader {
             // Decrement counter when the window is closed
             stage.setOnHiding(e -> openWindowCount--);
 
-            // Initialize controller
-            StudentProfileController controller = loader.getController();
-            controller.setStage(stage);
-            controller.load();
-            controller.setStudent((Student) getParameter("SELECTED_STUDENT"));
+            // Initialize the controller
+            EnrollmentController controller = loader.getController();
+            if (controller != null) {
+                controller.setDialogStage(stage);
+                controller.setParameters(params)
+                        .addParameter("SCENE", scene)
+                        .addParameter("OWNER", stage)
+                        .load();
+            }
 
-            // Show the stage
-            stage.show();
+            // Show the dialog and wait for it to close
+            stage.showAndWait();
 
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Failed to load student profile", e);
+            throw new RuntimeException("Failed to load enrollment form", e);
         }
     }
 
     /**
-     * Creates and configures the scene for the student profile dialog, applying
+     * Creates and configures the scene for the enrollment dialog, applying
      * necessary styles.
      *
      * @return The configured Scene object.
@@ -90,7 +92,8 @@ public class StudentProfileLoader extends FXLoader {
         Scene scene = new Scene(root);
         scene.getStylesheets().addAll(
                 getClass().getResource("/sms/admin/app/styles/main.css").toExternalForm(),
-                getClass().getResource("/sms/admin/app/styles/dialog.css").toExternalForm());
+                getClass().getResource("/sms/admin/app/styles/dialog.css").toExternalForm(),
+                getClass().getResource("/sms/admin/app/enrollment/enrollment.css").toExternalForm());
         return scene;
     }
 }

@@ -30,18 +30,17 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
+import sms.admin.app.student.enrollment.EnrollmentLoader;
 import sms.admin.app.student.viewstudent.StudentProfileLoader;
 import sms.admin.util.enrollment.CsvImporter;
 import sms.admin.util.enrollment.CsvStudent;
 import sms.admin.util.enrollment.EnrollmentUtils;
 import sms.admin.util.exporter.StudentTableExporter;
 import javafx.fxml.FXMLLoader;
-import sms.admin.app.enrollment.EnrollmentControllerV2;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import sms.admin.app.enrollment.EnrollmentV2Loader;
 
 public class StudentController extends FXController {
 
@@ -374,7 +373,7 @@ public class StudentController extends FXController {
         try {
             SchoolYear currentSchoolYear = getCurrentSchoolYear();
             if (currentSchoolYear != null) {
-                EnrollmentV2Loader loader = new EnrollmentV2Loader();
+                EnrollmentLoader loader = new EnrollmentLoader();
                 loader.addParameter("selectedYear", selectedYear);
                 loader.addParameter("OWNER_WINDOW", studentTableView.getScene().getWindow());
                 loader.load();

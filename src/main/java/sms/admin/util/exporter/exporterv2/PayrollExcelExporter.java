@@ -1,12 +1,12 @@
 package sms.admin.util.exporter.exporterv2;
 
-import sms.admin.util.exporter.BaseTableExporter;
 import org.apache.poi.ss.usermodel.*;
 import dev.finalproject.models.Student;
+import sms.admin.util.exporter.TableDataProvider;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class PayrollExcelExporter extends BaseTableExporter<Student> {
+public abstract class PayrollExcelExporter implements TableDataProvider<Student> {
 
     protected static final String PESO = "₱";
 

@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -14,6 +15,9 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.TableView;
 import sms.admin.util.attendance.CommonAttendanceUtil;
 
+/**
+ * Exports detailed payroll data to an Excel file.
+ */
 public class DetailedPayrollExporter {
     // Constants
     private static final double MAX_TOTAL_AMOUNT = 1300.00;
@@ -25,29 +29,46 @@ public class DetailedPayrollExporter {
     private int totalDaysColumn;
     private int totalAmountColumn;
 
-    // Constructor
+    /**
+     * Constructor for DetailedPayrollExporter.
+     *
+     * @param month    The month for which the payroll is being generated.
+     * @param endMonth The end month (not used in this implementation).
+     * @param logs     The list of attendance logs.
+     */
     public DetailedPayrollExporter(YearMonth month, YearMonth endMonth, ObservableList<AttendanceLog> logs) {
         this.month = month;
         this.attendanceLogs = logs;
     }
 
-    // Setter for fare multiplier
+    /**
+     * Sets the fare multiplier.
+     *
+     * @param multiplier The multiplier to apply to the fare.
+     */
     public void setFareMultiplier(double multiplier) {
         this.fareMultiplier = multiplier;
     }
 
-    // Main export method
+    /**
+     * Exports the payroll data to an Excel file.
+     *
+     * @param table      The TableView containing student data.
+     * @param title      The title of the sheet.
+     * @param outputPath The path to save the Excel file.
+     * @throws Exception If an error occurs during export.
+     */
     public void exportToExcel(TableView<Student> table, String title, String outputPath) throws Exception {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet(title);
 
-            // Create styles
+            // Create cell styles
             CellStyle headerStyle = createHeaderStyle(workbook);
             CellStyle dataStyle = createDataStyle(workbook);
             CellStyle currencyStyle = createCurrencyStyle(workbook);
             CellStyle centerStyle = createCenterStyle(workbook);
 
-            // Create a new style for subtotal label (left-aligned)
+            // Style for subtotal label (right-aligned)
             CellStyle subtotalLabelStyle = workbook.createCellStyle();
             Font subtotalFont = workbook.createFont();
             subtotalFont.setBold(true);
@@ -57,38 +78,38 @@ public class DetailedPayrollExporter {
             subtotalLabelStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             addBorders(subtotalLabelStyle);
 
-            // Set initial column widths with consistent small values
+            // Set column widths
             sheet.setColumnWidth(0, 5 * 256); // No. column
             sheet.setColumnWidth(1, 40 * 256); // Name column
 
-            // Get weeks and total days
+            // Calculate weeks and total days
             List<List<LocalDate>> weeks = getWorkWeeks();
             int totalDays = weeks.stream().mapToInt(List::size).sum();
 
-            // Set ALL day columns to exactly the same small width
-            final int DAY_COLUMN_WIDTH = 3 * 256; // Very small width for day columns
+            // Set uniform width for day columns
+            final int DAY_COLUMN_WIDTH = 3 * 256;
             for (int i = 2; i < 2 + totalDays; i++) {
                 sheet.setColumnWidth(i, DAY_COLUMN_WIDTH);
             }
 
-            // Set other columns with consistent values
+            // Set widths for remaining columns
             int totalDaysCol = 2 + totalDays;
-            sheet.setColumnWidth(totalDaysCol, 5 * 256); // Total Days
-            sheet.setColumnWidth(totalDaysCol + 1, 7 * 256); // Trans Daily Rate
-            sheet.setColumnWidth(totalDaysCol + 2, 7 * 256); // Trans Amount Due
-            sheet.setColumnWidth(totalDaysCol + 3, 7 * 256); // Meal Daily Rate
-            sheet.setColumnWidth(totalDaysCol + 4, 7 * 256); // Meal Amount Due
+            sheet.setColumnWidth(totalDaysCol, 8 * 256); // Total Days - increased from 5 to 8
+            sheet.setColumnWidth(totalDaysCol + 1, 12 * 256); // Trans Daily Rate - increased from 7 to 12
+            sheet.setColumnWidth(totalDaysCol + 2, 12 * 256); // Trans Amount Due - increased from 7 to 12
+            sheet.setColumnWidth(totalDaysCol + 3, 12 * 256); // Meal Daily Rate - increased from 7 to 12
+            sheet.setColumnWidth(totalDaysCol + 4, 12 * 256); // Meal Amount Due - increased from 7 to 12
             int totalAmountCol = totalDaysCol + 5;
-            sheet.setColumnWidth(totalAmountCol, 8 * 256); // Total Amount
-            sheet.setColumnWidth(totalAmountCol + 1, 4 * 256); // No. for signature
-            sheet.setColumnWidth(totalAmountCol + 2, 20 * 256); // Signature
+            sheet.setColumnWidth(totalAmountCol, 15 * 256); // Total Amount - increased from 8 to 15
+            sheet.setColumnWidth(totalAmountCol + 1, 6 * 256); // No. for signature - increased from 4 to 6
+            sheet.setColumnWidth(totalAmountCol + 2, 25 * 256); // Signature - increased from 20 to 25
 
-            // Increase row heights
+            // Define row heights
             short normalRowHeight = (short) (25 * 20);
             short headerRowHeight = (short) (30 * 20);
             short titleRowHeight = (short) (35 * 20);
 
-            // Form number and title layout
+            // Title row setup
             Row titleRow = sheet.createRow(0);
             titleRow.setHeight(titleRowHeight);
             Cell formCell = titleRow.createCell(0);
@@ -113,10 +134,7 @@ public class DetailedPayrollExporter {
             mainTitleCell.setCellStyle(mainTitleStyle);
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 8, 26));
 
-            // Period description
-            Row periodRow = sheet.createRow(1);
-            periodRow.setHeight(headerRowHeight);
-            Cell periodCell = periodRow.createCell(0);
+            // Create period style
             CellStyle periodStyle = workbook.createCellStyle();
             Font periodFont = workbook.createFont();
             periodFont.setBold(true);
@@ -124,13 +142,66 @@ public class DetailedPayrollExporter {
             periodStyle.setFont(periodFont);
             periodStyle.setAlignment(HorizontalAlignment.CENTER);
             periodStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            periodCell.setCellValue(
-                    "For labor on _________ - Baybay Data Center, at Baybay National High School, Baybay City, Leyte, Philippines, for the period,    "
-                            + month.getMonth().toString() + " " + month.getYear());
 
-            periodCell.setCellStyle(periodStyle);
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 34));
+            // Create underlined style
+            CellStyle underlineStyle = workbook.createCellStyle();
+            Font underlineFont = workbook.createFont();
+            underlineFont.setBold(true);
+            underlineFont.setUnderline(Font.U_SINGLE);
+            underlineFont.setFontHeightInPoints((short) 13);
+            underlineStyle.setFont(underlineFont);
+            underlineStyle.setAlignment(HorizontalAlignment.CENTER);
+            underlineStyle.setVerticalAlignment(VerticalAlignment.CENTER);
 
+            // Period row with separate cells
+            Row periodRow = sheet.createRow(1);
+            periodRow.setHeight(headerRowHeight);
+            int currentCol = 0;
+
+            // Part 1: "For labor on"
+            Cell part1 = periodRow.createCell(currentCol);
+            part1.setCellValue("For labor on ________");
+            part1.setCellStyle(periodStyle);
+            currentCol += 2;
+
+            // Part 2: "Baybay Data Center"
+            Cell part2 = periodRow.createCell(currentCol);
+            part2.setCellValue("Baybay Data Center");
+            part2.setCellStyle(underlineStyle);
+            currentCol += 3;
+
+            // Part 3: ", at"
+            Cell part3 = periodRow.createCell(currentCol);
+            part3.setCellValue(", at ");
+            part3.setCellStyle(periodStyle);
+            currentCol += 2; // Changed from 1 to 2
+
+            // Part 4: "Baybay National High School, Baybay City, Leyte"
+            Cell part4 = periodRow.createCell(currentCol);
+            part4.setCellValue("Baybay National High School, Baybay City, Leyte");
+            part4.setCellStyle(underlineStyle);
+            currentCol += 6;
+
+            // Part 5: ", Philippines, for the period, "
+            Cell part5 = periodRow.createCell(currentCol);
+            part5.setCellValue(", Philippines, for the period, ");
+            part5.setCellStyle(periodStyle);
+            currentCol += 3;
+
+            // Part 6: Month and Year
+            Cell part6 = periodRow.createCell(currentCol);
+            part6.setCellValue(month.getMonth().toString() + " " + month.getYear());
+            part6.setCellStyle(underlineStyle);
+
+            // Merge all cells to make it look like one line
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 1)); // For labor on
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 2, 4)); // Baybay Data Center
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 5, 6)); // , at
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 7, 12)); // Baybay National High School...
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 13, 15)); // , Philippines...
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 16, 18)); // Month Year
+
+            // Spacer row
             sheet.createRow(2).setHeight((short) (15 * 20));
 
             // Store column indices
@@ -139,9 +210,8 @@ public class DetailedPayrollExporter {
 
             // Create table headers
             totalDays = createTableHeaders(sheet, 3, headerStyle, centerStyle, weeks);
-            int totalAmountColCalculated = 2 + totalDays + 5;
 
-            // Write data rows
+            // Write student data rows
             int rowNum = 7;
             double grandTotal = 0;
             int noCounter = 1;
@@ -151,17 +221,14 @@ public class DetailedPayrollExporter {
                 grandTotal += writeStudentRow(row, student, weeks, dataStyle, currencyStyle, centerStyle, noCounter++);
             }
 
-            // Create subtotal row with new style
+            // Subtotal row
             Row subtotalRow = sheet.createRow(rowNum++);
             subtotalRow.setHeight(normalRowHeight);
             Cell subtotalLabel = subtotalRow.createCell(0);
             subtotalLabel.setCellValue("SUB - TOTAL FOR THIS PAGE:  ");
-            subtotalLabel.setCellStyle(subtotalLabelStyle); // Use left-aligned style
-            sheet.addMergedRegion(new CellRangeAddress(
-                    subtotalRow.getRowNum(),
-                    subtotalRow.getRowNum(),
-                    0,
-                    totalAmountCol - 1));
+            subtotalLabel.setCellStyle(subtotalLabelStyle);
+            sheet.addMergedRegion(
+                    new CellRangeAddress(subtotalRow.getRowNum(), subtotalRow.getRowNum(), 0, totalAmountCol - 1));
             Cell subtotalAmount = subtotalRow.createCell(totalAmountCol);
             subtotalAmount.setCellValue(grandTotal);
             subtotalAmount.setCellStyle(currencyStyle);
@@ -177,7 +244,12 @@ public class DetailedPayrollExporter {
         }
     }
 
-    // Optimized method to get work weeks
+    /**
+     * Retrieves work weeks for the specified month, excluding weekends.
+     *
+     * @return A list of lists, where each inner list represents a week of working
+     *         days.
+     */
     private List<List<LocalDate>> getWorkWeeks() {
         List<LocalDate> workingDays = new ArrayList<>();
         for (int day = 1; day <= month.lengthOfMonth(); day++) {
@@ -196,7 +268,13 @@ public class DetailedPayrollExporter {
         return weeks;
     }
 
-    // Data processing methods
+    /**
+     * Determines the attendance status for a student on a specific date.
+     *
+     * @param student The student.
+     * @param date    The date to check.
+     * @return The attendance status (e.g., "P", "A").
+     */
     private String getAttendanceStatus(Student student, LocalDate date) {
         return attendanceLogs.stream()
                 .filter(log -> log != null
@@ -211,6 +289,52 @@ public class DetailedPayrollExporter {
                 .orElse(CommonAttendanceUtil.ABSENT_MARK);
     }
 
+    /**
+     * Calculates the total number of days a student was present or had excused
+     * absences.
+     *
+     * @param student The student.
+     * @param month   The month to calculate for.
+     * @return The total days attended.
+     */
+    public double calculateStudentDays(Student student, YearMonth month) {
+        try {
+            double totalDays = 0;
+            List<AttendanceLog> studentLogs = attendanceLogs.stream()
+                    .filter(log -> log != null
+                            && log.getStudentID() != null
+                            && log.getStudentID().getStudentID() == student.getStudentID()
+                            && log.getRecordID() != null
+                            && YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth()).equals(month)
+                            && !CommonAttendanceUtil.isWeekend(LocalDate.of(
+                                    log.getRecordID().getYear(), log.getRecordID().getMonth(),
+                                    log.getRecordID().getDay())))
+                    .collect(Collectors.toList());
+
+            for (AttendanceLog log : studentLogs) {
+                String status = CommonAttendanceUtil.computeAttendanceStatus(log);
+                switch (status) {
+                    case CommonAttendanceUtil.PRESENT_MARK,
+                            CommonAttendanceUtil.EXCUSED_MARK,
+                            CommonAttendanceUtil.HOLIDAY_MARK ->
+                        totalDays += 1.0;
+                    case CommonAttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
+                }
+            }
+            return totalDays;
+        } catch (Exception e) {
+            System.err.println("Error calculating days for student " + student.getStudentID());
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    /**
+     * Formats a student's full name.
+     *
+     * @param student The student.
+     * @return The formatted full name (e.g., "Doe, John A Jr").
+     */
     private String formatFullName(Student student) {
         String lastName = capitalizeWord(student.getLastName());
         String firstName = capitalizeWord(student.getFirstName());
@@ -219,6 +343,12 @@ public class DetailedPayrollExporter {
         return String.format("%s, %s %s%s", lastName, firstName, middleName, extension);
     }
 
+    /**
+     * Capitalizes the first letter of each word in a string.
+     *
+     * @param word The word to capitalize.
+     * @return The capitalized word.
+     */
     private String capitalizeWord(String word) {
         if (word == null || word.isEmpty()) {
             return "";
@@ -235,20 +365,34 @@ public class DetailedPayrollExporter {
         return result.toString().trim();
     }
 
+    /**
+     * Formats the day name (e.g., "M" for Monday).
+     *
+     * @param date The date.
+     * @return The formatted day initial.
+     */
     private String formatDayName(LocalDate date) {
         return CommonAttendanceUtil.getDayInitial(date.getDayOfWeek());
     }
 
-    // Excel sheet building methods
+    /**
+     * Creates the table headers in the Excel sheet.
+     *
+     * @param sheet       The sheet to modify.
+     * @param startRow    The starting row for headers.
+     * @param headerStyle Style for header cells.
+     * @param centerStyle Style for centered text.
+     * @param weeks       List of work weeks.
+     * @return The total number of days.
+     */
     private int createTableHeaders(Sheet sheet, int startRow, CellStyle headerStyle,
             CellStyle centerStyle, List<List<LocalDate>> weeks) {
-        // Create header rows with reduced height
         Row headerRow1 = sheet.createRow(startRow);
         Row headerRow2 = sheet.createRow(startRow + 1);
         Row headerRow3 = sheet.createRow(startRow + 2);
         Row headerRow4 = sheet.createRow(startRow + 3);
 
-        // Basic column headers (No. and Name)
+        // No. and Name headers
         Cell noHeader = headerRow1.createCell(0);
         noHeader.setCellValue("No.");
         noHeader.setCellStyle(headerStyle);
@@ -259,47 +403,36 @@ public class DetailedPayrollExporter {
         nameHeader.setCellStyle(headerStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, 1, 1));
 
-        // Time roll section setup
+        // Time roll header
         int currentCol = 2;
         Cell timeRollHeader = headerRow1.createCell(currentCol);
         timeRollHeader.setCellValue("TIME ROLL");
         timeRollHeader.setCellStyle(headerStyle);
 
-        // Calculate total days and max day digits for width
         int totalDays = weeks.stream().mapToInt(List::size).sum();
         int maxDayDigits = String.valueOf(month.lengthOfMonth()).length();
-        final int TIME_ROLL_WIDTH = (maxDayDigits + 2) * 256;
+        final int TIME_ROLL_WIDTH = (maxDayDigits + 4) * 256; // Increased from +2 to +4
 
-        // Set consistent width for all day columns
         for (int i = 0; i < totalDays; i++) {
             sheet.setColumnWidth(currentCol + i, TIME_ROLL_WIDTH);
         }
-
-        // Merge TIME ROLL header
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, currentCol, currentCol + totalDays - 1));
 
-        // Process weeks consistently
+        // Week and day headers
         int weekStartCol = currentCol;
         int weekNum = 1;
         for (List<LocalDate> week : weeks) {
             if (!week.isEmpty()) {
                 int daysInWeek = week.size();
-
-                // Week header
                 Cell weekHeader = headerRow2.createCell(weekStartCol);
                 weekHeader.setCellValue("Week " + weekNum++);
                 weekHeader.setCellStyle(centerStyle);
 
-                // Merge week header if multiple days
                 if (daysInWeek > 1) {
-                    sheet.addMergedRegion(new CellRangeAddress(
-                            startRow + 1,
-                            startRow + 1,
-                            weekStartCol,
+                    sheet.addMergedRegion(new CellRangeAddress(startRow + 1, startRow + 1, weekStartCol,
                             weekStartCol + daysInWeek - 1));
                 }
 
-                // Add days for this week
                 for (int i = 0; i < daysInWeek; i++) {
                     LocalDate date = week.get(i);
                     Cell dayNameCell = headerRow3.createCell(weekStartCol + i);
@@ -310,48 +443,46 @@ public class DetailedPayrollExporter {
                     dayCell.setCellValue(date.getDayOfMonth());
                     dayCell.setCellStyle(centerStyle);
                 }
-
                 weekStartCol += daysInWeek;
             }
         }
 
-        // Rest of the columns
+        // Remaining headers
         int remainingCol = weekStartCol;
-        sheet.setColumnWidth(remainingCol, 6 * 256); // Total Days
+        sheet.setColumnWidth(remainingCol, 6 * 256);
+        int allowanceWidth = 15 * 256; // Increased from 9 to 15
+        sheet.setColumnWidth(remainingCol + 1, allowanceWidth);
+        sheet.setColumnWidth(remainingCol + 2, allowanceWidth);
+        sheet.setColumnWidth(remainingCol + 3, allowanceWidth);
+        sheet.setColumnWidth(remainingCol + 4, allowanceWidth);
+        sheet.setColumnWidth(remainingCol + 5, 10 * 256);
+        sheet.setColumnWidth(remainingCol + 6, 4 * 256);
+        sheet.setColumnWidth(remainingCol + 7, 20 * 256);
 
-        // Set larger widths for allowance columns
-        int allowanceWidth = 9 * 256; // Increased width for allowance columns
-
-        sheet.setColumnWidth(remainingCol + 1, allowanceWidth); // Trans Daily Rate
-        sheet.setColumnWidth(remainingCol + 2, allowanceWidth); // Trans Amount Due
-        sheet.setColumnWidth(remainingCol + 3, allowanceWidth); // Meal Daily Rate
-        sheet.setColumnWidth(remainingCol + 4, allowanceWidth); // Meal Amount Due
-
-        // Merge regions should match the new widths
-        sheet.setColumnWidth(remainingCol + 5, 10 * 256); // Total Amount
-        sheet.setColumnWidth(remainingCol + 6, 4 * 256); // No. for signature
-        sheet.setColumnWidth(remainingCol + 7, 20 * 256); // Signature
-
-        // Continue with remaining headers
-        currentCol = weekStartCol;
-        addRemainingHeaders(sheet, startRow, currentCol, headerStyle, centerStyle);
-
+        addRemainingHeaders(sheet, startRow, remainingCol, headerStyle, centerStyle);
         return totalDays;
     }
 
+    /**
+     * Adds remaining headers to the sheet (Total Days, Allowances, etc.).
+     *
+     * @param sheet       The sheet.
+     * @param startRow    Starting row for headers.
+     * @param startCol    Starting column for remaining headers.
+     * @param headerStyle Style for headers.
+     * @param centerStyle Style for centered text.
+     */
     private void addRemainingHeaders(Sheet sheet, int startRow, int startCol,
             CellStyle headerStyle, CellStyle centerStyle) {
         CellStyle subHeaderStyle = createSubHeaderStyle(sheet.getWorkbook());
         int currentCol = startCol;
 
-        // Total Days
         Cell totalDaysHeader = sheet.getRow(startRow).createCell(currentCol);
         totalDaysHeader.setCellValue("Total Days");
         totalDaysHeader.setCellStyle(headerStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
         currentCol++;
 
-        // Transportation Allowance
         Cell transHeader = sheet.getRow(startRow).createCell(currentCol);
         transHeader.setCellValue("Transportation Allowance");
         transHeader.setCellStyle(headerStyle);
@@ -368,7 +499,6 @@ public class DetailedPayrollExporter {
         sheet.addMergedRegion(new CellRangeAddress(startRow + 1, startRow + 3, currentCol + 1, currentCol + 1));
         currentCol += 2;
 
-        // Meal Allowance
         Cell mealHeader = sheet.getRow(startRow).createCell(currentCol);
         mealHeader.setCellValue("Meal Allowance");
         mealHeader.setCellStyle(headerStyle);
@@ -385,27 +515,36 @@ public class DetailedPayrollExporter {
         sheet.addMergedRegion(new CellRangeAddress(startRow + 1, startRow + 3, currentCol + 1, currentCol + 1));
         currentCol += 2;
 
-        // Total Amount
         Cell totalAmountHeader = sheet.getRow(startRow).createCell(totalAmountColumn);
         totalAmountHeader.setCellValue("Total Amount Received");
         totalAmountHeader.setCellStyle(headerStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, totalAmountColumn, totalAmountColumn));
         currentCol = totalAmountColumn + 1;
 
-        // No. for signature
         Cell signNoHeader = sheet.getRow(startRow).createCell(currentCol);
         signNoHeader.setCellValue("No.");
         signNoHeader.setCellStyle(headerStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
         currentCol++;
 
-        // Signature
         Cell signatureHeader = sheet.getRow(startRow).createCell(currentCol);
         signatureHeader.setCellValue("Signature");
         signatureHeader.setCellStyle(headerStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
     }
 
+    /**
+     * Writes a row of data for a student.
+     *
+     * @param row           The row to write to.
+     * @param student       The student data.
+     * @param weeks         List of work weeks.
+     * @param dataStyle     Style for data cells.
+     * @param currencyStyle Style for currency cells.
+     * @param centerStyle   Style for centered text.
+     * @param no            Student number.
+     * @return The total amount for the student.
+     */
     private double writeStudentRow(Row row, Student student, List<List<LocalDate>> weeks,
             CellStyle dataStyle, CellStyle currencyStyle, CellStyle centerStyle, int no) {
         int colNum = 0;
@@ -424,16 +563,12 @@ public class DetailedPayrollExporter {
                 Cell attendanceCell = row.createCell(colNum++);
                 String status = getAttendanceStatus(student, date);
                 attendanceCell.setCellValue(status);
-
                 switch (status) {
-                    case CommonAttendanceUtil.PRESENT_MARK:
-                    case CommonAttendanceUtil.EXCUSED_MARK:
-                    case CommonAttendanceUtil.HOLIDAY_MARK:
+                    case CommonAttendanceUtil.PRESENT_MARK,
+                            CommonAttendanceUtil.EXCUSED_MARK,
+                            CommonAttendanceUtil.HOLIDAY_MARK ->
                         totalDays++;
-                        break;
-                    case CommonAttendanceUtil.HALF_DAY_MARK:
-                        totalDays += 0.5;
-                        break;
+                    case CommonAttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
                 }
                 attendanceCell.setCellStyle(centerStyle);
             }
@@ -445,6 +580,7 @@ public class DetailedPayrollExporter {
 
         double fareRate = student.getFare() * fareMultiplier;
         double fareAmount = fareRate * totalDays;
+        double totalAmount = Math.min(fareAmount, MAX_TOTAL_AMOUNT);
 
         Cell fareRateCell = row.createCell(colNum++);
         fareRateCell.setCellValue(fareRate);
@@ -460,7 +596,6 @@ public class DetailedPayrollExporter {
         Cell mealAmountCell = row.createCell(colNum++);
         mealAmountCell.setCellStyle(currencyStyle);
 
-        double totalAmount = Math.min(fareAmount, MAX_TOTAL_AMOUNT);
         Cell totalCell = row.createCell(colNum++);
         totalCell.setCellValue(totalAmount);
         totalCell.setCellStyle(currencyStyle);
@@ -475,6 +610,12 @@ public class DetailedPayrollExporter {
         return totalAmount;
     }
 
+    /**
+     * Creates the certification section at the bottom of the sheet.
+     *
+     * @param sheet    The sheet to modify.
+     * @param startRow The starting row for the certification.
+     */
     private void createCertificationSection(Sheet sheet, int startRow) {
         CellStyle certStyle = sheet.getWorkbook().createCellStyle();
         Font certFont = sheet.getWorkbook().createFont();
@@ -502,7 +643,6 @@ public class DetailedPayrollExporter {
         roleStyle.setVerticalAlignment(VerticalAlignment.TOP);
         roleStyle.setWrapText(true);
 
-        // Certification section with fixed column ranges
         Row certRow = sheet.createRow(startRow);
         certRow.setHeight((short) (50 * 20));
 
@@ -510,21 +650,17 @@ public class DetailedPayrollExporter {
         cert1.setCellValue(
                 "1. I HEREBY CERTIFY on my official oath to the correctness of the above roll. Payment is hereby approved from the appropriation indicated.");
         cert1.setCellStyle(certStyle);
-        // Reduce merge region to about one-third of totalDaysColumn
         int cert1EndColumn = Math.max(7, totalDaysColumn / 3);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, 0, cert1EndColumn));
 
-        // Calculate end columns for certifications
         int cert2StartColumn = cert1EndColumn + 1;
-        int cert2EndColumn = cert2StartColumn + 8; // Give cert2 a fixed width of 8 columns
+        int cert2EndColumn = cert2StartColumn + 8;
 
-        // Adjust cert2
         Cell cert2 = certRow.createCell(cert2StartColumn);
         cert2.setCellValue("2. APPROVED");
         cert2.setCellStyle(certStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, cert2StartColumn, cert2EndColumn));
 
-        // Adjust name2/role2 merged regions to match cert2's width
         Row nameRow = sheet.createRow(startRow + 3);
         Row roleRow = sheet.createRow(startRow + 4);
         nameRow.setHeight((short) (20 * 20));
@@ -548,7 +684,6 @@ public class DetailedPayrollExporter {
         sheet.addMergedRegion(new CellRangeAddress(startRow + 3, startRow + 3, cert2StartColumn, cert2EndColumn));
         sheet.addMergedRegion(new CellRangeAddress(startRow + 4, startRow + 4, cert2StartColumn, cert2EndColumn));
 
-        // Adjust cert3 to start after cert2
         Cell cert3 = certRow.createCell(cert2EndColumn + 1);
         cert3.setCellValue(
                 "3. I HEREBY CERTIFY on my official oath that I have this ___ day of ____ paid in cash to each man whose name appears on the above roll, the amount set opposite his name, he having presented himself, established his identity and affixed his signature or thumbmark on the space provided therefor.");
@@ -566,32 +701,25 @@ public class DetailedPayrollExporter {
         sheet.addMergedRegion(
                 new CellRangeAddress(startRow + 4, startRow + 4, totalAmountColumn, totalAmountColumn + 2));
 
-        // Note section
         Row noteRow = sheet.createRow(startRow + 6);
-        noteRow.setHeight((short) (30f * 20)); // Increase row height
+        noteRow.setHeight((short) (30 * 20));
         Cell note = noteRow.createCell(0);
-
-        // Break text into multiple lines with \n
         note.setCellValue(
                 "*NOTE: Where thumbmark is to be used in place of signature, and the space available is not sufficient, the thumbmark may be impressed on the back hereof with proper indication of the corresponding student's number and on the corresponding line on the payroll\n"
                         +
                         "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0or remark 'see thumbmark on the back' should be written.");
-
         CellStyle noteStyle = sheet.getWorkbook().createCellStyle();
         noteStyle.cloneStyleFrom(certStyle);
         noteStyle.setWrapText(true);
-        noteStyle.setAlignment(HorizontalAlignment.LEFT); // Left align for better readability
+        noteStyle.setAlignment(HorizontalAlignment.LEFT);
         noteStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         note.setCellStyle(noteStyle);
-
         sheet.addMergedRegion(new CellRangeAddress(startRow + 6, startRow + 6, 0, totalAmountColumn + 2));
 
-        // Tagline
         Row taglineRow = sheet.createRow(startRow + 7);
         Cell tagline = taglineRow.createCell(0);
-        taglineRow.setHeight((short) (30f * 20)); // Increase row height for tagline
+        taglineRow.setHeight((short) (30 * 20));
         tagline.setCellValue("\"IPAKITA SA MUNDO, UMAASENSO NA TAYO\"");
-
         CellStyle taglineStyle = sheet.getWorkbook().createCellStyle();
         Font taglineFont = sheet.getWorkbook().createFont();
         taglineFont.setBold(true);
@@ -599,12 +727,16 @@ public class DetailedPayrollExporter {
         taglineStyle.setFont(taglineFont);
         taglineStyle.setAlignment(HorizontalAlignment.CENTER);
         taglineStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-
         tagline.setCellStyle(taglineStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow + 7, startRow + 7, 0, totalAmountColumn + 2));
     }
 
-    // Cell style creation methods
+    /**
+     * Creates a header style for the workbook.
+     *
+     * @param workbook The workbook.
+     * @return The header cell style.
+     */
     private CellStyle createHeaderStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         Font font = workbook.createFont();
@@ -618,6 +750,12 @@ public class DetailedPayrollExporter {
         return style;
     }
 
+    /**
+     * Creates a sub-header style for the workbook.
+     *
+     * @param workbook The workbook.
+     * @return The sub-header cell style.
+     */
     private CellStyle createSubHeaderStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         Font font = workbook.createFont();
@@ -631,6 +769,12 @@ public class DetailedPayrollExporter {
         return style;
     }
 
+    /**
+     * Creates a data style for the workbook.
+     *
+     * @param workbook The workbook.
+     * @return The data cell style.
+     */
     private CellStyle createDataStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);
@@ -639,6 +783,12 @@ public class DetailedPayrollExporter {
         return style;
     }
 
+    /**
+     * Creates a centered text style for the workbook.
+     *
+     * @param workbook The workbook.
+     * @return The centered cell style.
+     */
     private CellStyle createCenterStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);
@@ -647,6 +797,12 @@ public class DetailedPayrollExporter {
         return style;
     }
 
+    /**
+     * Creates a currency style for the workbook.
+     *
+     * @param workbook The workbook.
+     * @return The currency cell style.
+     */
     private CellStyle createCurrencyStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);
@@ -657,6 +813,12 @@ public class DetailedPayrollExporter {
         return style;
     }
 
+    /**
+     * Creates a total style for the workbook (unused in this implementation).
+     *
+     * @param workbook The workbook.
+     * @return The total cell style.
+     */
     private CellStyle createTotalStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         Font font = workbook.createFont();
@@ -669,7 +831,11 @@ public class DetailedPayrollExporter {
         return style;
     }
 
-    // Utility method
+    /**
+     * Adds borders to a cell style.
+     *
+     * @param style The style to modify.
+     */
     private void addBorders(CellStyle style) {
         style.setBorderTop(BorderStyle.THIN);
         style.setBorderBottom(BorderStyle.THIN);

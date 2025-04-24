@@ -1,0 +1,70 @@
+.dialog-container {
+  -fx-background-color: white;
+  -fx-background-radius: 8;
+  -fx-border-radius: 8;
+  -fx-border-color: #003366;
+  -fx-border-width: 1;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 15, 0, 0, 1);
+  -fx-padding: 15 12 20 12;
+  -fx-min-width: 400px;
+  -fx-max-width: 500px;
+}
+
+/* Header */
+.dialog-header {
+  -fx-font-size: 14px;
+  -fx-font-weight: bold;
+  -fx-text-fill: #2b4865;
+  -fx-background-color: #75a7c9;
+  -fx-background-radius: 5;
+  -fx-padding: 10;
+  -fx-alignment: CENTER;
+  -fx-pref-width: infinity;
+}
+
+.dialog-label {
+  -fx-text-fill: #2b4865;
+  -fx-font-size: 13px;
+  -fx-font-weight: bold;
+}
+
+/* Combo Box Styling */
+.combo-box {
+  -fx-background-color: white;
+  -fx-border-color: #003366;
+  -fx-border-radius: 5;
+  -fx-background-radius: 5;
+}
+
+.combo-box:hover {
+  -fx-border-color: #406e8e;
+}
+
+.combo-box:focused {
+  -fx-border-color: #406e8e;
+  -fx-border-width: 2;
+}
+
+/* Button Styling */
+.dialog-button {
+  -fx-background-color: #003366;
+  -fx-text-fill: white;
+  -fx-font-weight: bold;
+  -fx-padding: 8 20;
+  -fx-background-radius: 5;
+  -fx-min-width: 70;
+  -fx-min-height: 28;
+  -fx-cursor: hand;
+}
+
+.dialog-button:hover {
+  -fx-background-color: #004080;
+}
+
+.dialog-button.primary-button {
+  -fx-background-color: #2b4865;
+}
+
+.dialog-button.primary-button:hover {
+  -fx-background-color: #406e8e;
+}

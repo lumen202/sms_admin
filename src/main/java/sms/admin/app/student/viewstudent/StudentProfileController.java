@@ -29,50 +29,96 @@ import sms.admin.util.dialog.DialogUtils;
 import sms.admin.util.profile.ProfileDataManager;
 import sms.admin.util.profile.ProfilePhotoManager;
 
+/**
+ * Controller for the student profile view, managing the display and editing of
+ * student information.
+ * This class handles the UI elements and logic for viewing and updating student
+ * details, including
+ * personal information, address, guardian, cluster, and profile photo.
+ */
 public class StudentProfileController extends FXController {
 
     // Core fields
-    private Stage stage;
-    private Student student;
-    private static final String STUDENT_PHOTOS_DIR = "src/main/resources/sms/admin/assets/img/profile";
-    private static final String DEFAULT_PHOTO_PATH = "/assets/img/default-profile.png";
-    private static final String BACKUP_PHOTO_PATH = "/sms/admin/assets/img/default-profile.png";
+    private Stage stage; // The stage for this dialog
+    private Student student; // The student whose profile is being viewed
+    private static final String STUDENT_PHOTOS_DIR = "src/main/resources/sms/admin/assets/img/profile"; // Directory for
+                                                                                                        // student
+                                                                                                        // photos
+    private static final String DEFAULT_PHOTO_PATH = "/assets/img/default-profile.png"; // Default profile photo path
+    private static final String BACKUP_PHOTO_PATH = "/sms/admin/assets/img/default-profile.png"; // Backup default photo
+                                                                                                 // path
 
     // Data lists
-    private ObservableList<Address> addressMasterList;
-    private ObservableList<StudentGuardian> studentGuardianMasterList;
-    private ObservableList<Guardian> guardianMasterList;
-    private ObservableList<Cluster> clusterMasterList;
+    private ObservableList<Address> addressMasterList; // List of all addresses
+    private ObservableList<StudentGuardian> studentGuardianMasterList; // List of student-guardian relationships
+    private ObservableList<Guardian> guardianMasterList; // List of all guardians
+    private ObservableList<Cluster> clusterMasterList; // List of all clusters
 
     // FXML injected fields
     @FXML
-    private ImageView profileImageView;
+    private ImageView profileImageView; // Image view for the student's profile photo
     @FXML
-    private Button changePhotoButton, backCancelButton, editSaveButton;
+    private Button changePhotoButton; // Button to change the profile photo
+    @FXML
+    private Button backCancelButton; // Button to cancel and close the dialog
+    @FXML
+    private Button editSaveButton; // Button to save changes
     // Personal Info Fields
     @FXML
-    private TextField firstNameField, middleNameField, lastNameField, nameExtField;
+    private TextField firstNameField; // Field for student's first name
+    @FXML
+    private TextField middleNameField; // Field for student's middle name
+    @FXML
+    private TextField lastNameField; // Field for student's last name
+    @FXML
+    private TextField nameExtField; // Field for student's name extension
     // Contact Fields
     @FXML
-    private TextField contactField, emailField, fareField;
+    private TextField contactField; // Field for student's contact number
+    @FXML
+    private TextField emailField; // Field for student's email
+    @FXML
+    private TextField fareField; // Field for student's fare
     // Address Fields
     @FXML
-    private TextField streetAddressField, barangayField, cityField, municipalityField, zipCodeField;
+    private TextField streetAddressField; // Field for street address
+    @FXML
+    private TextField barangayField; // Field for barangay
+    @FXML
+    private TextField cityField; // Field for city
+    @FXML
+    private TextField municipalityField; // Field for municipality
+    @FXML
+    private TextField zipCodeField; // Field for zip code
     // Academic Fields
     @FXML
-    private TextField clusterField, clusterDetailsField;
+    private TextField clusterField; // Field for cluster name
+    @FXML
+    private TextField clusterDetailsField; // Field for cluster details
     // Guardian Fields
     @FXML
-    private TextField guardianFirstNameField, guardianMiddleNameField, guardianLastNameField,
-            guardianRelationshipField, guardianContactInfoField;
+    private TextField guardianFirstNameField; // Field for guardian's first name
     @FXML
-    private GridPane guardianViewGrid, guardianEditGrid;
+    private TextField guardianMiddleNameField; // Field for guardian's middle name
+    @FXML
+    private TextField guardianLastNameField; // Field for guardian's last name
+    @FXML
+    private TextField guardianRelationshipField; // Field for guardian's relationship to student
+    @FXML
+    private TextField guardianContactInfoField; // Field for guardian's contact information
+    @FXML
+    private GridPane guardianViewGrid; // Grid for viewing guardian information
+    @FXML
+    private GridPane guardianEditGrid; // Grid for editing guardian information
 
-    private ObservableList<Address> addresses;
-    private ObservableList<Guardian> guardians;
-    private ObservableList<StudentGuardian> studentGuardians;
-    private ObservableList<Student> students;
+    private ObservableList<Address> addresses; // Shared address collection
+    private ObservableList<Guardian> guardians; // Shared guardian collection
+    private ObservableList<StudentGuardian> studentGuardians; // Shared student-guardian collection
+    private ObservableList<Student> students; // Shared student collection
 
+    /**
+     * Loads the initial fields and configurations for the student profile view.
+     */
     @Override
     protected void load_fields() {
         // Initialize collections via the shared DataManager
@@ -86,6 +132,9 @@ public class StudentProfileController extends FXController {
         updateUI();
     }
 
+    /**
+     * Loads event listeners for UI interactions.
+     */
     @Override
     protected void load_listeners() {
         editSaveButton.setOnAction(e -> saveChanges());
@@ -93,25 +142,40 @@ public class StudentProfileController extends FXController {
         changePhotoButton.setOnAction(e -> handleChangePhoto());
     }
 
+    /**
+     * Loads bindings for UI components. Currently empty as no bindings are needed.
+     */
     @Override
     protected void load_bindings() {
         // No bindings needed currently
     }
 
+    /**
+     * Initializes the controller after FXML injection, setting the initial state.
+     */
     @FXML
     public void initialize() {
-        // Called after FXML injection; ensure initial state
+        // Hide change photo button initially
         changePhotoButton.setVisible(false);
         changePhotoButton.setManaged(false);
         ProfilePhotoManager.loadPhoto(profileImageView, -1); // Load default photo when no student is set
     }
 
-    // Setters
+    /**
+     * Sets the stage for this dialog.
+     *
+     * @param stage The stage to set.
+     */
     public void setStage(Stage stage) {
         this.stage = stage;
         initializeKeyHandler(); // Reinitialize key handler when stage is set
     }
 
+    /**
+     * Sets the student whose profile is being viewed.
+     *
+     * @param student The student to set.
+     */
     public void setStudent(Student student) {
         this.student = student;
         if (student != null) {
@@ -119,7 +183,9 @@ public class StudentProfileController extends FXController {
         }
     }
 
-    // Initialization Helpers
+    /**
+     * Initializes the master lists for addresses, guardians, and clusters.
+     */
     private void initializeMasterLists() {
         try {
             addressMasterList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
@@ -134,13 +200,20 @@ public class StudentProfileController extends FXController {
         }
     }
 
+    /**
+     * Initializes the key handler for the stage to handle keyboard events.
+     */
     private void initializeKeyHandler() {
         if (stage != null && stage.getScene() != null) {
             stage.getScene().setOnKeyPressed(this::handleKeyPress);
         }
     }
 
-    // Event Handlers
+    /**
+     * Handles key press events, closing the dialog on ESCAPE key press.
+     *
+     * @param event The key event to handle.
+     */
     private void handleKeyPress(KeyEvent event) {
         if (event.getCode() == KeyCode.ESCAPE) {
             closeDialog();
@@ -148,11 +221,17 @@ public class StudentProfileController extends FXController {
         }
     }
 
+    /**
+     * Closes the dialog with a fade animation.
+     */
     @FXML
     private void closeDialog() {
         DialogManager.closeWithFade(stage, null);
     }
 
+    /**
+     * Handles the action to change the student's profile photo.
+     */
     private void handleChangePhoto() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select Profile Picture");
@@ -167,23 +246,33 @@ public class StudentProfileController extends FXController {
         }
     }
 
+    /**
+     * Closes the dialog (alias for closeDialog).
+     */
     @FXML
     private void handleClose() {
         closeDialog();
     }
 
+    /**
+     * Saves the changes made to the student's profile.
+     */
     @FXML
     private void handleSave() {
         saveChanges();
     }
 
-    // UI Update Helpers
+    /**
+     * Updates the UI to show the change photo button when a student is loaded.
+     */
     private void updateUI() {
         changePhotoButton.setVisible(true);
         changePhotoButton.setManaged(true);
     }
 
-    // Data Loading Methods
+    /**
+     * Loads all student data into the UI fields.
+     */
     private void loadStudentData() {
         if (student == null) {
             return;
@@ -196,6 +285,9 @@ public class StudentProfileController extends FXController {
         updateUI();
     }
 
+    /**
+     * Loads the student's basic information into the UI fields.
+     */
     private void loadBasicStudentInfo() {
         firstNameField.setText(student.getFirstName());
         middleNameField.setText(student.getMiddleName());
@@ -206,10 +298,12 @@ public class StudentProfileController extends FXController {
         fareField.setText(String.valueOf(student.getFare()));
     }
 
+    /**
+     * Loads the student's address information into the UI fields.
+     */
     private void loadAddressInfo() {
         // Reload address list if needed
         if (addressMasterList == null || addressMasterList.isEmpty()) {
-            // AddressDAO.initialize(DataManager.getInstance().getCollectionsRegistry().getList("STUDENT"));
             addressMasterList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
         }
         Optional<Address> studentAddress = addressMasterList.stream()
@@ -232,6 +326,9 @@ public class StudentProfileController extends FXController {
         });
     }
 
+    /**
+     * Loads the student's guardian information into the UI fields.
+     */
     private void loadGuardianInfo() {
         if (studentGuardianMasterList == null || guardianMasterList == null) {
             clearGuardianFields();
@@ -253,6 +350,9 @@ public class StudentProfileController extends FXController {
                         }));
     }
 
+    /**
+     * Clears all guardian-related fields in the UI.
+     */
     private void clearGuardianFields() {
         guardianFirstNameField.clear();
         guardianMiddleNameField.clear();
@@ -261,6 +361,9 @@ public class StudentProfileController extends FXController {
         guardianContactInfoField.clear();
     }
 
+    /**
+     * Loads the student's cluster information into the UI fields.
+     */
     private void loadClusterInfo() {
         if (student.getClusterID() != null) {
             clusterField.setText(student.getClusterID().getClusterName());
@@ -269,11 +372,17 @@ public class StudentProfileController extends FXController {
         }
     }
 
+    /**
+     * Loads the student's profile photo into the image view.
+     */
     private void loadStudentPhoto() {
         ProfilePhotoManager.loadPhoto(profileImageView, student.getStudentID());
     }
 
-    // Save Changes
+    /**
+     * Saves changes made to the student's profile, updating the database and
+     * collections.
+     */
     private void saveChanges() {
         try {
             // Update basic student info
@@ -307,6 +416,10 @@ public class StudentProfileController extends FXController {
         }
     }
 
+    /**
+     * Handles the update of the student's address, creating a new address if none
+     * exists.
+     */
     private void handleAddressUpdate() {
         Address studentAddress = findOrCreateStudentAddress();
         ProfileDataManager.updateAddressInfo(studentAddress, student,
@@ -319,6 +432,11 @@ public class StudentProfileController extends FXController {
         }
     }
 
+    /**
+     * Handles the update of the student's guardian, creating or updating as needed.
+     *
+     * @return The updated Guardian object.
+     */
     private Guardian handleGuardianUpdate() {
         Guardian currentGuardian = findCurrentGuardian();
         Guardian updatedGuardian = ProfileDataManager.createOrUpdateGuardian(
@@ -336,6 +454,9 @@ public class StudentProfileController extends FXController {
         return updatedGuardian;
     }
 
+    /**
+     * Handles the update of the student's cluster information.
+     */
     private void handleClusterUpdate() {
         ProfileDataManager.handleClusterUpdate(
                 clusterField.getText(),
@@ -343,7 +464,11 @@ public class StudentProfileController extends FXController {
                 clusterMasterList).ifPresent(student::setClusterID);
     }
 
-    // Helper Methods for Data Retrieval
+    /**
+     * Finds or creates an address for the student.
+     *
+     * @return The student's Address object.
+     */
     private Address findOrCreateStudentAddress() {
         if (addressMasterList == null) {
             return new Address(student, 0, "", "", "", "", 0);
@@ -354,6 +479,11 @@ public class StudentProfileController extends FXController {
                 .orElse(new Address(student, 0, "", "", "", "", 0));
     }
 
+    /**
+     * Finds the current guardian for the student.
+     *
+     * @return The Guardian object, or null if not found.
+     */
     private Guardian findCurrentGuardian() {
         if (studentGuardianMasterList == null || guardianMasterList == null) {
             return null;
@@ -367,6 +497,11 @@ public class StudentProfileController extends FXController {
                 .orElse(null);
     }
 
+    /**
+     * Updates the student-guardian relationship in the database and master list.
+     *
+     * @param guardian The guardian to associate with the student.
+     */
     private void updateStudentGuardianRelationship(Guardian guardian) {
         boolean relationshipExists = studentGuardianMasterList.stream()
                 .anyMatch(sg -> sg.getStudentId().getStudentID() == student.getStudentID());

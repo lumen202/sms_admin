@@ -1,45 +1,72 @@
-package sms.admin.app.enrollment;
+package sms.admin.app.student.enrollment;
 
-import java.sql.Date;
 import java.util.OptionalInt;
+import java.sql.Date;
 
-import dev.finalproject.App;
-import dev.finalproject.models.SchoolYear;
-import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
-import javafx.stage.Stage;
+import dev.finalproject.App;
+import dev.finalproject.models.*;
+import sms.admin.util.enrollment.EnrollmentUtils;
 import sms.admin.util.DialogUtils;
 import sms.admin.util.dialog.ValidationUtils;
-import sms.admin.util.enrollment.EnrollmentUtils;
+import javafx.stage.Stage;
 
-public class EnrollmentControllerV2 extends FXController {
-    @FXML private TextField firstNameField;
-    @FXML private TextField lastNameField;
-    @FXML private TextField middleNameField;
-    @FXML private TextField nameExtField;
-    @FXML private TextField streetField;
-    @FXML private TextField cityField;
-    @FXML private TextField municipalityField;
-    @FXML private TextField postalCodeField;
-    @FXML private TextField emailField;
-    @FXML private TextField contactNumberField;
-    @FXML private TextField guardianNameField;
-    @FXML private TextField guardianContactField;
-    @FXML private DatePicker dateOfBirthPicker;
-    @FXML private ComboBox<String> statusComboBox;
-    @FXML private TextField fareField;
-    @FXML private Button submitButton;
-    @FXML private Button clearButton;
-    @FXML private TextField barangayField;
+/**
+ * Controller for the student enrollment form, managing the input and submission
+ * of student data.
+ * This class handles the UI elements and logic for entering student details,
+ * validating input fields,
+ * and enrolling students into the system for a specific school year.
+ */
+public class EnrollmentController extends FXController {
+    @FXML
+    private TextField firstNameField; // Field for student's first name
+    @FXML
+    private TextField lastNameField; // Field for student's last name
+    @FXML
+    private TextField middleNameField; // Field for student's middle name
+    @FXML
+    private TextField nameExtField; // Field for student's name extension (e.g., Jr., Sr.)
+    @FXML
+    private TextField streetField; // Field for student's street address
+    @FXML
+    private TextField cityField; // Field for student's city
+    @FXML
+    private TextField municipalityField; // Field for student's municipality
+    @FXML
+    private TextField postalCodeField; // Field for student's postal code
+    @FXML
+    private TextField emailField; // Field for student's email address
+    @FXML
+    private TextField contactNumberField; // Field for student's contact number
+    @FXML
+    private TextField guardianNameField; // Field for guardian's name
+    @FXML
+    private TextField guardianContactField; // Field for guardian's contact number
+    @FXML
+    private DatePicker dateOfBirthPicker; // Picker for student's date of birth
+    @FXML
+    private ComboBox<String> statusComboBox; // ComboBox for student's status (Active, Inactive, Graduate)
+    @FXML
+    private TextField fareField; // Field for student's fare amount
+    @FXML
+    private Button submitButton; // Button to submit the enrollment form
+    @FXML
+    private Button clearButton; // Button to clear the form
+    @FXML
+    private TextField barangayField; // Field for student's barangay
 
-    private SchoolYear currentSchoolYear;
-    private Stage dialogStage;
+    private SchoolYear currentSchoolYear; // The current school year for enrollment
+    private Stage dialogStage; // The stage for the dialog, if opened as a dialog
 
+    /**
+     * Loads the initial fields and configurations for the enrollment form.
+     */
     @Override
     protected void load_fields() {
         System.out.println("Enrollment is called");
@@ -49,6 +76,10 @@ public class EnrollmentControllerV2 extends FXController {
         addValidationListeners();
     }
 
+    /**
+     * Sets up real-time validation listeners for input fields to provide immediate
+     * feedback.
+     */
     private void addValidationListeners() {
         // Email validation
         emailField.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -59,7 +90,7 @@ public class EnrollmentControllerV2 extends FXController {
             }
         });
 
-        // Phone number validation
+        // Phone number validation for student
         contactNumberField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (!newValue.isEmpty() && !ValidationUtils.isValidPhoneNumber(newValue)) {
                 ValidationUtils.setErrorStyle(contactNumberField);
@@ -68,6 +99,7 @@ public class EnrollmentControllerV2 extends FXController {
             }
         });
 
+        // Phone number validation for guardian
         guardianContactField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (!newValue.isEmpty() && !ValidationUtils.isValidPhoneNumber(newValue)) {
                 ValidationUtils.setErrorStyle(guardianContactField);
@@ -95,6 +127,12 @@ public class EnrollmentControllerV2 extends FXController {
         });
     }
 
+    /**
+     * Generates the next available student ID based on existing students in the
+     * system.
+     *
+     * @return A string representing the next student ID.
+     */
     private String generateNextStudentId() {
         OptionalInt maxId = App.COLLECTIONS_REGISTRY.getList("STUDENT").stream()
                 .filter(s -> s instanceof Student)
@@ -104,6 +142,10 @@ public class EnrollmentControllerV2 extends FXController {
         return String.valueOf(maxId.isPresent() ? maxId.getAsInt() + 1 : 1);
     }
 
+    /**
+     * Handles the submission of the enrollment form, validating fields and
+     * enrolling the student.
+     */
     @FXML
     private void handleSubmit() {
         if (validateFields()) {
@@ -120,6 +162,7 @@ public class EnrollmentControllerV2 extends FXController {
                         ? Date.valueOf(dateOfBirthPicker.getValue())
                         : null;
 
+                // Enroll the student using the provided details
                 Student student = EnrollmentUtils.enrollStudent(
                         nextStudentId,
                         firstNameField.getText(),
@@ -129,7 +172,7 @@ public class EnrollmentControllerV2 extends FXController {
                         emailField.getText(),
                         statusComboBox.getValue(),
                         contactNumberField.getText(),
-                        dateOfBirth, // Use the converted date
+                        dateOfBirth,
                         Double.parseDouble(fareField.getText()),
                         streetField.getText(),
                         barangayField.getText(),
@@ -143,7 +186,7 @@ public class EnrollmentControllerV2 extends FXController {
 
                 handleClear();
 
-                // If we're in dialog mode, close the dialog
+                // Close the dialog if in dialog mode
                 if (dialogStage != null) {
                     dialogStage.close();
                 }
@@ -157,10 +200,16 @@ public class EnrollmentControllerV2 extends FXController {
         }
     }
 
+    /**
+     * Validates all input fields to ensure required fields are filled and formats
+     * are correct.
+     *
+     * @return true if all validations pass, false otherwise.
+     */
     private boolean validateFields() {
         boolean isValid = true;
 
-        // Required fields validation
+        // Validate required fields
         if (ValidationUtils.isTextFieldEmpty(firstNameField)) {
             ValidationUtils.setErrorStyle(firstNameField);
             isValid = false;
@@ -190,7 +239,7 @@ public class EnrollmentControllerV2 extends FXController {
             isValid = false;
         }
 
-        // Format validations
+        // Validate optional fields with specific formats
         if (!ValidationUtils.isTextFieldEmpty(emailField) && !ValidationUtils.isValidEmail(emailField.getText())) {
             ValidationUtils.setErrorStyle(emailField);
             isValid = false;
@@ -215,13 +264,13 @@ public class EnrollmentControllerV2 extends FXController {
             isValid = false;
         }
 
-        // Date validation
+        // Validate date of birth
         if (dateOfBirthPicker.getValue() == null) {
             ValidationUtils.setErrorStyle(dateOfBirthPicker);
             isValid = false;
         }
 
-        // Status validation
+        // Validate status
         if (statusComboBox.getValue() == null) {
             ValidationUtils.setErrorStyle(statusComboBox);
             isValid = false;
@@ -230,6 +279,9 @@ public class EnrollmentControllerV2 extends FXController {
         return isValid;
     }
 
+    /**
+     * Clears all input fields and resets their styles.
+     */
     @FXML
     private void handleClear() {
         // Clear all fields
@@ -269,20 +321,37 @@ public class EnrollmentControllerV2 extends FXController {
         ValidationUtils.resetStyle(barangayField);
     }
 
+    /**
+     * Loads bindings for UI components. Currently empty as no bindings are needed.
+     */
     @Override
     protected void load_bindings() {
         System.out.println();
     }
 
+    /**
+     * Loads event listeners for UI interactions. Currently empty as listeners are
+     * handled elsewhere.
+     */
     @Override
     protected void load_listeners() {
         System.out.println();
     }
 
+    /**
+     * Updates the school year for the enrollment form.
+     *
+     * @param year The academic year to set (e.g., "2023-2024").
+     */
     public void updateYear(String year) {
         initializeWithYear(year);
     }
 
+    /**
+     * Initializes the controller with the specified school year.
+     *
+     * @param year The academic year to initialize with (e.g., "2023-2024").
+     */
     public void initializeWithYear(String year) {
         System.out.println("Initializing enrollment data for year: " + year);
         // Parse the year string to get start and end years
@@ -307,18 +376,36 @@ public class EnrollmentControllerV2 extends FXController {
         }
     }
 
+    /**
+     * Displays a success message to the user.
+     *
+     * @param message The message to display.
+     */
     private void showSuccessMessage(String message) {
         DialogUtils.showSuccess(message);
     }
 
+    /**
+     * Displays an error message to the user.
+     *
+     * @param message The message to display.
+     */
     private void showErrorMessage(String message) {
         DialogUtils.showError(message);
     }
 
+    /**
+     * Sets the dialog stage for this controller, used when opened as a dialog.
+     *
+     * @param dialogStage The stage to set.
+     */
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
     }
 
+    /**
+     * Handles the cancel action, closing the dialog if in dialog mode.
+     */
     @FXML
     private void handleCancel() {
         if (dialogStage != null) {

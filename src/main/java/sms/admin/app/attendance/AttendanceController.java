@@ -3,9 +3,6 @@ package sms.admin.app.attendance;
 import java.time.DateTimeException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.Month;
-import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,12 +11,9 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import dev.finalproject.data.AttendanceLogDAO;
-import dev.finalproject.data.AttendanceRecordDAO;
 import dev.finalproject.data.StudentDAO;
 import dev.finalproject.database.DataManager;
 import dev.finalproject.models.AttendanceLog;
-import dev.finalproject.models.AttendanceRecord;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import javafx.application.Platform;
@@ -45,10 +39,16 @@ import sms.admin.util.attendance.CommonAttendanceUtil;
 import sms.admin.util.attendance.TableColumnUtil;
 import sms.admin.util.attendance.WeeklyAttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
-import sms.admin.util.exporter.AttendanceTableExporter;
 import sms.admin.app.attendance.dialog.AttendanceSettingsDialogLoader;
 import sms.admin.app.attendance.model.AttendanceSettings;
 
+/**
+ * Controller for the attendance view, managing the display and interaction with
+ * attendance data.
+ * This class handles the UI elements and logic for displaying student
+ * attendance in a table,
+ * allowing for editing, marking holidays, and exporting data.
+ */
 public class AttendanceController extends FXController {
 
     @FXML
@@ -81,6 +81,9 @@ public class AttendanceController extends FXController {
     private boolean isMonthChanging = false;
     private String currentYear;
 
+    /**
+     * Loads the initial data and sets up the UI components.
+     */
     @Override
     protected void load_fields() {
         rootPane.getProperties().put("controller", this);
@@ -108,6 +111,11 @@ public class AttendanceController extends FXController {
         });
     }
 
+    /**
+     * Initializes the student list for the given academic year.
+     *
+     * @param year The academic year (e.g., "2023-2024").
+     */
     private void initializeStudentList(String year) {
         try {
             int startYear = Integer.parseInt(year.split("-")[0]);
@@ -125,6 +133,9 @@ public class AttendanceController extends FXController {
         }
     }
 
+    /**
+     * Loads attendance logs for the current academic year and updates the UI.
+     */
     private void loadAttendanceLogs() {
         try {
             masterAttendanceLogs.clear();
@@ -194,16 +205,33 @@ public class AttendanceController extends FXController {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Gets the start date of the academic year.
+     *
+     * @param year The academic year (e.g., "2023-2024").
+     * @return The start date (September 1st of the start year).
+     */
     private LocalDate getAcademicYearStartDate(String year) {
         int startYear = Integer.parseInt(year.split("-")[0]);
         return LocalDate.of(startYear, 9, 1); // September 1st
     }
 
+    /**
+     * Gets the end date of the academic year.
+     *
+     * @param year The academic year (e.g., "2023-2024").
+     * @return The end date (August 31st of the end year).
+     */
     private LocalDate getAcademicYearEndDate(String year) {
         int endYear = Integer.parseInt(year.split("-")[1]);
         return LocalDate.of(endYear, 8, 31); // August 31st
     }
 
+    /**
+     * Handles the case when no logs are available or an error occurs.
+     *
+     * @param message The message to display or log.
+     */
     private void handleEmptyLogs(String message) {
         Platform.runLater(() -> {
             masterAttendanceLogs.clear();
@@ -212,6 +240,12 @@ public class AttendanceController extends FXController {
         });
     }
 
+    /**
+     * Checks if an attendance log is valid.
+     *
+     * @param log The attendance log to check.
+     * @return true if the log is valid, false otherwise.
+     */
     private boolean isValidLog(AttendanceLog log) {
         return log != null
                 && log.getRecordID() != null
@@ -222,6 +256,12 @@ public class AttendanceController extends FXController {
                 && log.getTimeOutPM() >= -2;
     }
 
+    /**
+     * Checks if the date of the attendance log is in the future.
+     *
+     * @param log The attendance log to check.
+     * @return true if the date is in the future, false otherwise.
+     */
     private boolean isFutureDate(AttendanceLog log) {
         if (log == null || log.getRecordID() == null) {
             return true;
@@ -237,6 +277,9 @@ public class AttendanceController extends FXController {
         }
     }
 
+    /**
+     * Updates the date-to-student logs mapping for quick access.
+     */
     private void updateDateToStudentLogs() {
         try {
             dateToStudentLogs.clear();
@@ -256,6 +299,9 @@ public class AttendanceController extends FXController {
         }
     }
 
+    /**
+     * Loads bindings for UI components, such as resizing with the window.
+     */
     @Override
     protected void load_bindings() {
         attendanceTable.prefHeightProperty().bind(rootPane.heightProperty());
@@ -263,6 +309,9 @@ public class AttendanceController extends FXController {
         attendanceTable.prefWidthProperty().bind(rootPane.widthProperty());
     }
 
+    /**
+     * Loads event listeners for UI interactions.
+     */
     @Override
     protected void load_listeners() {
         monthYearComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -270,14 +319,14 @@ public class AttendanceController extends FXController {
                 setupMonthColumns();
             }
         });
-        exportExcel.setOnAction(e -> handleExport("excel"));
-        exportCsv.setOnAction(e -> handleExport("csv"));
-        exportPdf.setOnAction(e -> handleExport("pdf"));
         attendanceTable.getSelectionModel().selectedItemProperty()
                 .addListener((obs, old, sel) -> updateStudentCountLabels());
         settingsButton.setOnAction(e -> showSettingsDialog());
     }
 
+    /**
+     * Sets up the attendance table with columns and configurations.
+     */
     private void setupTable() {
         // Configure basic columns with responsive behavior
         colNo.setCellValueFactory(new PropertyValueFactory<>("studentID"));
@@ -304,6 +353,9 @@ public class AttendanceController extends FXController {
         Platform.runLater(() -> attendanceTable.refresh());
     }
 
+    /**
+     * Sets up the month columns in the table based on the selected month.
+     */
     private void setupMonthColumns() {
         if (isMonthChanging)
             return;
@@ -353,6 +405,14 @@ public class AttendanceController extends FXController {
         isMonthChanging = false;
     }
 
+    /**
+     * Creates a week column for the table.
+     *
+     * @param week     The week dates.
+     * @param weekNum  The week number.
+     * @param dayWidth The width for each day column.
+     * @return The week column.
+     */
     private TableColumn<Student, String> createWeekColumn(WeeklyAttendanceUtil.WeekDates week, int weekNum,
             double dayWidth) {
         TableColumn<Student, String> weekColumn = new TableColumn<>("Week " + weekNum);
@@ -374,6 +434,13 @@ public class AttendanceController extends FXController {
         return weekColumn;
     }
 
+    /**
+     * Creates a day column for the table.
+     *
+     * @param date  The date for the column.
+     * @param width The width of the column.
+     * @return The day column.
+     */
     private TableColumn<Student, String> createDayColumn(LocalDate date, double width) {
         TableColumn<Student, String> col = new TableColumn<>(String.valueOf(date.getDayOfMonth()));
         col.setCellValueFactory(cellData -> {
@@ -402,6 +469,12 @@ public class AttendanceController extends FXController {
         return col;
     }
 
+    /**
+     * Creates a custom table cell for attendance data.
+     *
+     * @param date The date for the cell.
+     * @return The custom table cell.
+     */
     private TableCell<Student, String> createDayCell(LocalDate date) {
         TableCell<Student, String> cell = new TableCell<>() {
             @Override
@@ -454,6 +527,12 @@ public class AttendanceController extends FXController {
         return cell;
     }
 
+    /**
+     * Edits the attendance for a specific cell.
+     *
+     * @param cell The table cell to edit.
+     * @param date The date of the attendance.
+     */
     private void editCell(TableCell<Student, String> cell, LocalDate date) {
         Student student = cell.getTableRow().getItem();
         if (student == null || date.isAfter(LocalDate.now())) {
@@ -475,6 +554,11 @@ public class AttendanceController extends FXController {
         });
     }
 
+    /**
+     * Marks a day as a holiday for all students.
+     *
+     * @param date The date to mark as a holiday.
+     */
     private void markDayAsHoliday(LocalDate date) {
         AttendanceEditUtil.markDayAsHoliday(date, studentList, masterAttendanceLogs, success -> {
             if (success) {
@@ -487,6 +571,11 @@ public class AttendanceController extends FXController {
         });
     }
 
+    /**
+     * Unmarks a day as a holiday.
+     *
+     * @param date The date to unmark as a holiday.
+     */
     private void unmarkDayAsHoliday(LocalDate date) {
         AttendanceEditUtil.unmarkDayAsHoliday(date, masterAttendanceLogs, success -> {
             if (success) {
@@ -499,6 +588,12 @@ public class AttendanceController extends FXController {
         });
     }
 
+    /**
+     * Shows the attendance log dialog for a specific student and date.
+     *
+     * @param student The student.
+     * @param date    The date.
+     */
     private void showAttendanceLogDialog(Student student, LocalDate date) {
         try {
             AttendanceLogDialogLoader loader = new AttendanceLogDialogLoader(student, date, masterAttendanceLogs);
@@ -508,6 +603,9 @@ public class AttendanceController extends FXController {
         }
     }
 
+    /**
+     * Shows the settings dialog for attendance configuration.
+     */
     private void showSettingsDialog() {
         try {
             System.out.println("Opening settings dialog with - Start: " + settings.getStartDay() + ", End: "
@@ -530,6 +628,9 @@ public class AttendanceController extends FXController {
         }
     }
 
+    /**
+     * Updates the labels showing the number of selected and total students.
+     */
     private void updateStudentCountLabels() {
         if (studentList != null && attendanceTable != null) {
             selectedStudentsLabel.setText("Selected: " + attendanceTable.getSelectionModel().getSelectedItems().size());
@@ -537,6 +638,11 @@ public class AttendanceController extends FXController {
         }
     }
 
+    /**
+     * Gets the selected academic year or defaults to the current year.
+     *
+     * @return The selected or default academic year.
+     */
     private String getSelectedYearOrDefault() {
         String year = (String) getParameter("selectedYear");
         if (year == null) {
@@ -547,14 +653,29 @@ public class AttendanceController extends FXController {
         return year;
     }
 
+    /**
+     * Gets the currently selected month.
+     *
+     * @return The selected month-year string.
+     */
     public String getSelectedMonth() {
         return monthYearComboBox != null ? monthYearComboBox.getValue() : null;
     }
 
+    /**
+     * Gets the list of attendance logs.
+     *
+     * @return The observable list of attendance logs.
+     */
     public ObservableList<AttendanceLog> getAttendanceLogs() {
         return masterAttendanceLogs;
     }
 
+    /**
+     * Initializes the controller with a specific academic year.
+     *
+     * @param year The academic year to initialize with.
+     */
     public void initializeWithYear(String year) {
         if (year == null || year.equals(currentYear)) {
             return;
@@ -571,6 +692,11 @@ public class AttendanceController extends FXController {
         Platform.runLater(() -> attendanceTable.refresh());
     }
 
+    /**
+     * Sets the selected month in the combo box.
+     *
+     * @param monthYear The month-year string to select.
+     */
     public void setSelectedMonth(String monthYear) {
         if (monthYear != null && monthYearComboBox != null && monthYearComboBox.getItems().contains(monthYear)) {
             Platform.runLater(() -> {
@@ -579,31 +705,6 @@ public class AttendanceController extends FXController {
                     setupMonthColumns();
                 }
             });
-        }
-    }
-
-    private void handleExport(String type) {
-        String monthYear = monthYearComboBox.getValue();
-        if (monthYear == null) {
-            return;
-        }
-        String[] parts = monthYear.split(" ");
-        YearMonth ym = YearMonth.of(Integer.parseInt(parts[1]), Month.valueOf(parts[0].toUpperCase()));
-        String fileName = String.format("attendance_%s.%s", monthYear.replace(" ", "_").toLowerCase(),
-                type.equals("excel") ? "xlsx" : type);
-        String filePath = System.getProperty("user.home") + "/Downloads/" + fileName;
-        AttendanceTableExporter exporter = new AttendanceTableExporter(ym);
-        try {
-            switch (type) {
-                case "excel" ->
-                    exporter.exportToExcel(attendanceTable, "Attendance Report - " + monthYear, filePath);
-                case "csv" ->
-                    exporter.exportToCsv(attendanceTable, "Attendance Report - " + monthYear, filePath);
-                case "pdf" ->
-                    exporter.exportToPdf(attendanceTable, "Attendance Report - " + monthYear, filePath);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 }

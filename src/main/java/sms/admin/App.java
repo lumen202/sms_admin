@@ -57,7 +57,7 @@ public class App extends FXApplication {
         try {
             RootLoader rootLoader = (RootLoader) FXLoaderFactory
                     .createInstance(RootLoader.class,
-                            App.class.getResource("/sms/admin/app/ROOTv2.fxml"))
+                            App.class.getResource("/sms/admin/app/ROOT.fxml"))
                     .addParameter("scene", applicationScene)
                     .addParameter("OWNER", applicationStage)
                     .initialize();
@@ -85,8 +85,8 @@ public class App extends FXApplication {
     private void clearCollections() {
         FXCollectionsRegister collectionsRegistry = DataManager.getInstance().getCollectionsRegistry();
         String[] knownCollections = {
-            "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
-            "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG","SETTINGS"
+                "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
+                "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG", "SETTINGS"
         };
 
         for (String key : knownCollections) {

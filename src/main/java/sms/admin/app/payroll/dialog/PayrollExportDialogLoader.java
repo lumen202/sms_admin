@@ -9,12 +9,25 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import dev.sol.core.application.loader.FXLoader;
 
+/**
+ * Loader for the payroll export dialog, responsible for initializing and
+ * displaying the dialog.
+ * This class sets up the stage, applies visual effects, and configures the
+ * controller with the provided parameters.
+ */
 public class PayrollExportDialogLoader extends FXLoader {
-    private PayrollExportDialogController controller;
-    private final String currentYear;
-    private final String currentMonth;
-    private final String exportType;
+    private PayrollExportDialogController controller; // Controller for the dialog
+    private final String currentYear; // The current academic year (e.g., "2023-2024")
+    private final String currentMonth; // The current month (e.g., "September 2023")
+    private final String exportType; // The type of export (e.g., "excel", "csv", "xlsx")
 
+    /**
+     * Constructor for the PayrollExportDialogLoader.
+     *
+     * @param currentYear  The current academic year.
+     * @param currentMonth The current month.
+     * @param exportType   The type of export to perform.
+     */
     public PayrollExportDialogLoader(String currentYear, String currentMonth, String exportType) {
         String fxmlPath = "/sms/admin/app/payroll/dialog/PAYROLL_EXPORT_DIALOG.fxml";
         createInstance(getClass().getResource(fxmlPath));
@@ -24,8 +37,13 @@ public class PayrollExportDialogLoader extends FXLoader {
         initialize();
     }
 
+    /**
+     * Loads and displays the payroll export dialog, setting up the stage and
+     * controller.
+     */
     public void load() {
         try {
+            // Create a transparent stage for the dialog
             Stage stage = new Stage(StageStyle.TRANSPARENT);
             stage.initModality(Modality.APPLICATION_MODAL);
             Window owner = (Window) getParameter("OWNER_STAGE");
@@ -34,17 +52,20 @@ public class PayrollExportDialogLoader extends FXLoader {
                 applyOwnerStageEffects((Stage) owner, stage);
             }
 
+            // Configure the scene
             Scene scene = new Scene(root);
             scene.setFill(Color.TRANSPARENT);
             stage.setScene(scene);
-            stage.sizeToScene(); // Ensure stage dimensions are set based on content
+            stage.sizeToScene(); // Adjust stage size to fit content
 
+            // Initialize the controller
             controller = loader.getController();
             controller.setStage(stage);
             controller.initData(currentYear, currentMonth, exportType);
 
             System.out.println("Export dialog loaded successfully for export type: " + exportType);
 
+            // Show the dialog and wait for it to close
             stage.showAndWait();
 
         } catch (Exception e) {
@@ -54,15 +75,28 @@ public class PayrollExportDialogLoader extends FXLoader {
         }
     }
 
+    /**
+     * Applies a blur effect to the owner stage when the dialog is shown and removes
+     * it when the dialog is closed.
+     *
+     * @param ownerStage  The owner stage to apply effects to.
+     * @param dialogStage The dialog stage being shown.
+     */
     private void applyOwnerStageEffects(Stage ownerStage, Stage dialogStage) {
         GaussianBlur blur = new GaussianBlur(5);
         ownerStage.getScene().getRoot().setEffect(blur);
 
+        // Remove the effect when the dialog is closed
         dialogStage.setOnHiding(event -> {
             ownerStage.getScene().getRoot().setEffect(null);
         });
     }
 
+    /**
+     * Gets the controller for the payroll export dialog.
+     *
+     * @return The current PayrollExportDialogController instance.
+     */
     public PayrollExportDialogController getController() {
         return controller;
     }
