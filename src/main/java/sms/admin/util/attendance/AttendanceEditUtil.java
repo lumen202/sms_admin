@@ -18,20 +18,44 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableCell;
 import sms.admin.util.db.DatabaseRetryHelper;
 
+/**
+ * Utility class for editing and managing attendance records in the Student
+ * Management System.
+ * Provides methods for creating UI components, updating attendance records, and
+ * marking/unmarking holidays.
+ */
 public class AttendanceEditUtil {
 
+    private static final Object ID_LOCK = new Object(); // Lock for synchronizing ID generation
+
+    /**
+     * Creates a ComboBox for selecting attendance status with predefined values.
+     *
+     * @param currentValue The current attendance status to set as the default
+     *                     value.
+     * @return A configured ComboBox with attendance status options.
+     */
     public static ComboBox<String> createAttendanceComboBox(String currentValue) {
         ComboBox<String> comboBox = new ComboBox<>();
         comboBox.getItems().addAll(
                 CommonAttendanceUtil.PRESENT_MARK,
                 CommonAttendanceUtil.ABSENT_MARK,
                 CommonAttendanceUtil.HALF_DAY_MARK,
-                CommonAttendanceUtil.EXCUSED_MARK
-        );
+                CommonAttendanceUtil.EXCUSED_MARK);
         comboBox.setValue(currentValue.isEmpty() ? CommonAttendanceUtil.PRESENT_MARK : currentValue);
         return comboBox;
     }
 
+    /**
+     * Handles the editing of an attendance record in a table cell, updating the
+     * database and UI.
+     *
+     * @param cell           The table cell being edited.
+     * @param student        The student associated with the attendance record.
+     * @param date           The date of the attendance record.
+     * @param attendanceLogs The list of attendance logs to update.
+     * @param onComplete     Callback to handle the updated AttendanceLog.
+     */
     public static void handleAttendanceEdit(
             TableCell<Student, String> cell,
             Student student,
@@ -82,8 +106,16 @@ public class AttendanceEditUtil {
         });
     }
 
-    private static final Object ID_LOCK = new Object();
-
+    /**
+     * Updates an attendance record in the database for a specific student and date.
+     *
+     * @param student         The student whose attendance is being updated.
+     * @param date            The date of the attendance record.
+     * @param attendanceValue The new attendance status.
+     * @param attendanceLogs  The list of attendance logs to update.
+     * @return The updated or newly created AttendanceLog, or null if the operation
+     *         fails.
+     */
     private static AttendanceLog updateAttendanceRecord(
             Student student,
             LocalDate date,
@@ -92,18 +124,18 @@ public class AttendanceEditUtil {
         try {
             return DatabaseRetryHelper.withRetry(() -> {
                 synchronized (ID_LOCK) {
-                    // Get fresh data from database
+                    // Fetch fresh data from the database
                     List<AttendanceRecord> recordList = AttendanceRecordDAO.getRecordList();
                     List<AttendanceLog> dbLogs = AttendanceLogDAO.getAttendanceLogList();
 
                     System.out.println("Current records in DB: " + recordList.size());
                     System.out.println("Current logs in DB: " + (dbLogs != null ? dbLogs.size() : 0));
 
-                    // Ensure record exists for the exact date
+                    // Ensure a record exists for the date
                     AttendanceRecord record = recordList.stream()
                             .filter(r -> r.getYear() == date.getYear()
-                            && r.getMonth() == date.getMonthValue()
-                            && r.getDay() == date.getDayOfMonth())
+                                    && r.getMonth() == date.getMonthValue()
+                                    && r.getDay() == date.getDayOfMonth())
                             .findFirst()
                             .orElse(null);
 
@@ -124,10 +156,10 @@ public class AttendanceEditUtil {
 
                     final AttendanceRecord finalRecord = record;
 
-                    // Get existing log for this exact record
+                    // Check for an existing log
                     AttendanceLog existingLog = dbLogs.stream()
                             .filter(l -> l.getStudentID().getStudentID() == student.getStudentID()
-                            && l.getRecordID().getRecordID() == finalRecord.getRecordID())
+                                    && l.getRecordID().getRecordID() == finalRecord.getRecordID())
                             .findFirst()
                             .orElse(null);
 
@@ -152,13 +184,11 @@ public class AttendanceEditUtil {
                         resultLog = newLog;
                     }
 
-                    // After successful insert/update
+                    // Update the local collection on the JavaFX thread
                     if (resultLog != null) {
                         System.out.println("Operation successful, refreshing log list");
-                        // Get updated logs from database
                         List<AttendanceLog> updatedLogs = AttendanceLogDAO.getAttendanceLogList();
 
-                        // Update local collection on FX thread
                         Platform.runLater(() -> {
                             attendanceLogs.clear();
                             if (updatedLogs != null) {
@@ -178,12 +208,19 @@ public class AttendanceEditUtil {
         }
     }
 
+    /**
+     * Finds an existing attendance log for a student and record.
+     *
+     * @param student The student to search for.
+     * @param record  The attendance record to search for.
+     * @return The existing AttendanceLog, or null if not found or an error occurs.
+     */
     private static AttendanceLog findExistingLog(Student student, AttendanceRecord record) {
         try {
             List<AttendanceLog> dbLogs = AttendanceLogDAO.getAttendanceLogList();
             return dbLogs.stream()
                     .filter(l -> l.getStudentID().getStudentID() == student.getStudentID()
-                    && l.getRecordID().getRecordID() == record.getRecordID())
+                            && l.getRecordID().getRecordID() == record.getRecordID())
                     .findFirst()
                     .orElse(null);
         } catch (Exception e) {
@@ -192,6 +229,12 @@ public class AttendanceEditUtil {
         }
     }
 
+    /**
+     * Updates the time values of an attendance log based on the provided status.
+     *
+     * @param log             The AttendanceLog to update.
+     * @param attendanceValue The attendance status to apply.
+     */
     private static void updateAttendanceValues(AttendanceLog log, String attendanceValue) {
         switch (attendanceValue) {
             case CommonAttendanceUtil.PRESENT_MARK -> {
@@ -227,12 +270,19 @@ public class AttendanceEditUtil {
         }
     }
 
+    /**
+     * Ensures an attendance record exists for the specified date, creating a new
+     * one if necessary.
+     *
+     * @param date The date to check or create a record for.
+     * @return The existing or newly created AttendanceRecord.
+     */
     private static AttendanceRecord ensureAttendanceRecordExists(LocalDate date) {
         List<AttendanceRecord> recordList = AttendanceRecordDAO.getRecordList();
         AttendanceRecord record = recordList.stream()
                 .filter(r -> r.getYear() == date.getYear()
-                && r.getMonth() == date.getMonthValue()
-                && r.getDay() == date.getDayOfMonth())
+                        && r.getMonth() == date.getMonthValue()
+                        && r.getDay() == date.getDayOfMonth())
                 .findFirst()
                 .orElse(null);
         if (record == null) {
@@ -246,6 +296,16 @@ public class AttendanceEditUtil {
         return record;
     }
 
+    /**
+     * Marks a specific date as a holiday for all provided students.
+     *
+     * @param date                 The date to mark as a holiday.
+     * @param students             The list of students to apply the holiday status
+     *                             to.
+     * @param masterAttendanceLogs The list of attendance logs to update.
+     * @param onComplete           Callback to indicate operation success or
+     *                             failure.
+     */
     public static void markDayAsHoliday(LocalDate date, List<Student> students,
             ObservableList<AttendanceLog> masterAttendanceLogs, Consumer<Boolean> onComplete) {
         try {
@@ -289,14 +349,22 @@ public class AttendanceEditUtil {
         }
     }
 
+    /**
+     * Unmarks a specific date as a holiday, removing associated attendance records.
+     *
+     * @param date                 The date to unmark as a holiday.
+     * @param masterAttendanceLogs The list of attendance logs to update.
+     * @param onComplete           Callback to indicate operation success or
+     *                             failure.
+     */
     public static void unmarkDayAsHoliday(LocalDate date,
             ObservableList<AttendanceLog> masterAttendanceLogs, Consumer<Boolean> onComplete) {
         try {
             List<AttendanceRecord> recordList = AttendanceRecordDAO.getRecordList();
             AttendanceRecord record = recordList.stream()
                     .filter(r -> r.getYear() == date.getYear()
-                    && r.getMonth() == date.getMonthValue()
-                    && r.getDay() == date.getDayOfMonth())
+                            && r.getMonth() == date.getMonthValue()
+                            && r.getDay() == date.getDayOfMonth())
                     .findFirst()
                     .orElse(null);
 
@@ -314,6 +382,11 @@ public class AttendanceEditUtil {
         }
     }
 
+    /**
+     * Generates the next available log ID for a new attendance log.
+     *
+     * @return The next log ID, or -1 if generation fails.
+     */
     private static synchronized int generateNextLogId() {
         try {
             return DatabaseRetryHelper.withRetry(() -> {

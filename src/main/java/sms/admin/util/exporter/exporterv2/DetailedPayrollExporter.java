@@ -94,15 +94,15 @@ public class DetailedPayrollExporter {
 
             // Set widths for remaining columns
             int totalDaysCol = 2 + totalDays;
-            sheet.setColumnWidth(totalDaysCol, 8 * 256); // Total Days - increased from 5 to 8
-            sheet.setColumnWidth(totalDaysCol + 1, 12 * 256); // Trans Daily Rate - increased from 7 to 12
-            sheet.setColumnWidth(totalDaysCol + 2, 12 * 256); // Trans Amount Due - increased from 7 to 12
-            sheet.setColumnWidth(totalDaysCol + 3, 12 * 256); // Meal Daily Rate - increased from 7 to 12
-            sheet.setColumnWidth(totalDaysCol + 4, 12 * 256); // Meal Amount Due - increased from 7 to 12
+            sheet.setColumnWidth(totalDaysCol, 5 * 256); // Total Days
+            sheet.setColumnWidth(totalDaysCol + 1, 7 * 256); // Trans Daily Rate
+            sheet.setColumnWidth(totalDaysCol + 2, 7 * 256); // Trans Amount Due
+            sheet.setColumnWidth(totalDaysCol + 3, 7 * 256); // Meal Daily Rate
+            sheet.setColumnWidth(totalDaysCol + 4, 7 * 256); // Meal Amount Due
             int totalAmountCol = totalDaysCol + 5;
-            sheet.setColumnWidth(totalAmountCol, 15 * 256); // Total Amount - increased from 8 to 15
-            sheet.setColumnWidth(totalAmountCol + 1, 6 * 256); // No. for signature - increased from 4 to 6
-            sheet.setColumnWidth(totalAmountCol + 2, 25 * 256); // Signature - increased from 20 to 25
+            sheet.setColumnWidth(totalAmountCol, 8 * 256); // Total Amount
+            sheet.setColumnWidth(totalAmountCol + 1, 4 * 256); // No. for signature
+            sheet.setColumnWidth(totalAmountCol + 2, 20 * 256); // Signature
 
             // Define row heights
             short normalRowHeight = (short) (25 * 20);
@@ -134,72 +134,21 @@ public class DetailedPayrollExporter {
             mainTitleCell.setCellStyle(mainTitleStyle);
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 8, 26));
 
-            // Create period style
+            // Period description row
+            Row periodRow = sheet.createRow(1);
+            periodRow.setHeight(headerRowHeight);
+            Cell periodCell = periodRow.createCell(0);
             CellStyle periodStyle = workbook.createCellStyle();
             Font periodFont = workbook.createFont();
-            periodFont.setBold(true);
-            periodFont.setFontHeightInPoints((short) 13);
+            periodFont.setFontHeightInPoints((short) 14);
             periodStyle.setFont(periodFont);
             periodStyle.setAlignment(HorizontalAlignment.CENTER);
             periodStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-
-            // Create underlined style
-            CellStyle underlineStyle = workbook.createCellStyle();
-            Font underlineFont = workbook.createFont();
-            underlineFont.setBold(true);
-            underlineFont.setUnderline(Font.U_SINGLE);
-            underlineFont.setFontHeightInPoints((short) 13);
-            underlineStyle.setFont(underlineFont);
-            underlineStyle.setAlignment(HorizontalAlignment.CENTER);
-            underlineStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-
-            // Period row with separate cells
-            Row periodRow = sheet.createRow(1);
-            periodRow.setHeight(headerRowHeight);
-            int currentCol = 0;
-
-            // Part 1: "For labor on"
-            Cell part1 = periodRow.createCell(currentCol);
-            part1.setCellValue("For labor on ________");
-            part1.setCellStyle(periodStyle);
-            currentCol += 2;
-
-            // Part 2: "Baybay Data Center"
-            Cell part2 = periodRow.createCell(currentCol);
-            part2.setCellValue("Baybay Data Center");
-            part2.setCellStyle(underlineStyle);
-            currentCol += 3;
-
-            // Part 3: ", at"
-            Cell part3 = periodRow.createCell(currentCol);
-            part3.setCellValue(", at ");
-            part3.setCellStyle(periodStyle);
-            currentCol += 2; // Changed from 1 to 2
-
-            // Part 4: "Baybay National High School, Baybay City, Leyte"
-            Cell part4 = periodRow.createCell(currentCol);
-            part4.setCellValue("Baybay National High School, Baybay City, Leyte");
-            part4.setCellStyle(underlineStyle);
-            currentCol += 6;
-
-            // Part 5: ", Philippines, for the period, "
-            Cell part5 = periodRow.createCell(currentCol);
-            part5.setCellValue(", Philippines, for the period, ");
-            part5.setCellStyle(periodStyle);
-            currentCol += 3;
-
-            // Part 6: Month and Year
-            Cell part6 = periodRow.createCell(currentCol);
-            part6.setCellValue(month.getMonth().toString() + " " + month.getYear());
-            part6.setCellStyle(underlineStyle);
-
-            // Merge all cells to make it look like one line
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 1)); // For labor on
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 2, 4)); // Baybay Data Center
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 5, 6)); // , at
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 7, 12)); // Baybay National High School...
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 13, 15)); // , Philippines...
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 16, 18)); // Month Year
+            periodCell.setCellValue(
+                    "For labor on _________ - Baybay Data Center, at Baybay National High School, Baybay City, Leyte, Philippines, for the period,    "
+                            + month.getMonth().toString() + " " + month.getYear());
+            periodCell.setCellStyle(periodStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 34));
 
             // Spacer row
             sheet.createRow(2).setHeight((short) (15 * 20));
@@ -411,7 +360,7 @@ public class DetailedPayrollExporter {
 
         int totalDays = weeks.stream().mapToInt(List::size).sum();
         int maxDayDigits = String.valueOf(month.lengthOfMonth()).length();
-        final int TIME_ROLL_WIDTH = (maxDayDigits + 4) * 256; // Increased from +2 to +4
+        final int TIME_ROLL_WIDTH = (maxDayDigits + 2) * 256;
 
         for (int i = 0; i < totalDays; i++) {
             sheet.setColumnWidth(currentCol + i, TIME_ROLL_WIDTH);
@@ -450,7 +399,7 @@ public class DetailedPayrollExporter {
         // Remaining headers
         int remainingCol = weekStartCol;
         sheet.setColumnWidth(remainingCol, 6 * 256);
-        int allowanceWidth = 15 * 256; // Increased from 9 to 15
+        int allowanceWidth = 9 * 256;
         sheet.setColumnWidth(remainingCol + 1, allowanceWidth);
         sheet.setColumnWidth(remainingCol + 2, allowanceWidth);
         sheet.setColumnWidth(remainingCol + 3, allowanceWidth);

@@ -1,8 +1,18 @@
+/**
+ * Utility class for handling date and time operations related to academic years
+ * and month-year formatting within the SMS administrative module.
+ * <p>
+ * Provides methods for generating lists of academic years, determining the current
+ * academic year, parsing and formatting month-year strings, and populating JavaFX
+ * ComboBox controls with appropriate month-year values based on an academic year.
+ * </p>
+ */
 package sms.admin.util.datetime;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.ComboBox;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -10,24 +20,51 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DateTimeUtils {
+    /**
+     * Formatter for displaying a YearMonth as "MMMM yyyy", e.g., "January 2025".
+     */
     public static final DateTimeFormatter MONTH_YEAR_FORMATTER = DateTimeFormatter.ofPattern("MMMM yyyy");
 
+    /**
+     * Generates an observable list of academic year strings for a given number of
+     * past years.
+     * <p>
+     * Each academic year is formatted as "YYYY-YYYY", starting from the current
+     * calendar year
+     * and going backwards.
+     * </p>
+     *
+     * @param numberOfYears the number of academic years to generate
+     * @return ObservableList of academic year strings
+     */
     public static ObservableList<String> getYearsList(int numberOfYears) {
         List<String> years = new ArrayList<>();
         int currentYear = LocalDate.now().getYear();
 
         for (int i = 0; i < numberOfYears; i++) {
-            String academicYear = String.format("%d-%d", currentYear - i, currentYear - i + 1);
+            String academicYear = String.format("%d-%d",
+                    currentYear - i,
+                    currentYear - i + 1);
             years.add(academicYear);
         }
 
         return FXCollections.observableArrayList(years);
     }
 
+    /**
+     * Determines the current academic year based on today's date.
+     * <p>
+     * The academic year is assumed to start in July and end in June.
+     * If the current month is July or later, the academic year is
+     * the current calendar year to next year; otherwise it is the
+     * previous year to the current year.
+     * </p>
+     *
+     * @return String representation of the current academic year, "YYYY-YYYY"
+     */
     public static String getCurrentAcademicYear() {
         int currentYear = LocalDate.now().getYear();
         int currentMonth = LocalDate.now().getMonthValue();
-        // Academic year starts in July
         if (currentMonth >= 7) {
             return String.format("%d-%d", currentYear, currentYear + 1);
         } else {
@@ -35,26 +72,53 @@ public class DateTimeUtils {
         }
     }
 
-    public static boolean isInAcademicYear(int targetYear, int targetMonth, String academicYear) {
-        if (academicYear == null) return false;
-        
+    /**
+     * Checks if a given year-month falls within a specified academic year.
+     * <p>
+     * The academic year runs from July of the start year to June of the end year.
+     * </p>
+     *
+     * @param targetYear   the year to check
+     * @param targetMonth  the month to check (1-12)
+     * @param academicYear academic year string "YYYY-YYYY"
+     * @return true if the date is within the academic year, false otherwise
+     */
+    public static boolean isInAcademicYear(int targetYear,
+            int targetMonth,
+            String academicYear) {
+        if (academicYear == null)
+            return false;
+
         String[] years = academicYear.split("-");
-        if (years.length != 2) return false;
+        if (years.length != 2)
+            return false;
 
         int startYear = Integer.parseInt(years[0]);
         int endYear = Integer.parseInt(years[1]);
 
-        // Academic year runs from July of start year to June of end year
         if (targetYear == startYear) {
-            return targetMonth >= 7; // July onwards of start year
+            return targetMonth >= 7;
         } else if (targetYear == endYear) {
-            return targetMonth <= 6; // Up to June of end year
+            return targetMonth <= 6;
         }
-        
         return false;
     }
 
-    public static void updateMonthYearComboBox(ComboBox<String> comboBox, String academicYear) {
+    /**
+     * Populates a ComboBox with month-year values for a given academic year,
+     * and selects the current month if it falls within that academic year.
+     * <p>
+     * Months from July of the start year through June of the end year are added.
+     * If no months match, it defaults to July of the start year or the current
+     * month
+     * if within range.
+     * </p>
+     *
+     * @param comboBox     the ComboBox to populate
+     * @param academicYear academic year string "YYYY-YYYY"
+     */
+    public static void updateMonthYearComboBox(ComboBox<String> comboBox,
+            String academicYear) {
         if (comboBox == null || academicYear == null)
             return;
 
@@ -62,11 +126,11 @@ public class DateTimeUtils {
             int[] years = parseAcademicYear(academicYear);
             int startYear = years[0];
             int endYear = years[1];
-            
+            YearMonth currentMonth = YearMonth.now();
+
             ObservableList<String> monthYears = FXCollections.observableArrayList();
 
-            // Add months from July to December of start year
-            YearMonth currentMonth = YearMonth.now();
+            // July-December of start year
             for (int month = 7; month <= 12; month++) {
                 try {
                     YearMonth ym = YearMonth.of(startYear, month);
@@ -75,8 +139,7 @@ public class DateTimeUtils {
                     System.err.println("Invalid month value: " + month);
                 }
             }
-
-            // Add months from January to June of end year
+            // January-June of end year
             for (int month = 1; month <= 6; month++) {
                 try {
                     YearMonth ym = YearMonth.of(endYear, month);
@@ -88,22 +151,20 @@ public class DateTimeUtils {
 
             comboBox.setItems(monthYears);
 
-            // If items list is empty, try to add current month if it's in range
             if (monthYears.isEmpty()) {
                 if (isMonthInAcademicYear(currentMonth, startYear, endYear)) {
                     monthYears.add(formatMonthYear(currentMonth));
                 } else {
-                    // Default to July of start year
                     monthYears.add(formatMonthYear(YearMonth.of(startYear, 7)));
                 }
                 comboBox.setItems(monthYears);
             }
 
-            // Select appropriate month
             if (!monthYears.isEmpty()) {
-                if (isMonthInAcademicYear(currentMonth, startYear, endYear) && 
-                    monthYears.contains(formatMonthYear(currentMonth))) {
-                    comboBox.setValue(formatMonthYear(currentMonth));
+                String formattedCurrent = formatMonthYear(currentMonth);
+                if (isMonthInAcademicYear(currentMonth, startYear, endYear)
+                        && monthYears.contains(formattedCurrent)) {
+                    comboBox.setValue(formattedCurrent);
                 } else {
                     comboBox.setValue(monthYears.get(0));
                 }
@@ -112,26 +173,42 @@ public class DateTimeUtils {
         } catch (Exception e) {
             e.printStackTrace();
             comboBox.setItems(FXCollections.observableArrayList(
-                formatMonthYear(YearMonth.now())
-            ));
+                    formatMonthYear(YearMonth.now())));
         }
     }
 
-    private static boolean isMonthInAcademicYear(YearMonth month, int startYear, int endYear) {
-        YearMonth startMonth = YearMonth.of(startYear, 7); // July of start year
-        YearMonth endMonth = YearMonth.of(endYear, 6);    // June of end year
+    /**
+     * Checks if a YearMonth falls within the academic year range.
+     *
+     * @param month     the YearMonth to check
+     * @param startYear the start academic year
+     * @param endYear   the end academic year
+     * @return true if within range, false otherwise
+     */
+    private static boolean isMonthInAcademicYear(YearMonth month,
+            int startYear,
+            int endYear) {
+        YearMonth startMonth = YearMonth.of(startYear, 7);
+        YearMonth endMonth = YearMonth.of(endYear, 6);
         return !month.isBefore(startMonth) && !month.isAfter(endMonth);
     }
 
+    /**
+     * Parses an academic year string into start and end years.
+     *
+     * @param academicYear academic year string "YYYY-YYYY"
+     * @return int array [startYear, endYear]
+     */
     public static int[] parseAcademicYear(String academicYear) {
         try {
             String[] years = academicYear.split("-");
-            if (years.length != 2)
-                throw new IllegalArgumentException("Invalid academic year format: " + academicYear);
-
+            if (years.length != 2) {
+                throw new IllegalArgumentException(
+                        "Invalid academic year format: " + academicYear);
+            }
             return new int[] {
-                Integer.parseInt(years[0].trim()),
-                Integer.parseInt(years[1].trim())
+                    Integer.parseInt(years[0].trim()),
+                    Integer.parseInt(years[1].trim())
             };
         } catch (Exception e) {
             e.printStackTrace();
@@ -140,31 +217,43 @@ public class DateTimeUtils {
         }
     }
 
+    /**
+     * Validates a month-year combination.
+     *
+     * @param year  the year (>=1900, <=9999)
+     * @param month the month (1-12)
+     * @return true if valid, false otherwise
+     */
     private static boolean isValidMonthYear(int year, int month) {
         return month >= 1 && month <= 12 && year >= 1900 && year <= 9999;
     }
 
+    /**
+     * Parses a "MMMM yyyy" string into a YearMonth.
+     * <p>
+     * Falls back to the current month if parsing fails.
+     * </p>
+     *
+     * @param monthYear string to parse (e.g., "March 2025")
+     * @return corresponding YearMonth, or current month on error
+     */
     public static YearMonth parseMonthYear(String monthYear) {
         if (monthYear == null || monthYear.trim().isEmpty()) {
             return YearMonth.now();
         }
-
         try {
             String[] parts = monthYear.trim().split("\\s+");
             if (parts.length != 2) {
                 System.err.println("Invalid month-year format: " + monthYear);
                 return YearMonth.now();
             }
-
             int month = parseMonth(parts[0].trim());
             int year = Integer.parseInt(parts[1].trim());
-
-            // Validate month and year values
             if (!isValidMonthYear(year, month)) {
-                System.err.println("Invalid month-year values: month=" + month + ", year=" + year);
+                System.err.println("Invalid month-year values: month=" + month
+                        + ", year=" + year);
                 return YearMonth.now();
             }
-
             return YearMonth.of(year, month);
         } catch (Exception e) {
             System.err.println("Error parsing month-year: " + monthYear);
@@ -173,6 +262,13 @@ public class DateTimeUtils {
         }
     }
 
+    /**
+     * Converts a month name to its integer representation.
+     *
+     * @param monthStr full or abbreviated month name (case-insensitive)
+     * @return integer month (1-12)
+     * @throws IllegalArgumentException if the month name is unrecognized
+     */
     private static int parseMonth(String monthStr) {
         return switch (monthStr.toLowerCase()) {
             case "january", "jan" -> 1;
@@ -191,6 +287,12 @@ public class DateTimeUtils {
         };
     }
 
+    /**
+     * Formats a YearMonth using the {@link #MONTH_YEAR_FORMATTER}.
+     *
+     * @param yearMonth the YearMonth to format
+     * @return formatted string "MMMM yyyy"
+     */
     public static String formatMonthYear(YearMonth yearMonth) {
         return yearMonth.format(MONTH_YEAR_FORMATTER);
     }

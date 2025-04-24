@@ -13,10 +13,22 @@ import javafx.stage.WindowEvent;
 import sms.admin.app.RootLoader;
 import sms.admin.util.db.DatabaseConnection;
 
+/**
+ * Main application class for the Student Management System Admin interface.
+ * This class extends {@link FXApplication} and is responsible for initializing
+ * the application,
+ * configuring the UI, setting up the dataset, and handling application
+ * shutdown.
+ */
 public class App extends FXApplication {
 
-    private static final Logger LOGGER = Logger.getLogger(App.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(App.class.getName()); // Logger for application events
 
+    /**
+     * Initializes the application by configuring settings, dataset, and UI.
+     *
+     * @throws Exception If initialization fails.
+     */
     @Override
     public void initialize() throws Exception {
         try {
@@ -29,6 +41,10 @@ public class App extends FXApplication {
         }
     }
 
+    /**
+     * Configures the application settings, including title, skin, icon, and window
+     * properties.
+     */
     private void configureApplication() {
         setTitle("Student Management System - Admin");
         setSkin(FXSkin.PRIMER_LIGHT);
@@ -41,7 +57,7 @@ public class App extends FXApplication {
     }
 
     /**
-     * Initialize the dataset once at startup.
+     * Initializes the dataset for the application using the DataManager.
      */
     public void initializeDataset() {
         try {
@@ -53,6 +69,9 @@ public class App extends FXApplication {
         }
     }
 
+    /**
+     * Initializes the application UI by loading the root view.
+     */
     private void initializeApplication() {
         try {
             RootLoader rootLoader = (RootLoader) FXLoaderFactory
@@ -71,6 +90,12 @@ public class App extends FXApplication {
         }
     }
 
+    /**
+     * Handles the application close event, cleaning up resources and closing the
+     * database connection.
+     *
+     * @param event The window close event.
+     */
     private void handleApplicationClose(WindowEvent event) {
         try {
             // Close database connection and clear collections before exiting
@@ -82,6 +107,9 @@ public class App extends FXApplication {
         }
     }
 
+    /**
+     * Clears all collections in the DataManager to free up resources.
+     */
     private void clearCollections() {
         FXCollectionsRegister collectionsRegistry = DataManager.getInstance().getCollectionsRegistry();
         String[] knownCollections = {

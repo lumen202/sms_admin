@@ -36,67 +36,70 @@ import sms.admin.util.enrollment.CsvImporter;
 import sms.admin.util.enrollment.CsvStudent;
 import sms.admin.util.enrollment.EnrollmentUtils;
 import sms.admin.util.exporter.StudentTableExporter;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 
+/**
+ * Controller for the student management view, handling the display, filtering,
+ * and management of student records.
+ * This class manages the UI elements and logic for viewing, adding, editing,
+ * deleting, importing, and exporting student data.
+ */
 public class StudentController extends FXController {
 
     @FXML
-    private TableView<Student> studentTableView;
+    private TableView<Student> studentTableView; // Table displaying student records
     @FXML
-    private TableColumn<Student, Integer> studentIDColumn;
+    private TableColumn<Student, Integer> studentIDColumn; // Column for student ID
     @FXML
-    private TableColumn<Student, String> firstNameColumn;
+    private TableColumn<Student, String> firstNameColumn; // Column for student's first name
     @FXML
-    private TableColumn<Student, String> middleNameColumn;
+    private TableColumn<Student, String> middleNameColumn; // Column for student's middle name
     @FXML
-    private TableColumn<Student, String> lastNameColumn;
+    private TableColumn<Student, String> lastNameColumn; // Column for student's last name
     @FXML
-    private TableColumn<Student, String> nameExtensionColumn;
+    private TableColumn<Student, String> nameExtensionColumn; // Column for student's name extension
     @FXML
-    private TableColumn<Student, String> clusterColumn;
+    private TableColumn<Student, String> clusterColumn; // Column for student's cluster
     @FXML
-    private TableColumn<Student, String> contactColumn;
+    private TableColumn<Student, String> contactColumn; // Column for student's contact
     @FXML
-    private TableColumn<Student, String> emailColumn;
+    private TableColumn<Student, String> emailColumn; // Column for student's email
     @FXML
-    private TableColumn<Student, String> addressColumn;
+    private TableColumn<Student, String> addressColumn; // Column for student's address
     @FXML
-    private BorderPane contentPane;
+    private BorderPane contentPane; // Main content pane
     @FXML
-    private ModalPane formodal;
+    private ModalPane formodal; // Modal pane for displaying forms
     @FXML
-    private StackPane modalContainer;
+    private StackPane modalContainer; // Container for modal content
     @FXML
-    private MenuButton exportButton;
+    private MenuButton exportButton; // Button for export options
     @FXML
-    private MenuItem exportExcel;
+    private MenuItem exportExcel; // Menu item for exporting to Excel
     @FXML
-    private MenuItem exportCsv;
+    private MenuItem exportCsv; // Menu item for exporting to CSV
     @FXML
-    private MenuItem exportPdf;
+    private MenuItem exportPdf; // Menu item for exporting to PDF
     @FXML
-    private MenuItem importCsv;
+    private MenuItem importCsv; // Menu item for importing from CSV
     @FXML
-    private TextField searchField;
+    private TextField searchField; // Field for searching students
     @FXML
-    private Label totalLabel;
+    private Label totalLabel; // Label displaying total number of students
     @FXML
-    private Label statusLabel;
+    private Label statusLabel; // Label displaying status messages
     @FXML
-    private Button addStudentButton;
+    private Button addStudentButton; // Button to add a new student
 
-    // The master list is modifiable and backs our filtered view.
-    private ObservableList<Student> masterStudentList = FXCollections.observableArrayList();
-    // One filtered list to handle both year and search criteria.
-    private FilteredList<Student> filteredList;
-    private ContextMenu studentMenu;
-    private String selectedYear; // e.g., "2024-2025"
-    private String searchText = "";
+    // The master list is modifiable and backs our filtered view
+    private ObservableList<Student> masterStudentList = FXCollections.observableArrayList(); // Master list of students
+    private FilteredList<Student> filteredList; // Filtered list for year and search criteria
+    private ContextMenu studentMenu; // Context menu for student table
+    private String selectedYear; // Selected academic year (e.g., "2024-2025")
+    private String searchText = ""; // Current search text
 
+    /**
+     * Loads the initial fields and configurations for the student management view.
+     */
     @Override
     protected void load_fields() {
         try {
@@ -105,12 +108,13 @@ public class StudentController extends FXController {
             if (selectedYear == null) {
                 selectedYear = getDefaultYear();
             }
-            // Load the master list for the selected year using the DataManager
+            // Load the master list for the selected year
             initializeStudentList(selectedYear);
-            // Create a single FilteredList using the master list.
+            // Create a filtered list using the master list
             filteredList = new FilteredList<>(masterStudentList);
             studentTableView.setItems(filteredList);
 
+            // Configure modal pane
             formodal.setAlignment(Pos.TOP_CENTER);
             formodal.usePredefinedTransitionFactories(Side.TOP);
             formodal.setPersistent(true);
@@ -125,6 +129,9 @@ public class StudentController extends FXController {
         addStudentButton.setOnAction(e -> handleAddStudent());
     }
 
+    /**
+     * Loads bindings for the table columns to display student properties.
+     */
     @Override
     protected void load_bindings() {
         studentIDColumn.setCellValueFactory(cell -> cell.getValue().studentIDProperty().asObject());
@@ -137,6 +144,7 @@ public class StudentController extends FXController {
         emailColumn.setCellValueFactory(cell -> cell.getValue().emailProperty());
         studentTableView.setItems(filteredList);
 
+        // Configure context menu for the table
         studentMenu = new ContextMenu();
         MenuItem viewMenu = new MenuItem("Edit Student");
         viewMenu.setOnAction(e -> openStudentProfileInEditMode());
@@ -147,6 +155,9 @@ public class StudentController extends FXController {
         studentTableView.setContextMenu(studentMenu);
     }
 
+    /**
+     * Loads event listeners for UI interactions.
+     */
     @Override
     protected void load_listeners() {
         exportExcel.setOnAction(event -> handleExport("excel"));
@@ -154,7 +165,7 @@ public class StudentController extends FXController {
         exportPdf.setOnAction(event -> handleExport("pdf"));
         importCsv.setOnAction(event -> handleImport());
 
-        // Update the search text and filter predicate as the user types.
+        // Update search filter as the user types
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
             searchText = newValue.toLowerCase();
             updateFilter();
@@ -162,6 +173,11 @@ public class StudentController extends FXController {
         });
     }
 
+    /**
+     * Updates the selected academic year and refreshes the student list.
+     *
+     * @param year The academic year to set (e.g., "2024-2025").
+     */
     public void updateYear(String year) {
         if (year != null && !year.equals(selectedYear)) {
             selectedYear = year;
@@ -172,6 +188,11 @@ public class StudentController extends FXController {
         }
     }
 
+    /**
+     * Initializes the controller with the specified academic year.
+     *
+     * @param year The academic year to initialize with (e.g., "2024-2025").
+     */
     public void initializeWithYear(String year) {
         if (year == null) {
             return;
@@ -180,12 +201,14 @@ public class StudentController extends FXController {
     }
 
     /**
-     * Populate the masterStudentList with students matching the selected year
-     * and that are not archived.
+     * Populates the master student list with students matching the selected year
+     * and not marked as deleted.
+     *
+     * @param year The academic year to filter students by.
      */
     private void initializeStudentList(String year) {
         int startYear = Integer.parseInt(year.split("-")[0]);
-        // Use the new DataManager to get fresh data.
+        // Use DataManager to get fresh data
         ObservableList<Student> students = DataManager.getInstance()
                 .getCollectionsRegistry().getList("STUDENT");
         masterStudentList.setAll(
@@ -197,7 +220,7 @@ public class StudentController extends FXController {
     }
 
     /**
-     * Update the filter predicate to apply both the year and search filters.
+     * Updates the filter predicate to apply both year and search criteria.
      */
     private void updateFilter() {
         filteredList.setPredicate(student -> {
@@ -214,11 +237,18 @@ public class StudentController extends FXController {
         });
     }
 
+    /**
+     * Updates the status label with the total number of students in the filtered
+     * list.
+     */
     private void updateStatusLabel() {
         int totalStudents = filteredList.size();
         totalLabel.setText("Total Students: " + totalStudents);
     }
 
+    /**
+     * Opens the profile view for the selected student.
+     */
     @FXML
     private void openStudentProfile() {
         Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
@@ -228,8 +258,9 @@ public class StudentController extends FXController {
     }
 
     /**
-     * Marks the student as archived (i.e. deleted) and updates the underlying
-     * master list.
+     * Marks a student as deleted and updates the master list and database.
+     *
+     * @param student The student to delete.
      */
     private void deleteStudent(Student student) {
         Alert confirmDialog = new Alert(Alert.AlertType.CONFIRMATION);
@@ -272,6 +303,11 @@ public class StudentController extends FXController {
         });
     }
 
+    /**
+     * Opens the profile view for a specific student.
+     *
+     * @param student The student whose profile to open.
+     */
     private void openStudentProfile(Student student) {
         try {
             StudentProfileLoader loader = new StudentProfileLoader();
@@ -284,6 +320,9 @@ public class StudentController extends FXController {
         }
     }
 
+    /**
+     * Opens the profile view for the selected student in edit mode.
+     */
     private void openStudentProfileInEditMode() {
         try {
             Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
@@ -302,15 +341,29 @@ public class StudentController extends FXController {
         }
     }
 
+    /**
+     * Closes the modal pane.
+     */
     @FXML
     private void closeModal() {
         formodal.hide();
     }
 
+    /**
+     * Generates the file path for exporting student data.
+     *
+     * @param extension The file extension (e.g., "xlsx", "csv", "pdf").
+     * @return The file path for the export.
+     */
     private String getExportPath(String extension) {
         return System.getProperty("user.home") + "/Downloads/students_" + LocalDate.now().toString() + "." + extension;
     }
 
+    /**
+     * Handles the export of student data to the specified format.
+     *
+     * @param type The export type ("excel", "csv", or "pdf").
+     */
     private void handleExport(String type) {
         try {
             String title = "Student List Report";
@@ -331,6 +384,9 @@ public class StudentController extends FXController {
         }
     }
 
+    /**
+     * Handles the import of student data from a CSV file.
+     */
     private void handleImport() {
         try {
             FileChooser fileChooser = new FileChooser();
@@ -369,6 +425,9 @@ public class StudentController extends FXController {
         }
     }
 
+    /**
+     * Opens the enrollment form to add a new student.
+     */
     private void handleAddStudent() {
         try {
             SchoolYear currentSchoolYear = getCurrentSchoolYear();
@@ -393,6 +452,11 @@ public class StudentController extends FXController {
         }
     }
 
+    /**
+     * Retrieves the current school year based on the selected year.
+     *
+     * @return The current SchoolYear object, or null if not found.
+     */
     private SchoolYear getCurrentSchoolYear() {
         if (selectedYear == null) {
             return null;
@@ -410,12 +474,24 @@ public class StudentController extends FXController {
                 .orElse(null);
     }
 
+    /**
+     * Determines the default academic year based on the current date.
+     *
+     * @return The default academic year string (e.g., "2024-2025").
+     */
     private String getDefaultYear() {
         int currentYear = LocalDate.now().getYear();
         return (LocalDate.now().getMonthValue() >= 6 ? currentYear : currentYear - 1) + "-"
                 + (LocalDate.now().getMonthValue() >= 6 ? currentYear + 1 : currentYear);
     }
 
+    /**
+     * Displays an error alert with the specified details.
+     *
+     * @param title   The title of the alert.
+     * @param header  The header text of the alert.
+     * @param content The content text of the alert.
+     */
     private void showErrorAlert(String title, String header, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
