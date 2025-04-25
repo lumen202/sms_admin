@@ -433,6 +433,7 @@ public class StudentController extends FXController {
             SchoolYear currentSchoolYear = getCurrentSchoolYear();
             if (currentSchoolYear != null) {
                 EnrollmentLoader loader = new EnrollmentLoader();
+                // Pass the selectedYear parameter
                 loader.addParameter("selectedYear", selectedYear);
                 loader.addParameter("OWNER_WINDOW", studentTableView.getScene().getWindow());
                 loader.load();

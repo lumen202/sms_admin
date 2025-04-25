@@ -69,11 +69,23 @@ public class EnrollmentController extends FXController {
      */
     @Override
     protected void load_fields() {
-        System.out.println("Enrollment is called");
-        // Initialize status options
-        statusComboBox.getItems().addAll("Active", "Inactive", "Graduate");
-        // Add listeners for real-time validation
-        addValidationListeners();
+        try {
+            // Initialize status options
+            statusComboBox.getItems().addAll("Single", "Married", "Widow");
+            statusComboBox.setValue("Single"); // Set default value
+
+            String selectedYear = (String) getParameter("selectedYear");
+            if (selectedYear != null) {
+                initializeWithYear(selectedYear);
+            }
+
+            // Add listeners for real-time validation
+            addValidationListeners();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showErrorMessage("Error initializing form");
+        }
     }
 
     /**

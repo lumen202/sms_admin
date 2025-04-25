@@ -24,6 +24,7 @@ c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\st
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\schoolyear\SchoolYearDialogController.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\schoolyear\SchoolYearDialog.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\util\dialog\ValidationUtils.java
+c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\deleted_student\DeletedStudentController.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\attendance\AttendanceLoader.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\util\db\DatabaseConnection.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\util\datetime\YearData.java
@@ -45,6 +46,7 @@ c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\util\e
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\util\exporter\StudentTableExporter.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\util\enrollment\CsvStudent.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\attendance\AttendanceController.java
+c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\deleted_student\DeletedStudentLoader.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\payroll\PayrollLoader.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\payroll\PayrollController.java
 c:\Users\E2Ps ICT\Desktop\Final Project\sms_admin\src\main\java\sms\admin\app\attendance\dialog\AttendanceLogDialogController.java

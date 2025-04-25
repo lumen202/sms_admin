@@ -5,6 +5,8 @@ import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.net.URL;
+
 /**
  * Loader for the student enrollment dialog, responsible for initializing and
  * displaying the enrollment form.
@@ -21,7 +23,7 @@ public class EnrollmentLoader extends FXLoader {
      * Initializes the loader with the FXML resource for the enrollment form.
      */
     public EnrollmentLoader() {
-        createInstance(getClass().getResource("/sms/admin/app/enrollment/ENROLLMENT.fxml"));
+        createInstance(getClass().getResource("/sms/admin/app/student/enrollment/ENROLLMENT.fxml"));
         initialize();
     }
 
@@ -90,10 +92,23 @@ public class EnrollmentLoader extends FXLoader {
      */
     private Scene createAndConfigureScene() {
         Scene scene = new Scene(root);
-        scene.getStylesheets().addAll(
-                getClass().getResource("/sms/admin/app/styles/main.css").toExternalForm(),
-                getClass().getResource("/sms/admin/app/styles/dialog.css").toExternalForm(),
-                getClass().getResource("/sms/admin/app/enrollment/enrollment.css").toExternalForm());
+
+        // Fix stylesheet paths
+        String[] stylesheets = {
+                "/sms/admin/app/styles/main.css",
+                "/sms/admin/app/styles/dialog.css",
+                "/sms/admin/app/student/enrollment/enrollment.css"
+        };
+
+        for (String stylesheet : stylesheets) {
+            URL resource = getClass().getResource(stylesheet);
+            if (resource != null) {
+                scene.getStylesheets().add(resource.toExternalForm());
+            } else {
+                System.err.println("Could not find stylesheet: " + stylesheet);
+            }
+        }
+
         return scene;
     }
 }

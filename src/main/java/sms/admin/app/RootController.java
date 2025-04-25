@@ -19,7 +19,6 @@ import javax.imageio.ImageIO;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
@@ -47,6 +46,7 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.DirectoryChooser;
 import sms.admin.app.attendance.AttendanceController;
 import sms.admin.app.attendance.AttendanceLoader;
+import sms.admin.app.deleted_student.DeletedStudentLoader;
 import sms.admin.app.payroll.PayrollController;
 import sms.admin.app.payroll.PayrollLoader;
 import sms.admin.app.schoolyear.SchoolYearDialog;
@@ -84,6 +84,8 @@ public class RootController extends FXController {
     private MenuItem newSchoolYearMenuItem; // Menu item to create a new school year
     @FXML
     private MenuItem editSchoolYearMenuItem; // Menu item to edit the current school year
+    @FXML
+    private MenuItem deletedStudentMenuItem; // Menu item to view deleted students
 
     private ObservableList<SchoolYear> schoolYearList; // List of school years
     private String selectedMonth; // Selected month for filtering data
@@ -145,6 +147,7 @@ public class RootController extends FXController {
         generateKeyMenuItem.setOnAction(event -> handleGenerateKeyMenuItem());
         newSchoolYearMenuItem.setOnAction(event -> handleNewSchoolYear());
         editSchoolYearMenuItem.setOnAction(event -> handleEditSchoolYear());
+        deletedStudentMenuItem.setOnAction(event -> handleDeletedStudentMenuItem());
     }
 
     /**
@@ -524,6 +527,18 @@ public class RootController extends FXController {
             }
         } finally {
             setOverlayVisible(false);
+        }
+    }
+
+    @FXML
+    public void handleDeletedStudentMenuItem() {
+        try {
+            DeletedStudentLoader loader = new DeletedStudentLoader();
+            loader.addParameter("OWNER_WINDOW", contentPane.getScene().getWindow());
+            loader.addParameter("SELECTED_YEAR", yearComboBox.getValue());
+            loader.load();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

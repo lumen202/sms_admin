@@ -38,6 +38,7 @@
                      <MenuItem fx:id="editSchoolYearMenuItem" onAction="#handleEditSchoolYear" text="Edit School Year" />
                      <SeparatorMenuItem mnemonicParsing="false" />
                      <MenuItem fx:id="generateKeyMenuItem" text="Generate QR Key Code" />
+                     <MenuItem fx:id="deletedStudentMenuItem" mnemonicParsing="false" text="Deleted Student" />
                   </items>
                   <graphic>
                      <FontIcon iconLiteral="mdi2m-menu" iconSize="24" styleClass="menu-icon" />

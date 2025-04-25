@@ -1,0 +1,114 @@
+/* Root styles */
+.root {
+    -fx-background-color: -sms-background;
+    -fx-padding: 15px;
+}
+
+/* Search Section */
+.search-section {
+    -fx-background-color: white;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px;
+    -fx-spacing: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);
+}
+
+.search-field {
+    -fx-background-radius: 20px;
+    -fx-padding: 8px 15px;
+    -fx-prompt-text-fill: #95a5a6;
+}
+
+/* Table Styles */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: -sms-border;
+    -fx-border-radius: 5px;
+}
+
+.table-view .column-header {
+    -fx-background-color: -sms-secondary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10px;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: derive(-sms-background, 5%);
+}
+
+.table-view .table-row-cell:even {
+    -fx-background-color: white;
+}
+
+.table-view .table-row-cell:selected {
+    -fx-background-color: derive(-sms-secondary, 80%);
+}
+
+/* Action Buttons */
+.button {
+    -fx-background-color: -sms-secondary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 8 15;
+    -fx-background-radius: 4;
+}
+
+.button:hover {
+    -fx-background-color: derive(-sms-secondary, 10%);
+    -fx-cursor: hand;
+}
+
+.button:pressed {
+    -fx-background-color: derive(-sms-secondary, -10%);
+}
+
+/* ComboBox Styles */
+.combo-box {
+    -fx-background-color: white;
+    -fx-border-color: -sms-border;
+    -fx-border-radius: 4;
+    -fx-padding: 4;
+}
+
+.combo-box:hover {
+    -fx-border-color: -sms-secondary;
+}
+
+.combo-box .list-cell {
+    -fx-padding: 4 8;
+}
+
+/* No Records Message */
+.empty-table-message {
+    -fx-text-fill: #666;
+    -fx-font-size: 14px;
+    -fx-font-style: italic;
+}
+
+/* Action Column */
+.action-column {
+    -fx-alignment: CENTER;
+}
+
+.restore-button {
+    -fx-background-color: #28a745;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 4 8;
+}
+
+.restore-button:hover {
+    -fx-background-color: derive(#28a745, 10%);
+}
+
+.delete-button {
+    -fx-background-color: #dc3545;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-padding: 4 8;
+}
+
+.delete-button:hover {
+    -fx-background-color: derive(#dc3545, 10%);
+}
