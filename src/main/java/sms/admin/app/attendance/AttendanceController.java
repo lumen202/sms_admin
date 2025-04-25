@@ -328,7 +328,6 @@ public class AttendanceController extends FXController {
      * Sets up the attendance table with columns and configurations.
      */
     private void setupTable() {
-        // Configure basic columns with responsive behavior
         colNo.setCellValueFactory(new PropertyValueFactory<>("studentID"));
         colFullName.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue() != null
@@ -338,18 +337,13 @@ public class AttendanceController extends FXController {
                                 c.getValue().getMiddleName())
                         : ""));
 
-        // Initialize responsive layout system
-        TableColumnUtil.configureResponsiveLayout(
-                attendanceTable,
-                colNo,
-                colFullName,
-                monthAttendanceColumn);
+        // Set initial prefWidths for basic columns
+        colNo.setPrefWidth(50);
+        colFullName.setPrefWidth(200);
 
-        // Configure selection
         attendanceTable.setItems(studentList);
         attendanceTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-        // Initial style application
         Platform.runLater(() -> attendanceTable.refresh());
     }
 
@@ -368,36 +362,37 @@ public class AttendanceController extends FXController {
             return;
         }
 
-        // Load settings for current month
         settings.loadForMonth(monthYear);
-
         LocalDate firstDayOfMonth = WeeklyAttendanceUtil.getFirstDayOfMonth(monthYear);
         LocalDate startDate = firstDayOfMonth.withDayOfMonth(settings.getStartDay());
         LocalDate endDate = firstDayOfMonth.withDayOfMonth(settings.getEndDay());
 
         System.out.println("Rendering columns from " + startDate + " to " + endDate);
 
-        // Get only the dates within our range
         List<WeeklyAttendanceUtil.WeekDates> allWeeks = WeeklyAttendanceUtil.splitIntoWeeks(startDate, endDate);
-
-        // Calculate widths
-        double availableWidth = attendanceTable.getWidth() - colNo.getWidth() - colFullName.getWidth() - 20;
         int totalDays = allWeeks.stream().mapToInt(WeeklyAttendanceUtil::calculateWorkingDays).sum();
-        double dayWidth = Math.max(30, availableWidth / Math.max(totalDays, 1));
 
-        // Create columns
         AtomicInteger weekNum = new AtomicInteger(1);
         List<TableColumn<Student, String>> weekColumns = allWeeks.stream()
                 .filter(WeeklyAttendanceUtil.WeekDates::hasWorkingDays)
-                .map(week -> createWeekColumn(week, weekNum.getAndIncrement(), dayWidth))
+                .map(week -> {
+                    int weekDays = WeeklyAttendanceUtil.calculateWorkingDays(week);
+                    TableColumn<Student, String> weekColumn = createWeekColumn(week, weekNum.getAndIncrement(),
+                            weekDays);
+                    // Bind weekColumn width proportionally to total days
+                    weekColumn.prefWidthProperty().bind(
+                            monthAttendanceColumn.widthProperty().multiply((double) weekDays / totalDays));
+                    return weekColumn;
+                })
                 .collect(Collectors.toList());
 
         monthAttendanceColumn.getColumns().addAll(weekColumns);
 
-        if (monthAttendanceColumn.getPrefWidth() == 0 || availableWidth > monthAttendanceColumn.getPrefWidth()) {
-            monthAttendanceColumn.setPrefWidth(availableWidth);
-        }
-        TableColumnUtil.adjustColumnWidths(attendanceTable, colNo, colFullName, monthAttendanceColumn);
+        // Optional: Ensure monthAttendanceColumn uses available space
+        monthAttendanceColumn.prefWidthProperty().bind(
+                attendanceTable.widthProperty().subtract(colNo.widthProperty()).subtract(colFullName.widthProperty())
+                        .subtract(20));
+
         Platform.runLater(() -> {
             attendanceTable.refresh();
             TableColumnUtil.updateColumnStyles(attendanceTable, 10);
@@ -414,19 +409,26 @@ public class AttendanceController extends FXController {
      * @return The week column.
      */
     private TableColumn<Student, String> createWeekColumn(WeeklyAttendanceUtil.WeekDates week, int weekNum,
-            double dayWidth) {
+            int weekDays) {
         TableColumn<Student, String> weekColumn = new TableColumn<>("Week " + weekNum);
         weekColumn.setStyle("-fx-alignment: CENTER;");
         Map<DayOfWeek, List<LocalDate>> datesByDay = week.getDates().stream()
                 .filter(d -> !CommonAttendanceUtil.isWeekend(d))
                 .collect(Collectors.groupingBy(LocalDate::getDayOfWeek, TreeMap::new, Collectors.toList()));
+        int numDayColumns = datesByDay.size(); // Number of working days in the week
+
         datesByDay.forEach((day, dates) -> {
             TableColumn<Student, String> dayColumn = new TableColumn<>(CommonAttendanceUtil.getDayInitial(day));
             dayColumn.setStyle("-fx-alignment: CENTER;");
+            // Bind dayColumn width to weekColumn width divided by number of day columns
+            dayColumn.prefWidthProperty().bind(weekColumn.widthProperty().divide(numDayColumns));
             dates.sort(LocalDate::compareTo);
             dates.forEach(date -> {
-                TableColumn<Student, String> dateColumn = createDayColumn(date, dayWidth);
+                TableColumn<Student, String> dateColumn = createDayColumn(date);
                 dateColumn.setText(String.valueOf(date.getDayOfMonth()));
+                // Since each dayColumn has one dateColumn per week, bind directly to dayColumn
+                // width
+                dateColumn.prefWidthProperty().bind(dayColumn.widthProperty());
                 dayColumn.getColumns().add(dateColumn);
             });
             weekColumn.getColumns().add(dayColumn);
@@ -441,7 +443,7 @@ public class AttendanceController extends FXController {
      * @param width The width of the column.
      * @return The day column.
      */
-    private TableColumn<Student, String> createDayColumn(LocalDate date, double width) {
+    private TableColumn<Student, String> createDayColumn(LocalDate date) {
         TableColumn<Student, String> col = new TableColumn<>(String.valueOf(date.getDayOfMonth()));
         col.setCellValueFactory(cellData -> {
             Student student = cellData.getValue();
@@ -458,8 +460,7 @@ public class AttendanceController extends FXController {
             }
             return new SimpleStringProperty(CommonAttendanceUtil.ABSENT_MARK);
         });
-        col.setMinWidth(width);
-        col.setPrefWidth(width);
+        // Remove minWidth and prefWidth settings; rely on binding
         if (CommonAttendanceUtil.isHolidayDate(date)) {
             col.setStyle("-fx-background-color: lightcoral; -fx-alignment: CENTER;");
         } else {

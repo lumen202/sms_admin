@@ -1,6 +1,7 @@
 package sms.admin.util.exporter.exporterv2;
 
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import sms.admin.util.attendance.CommonAttendanceUtil;
 public class DetailedPayrollExporter {
     // Constants
     private static final double MAX_TOTAL_AMOUNT = 1300.00;
+    private static final String TEMPLATE_PATH = "/templates/Payroll Template.xlsx";
 
     // Instance variables
     private final YearMonth month;
@@ -28,6 +30,7 @@ public class DetailedPayrollExporter {
     private double fareMultiplier = 1.0;
     private int totalDaysColumn;
     private int totalAmountColumn;
+    private boolean isNewWorkbook = false;
 
     /**
      * Constructor for DetailedPayrollExporter.
@@ -51,7 +54,7 @@ public class DetailedPayrollExporter {
     }
 
     /**
-     * Exports the payroll data to an Excel file.
+     * Exports the payroll data to an Excel file using a template.
      *
      * @param table      The TableView containing student data.
      * @param title      The title of the sheet.
@@ -59,136 +62,73 @@ public class DetailedPayrollExporter {
      * @throws Exception If an error occurs during export.
      */
     public void exportToExcel(TableView<Student> table, String title, String outputPath) throws Exception {
-        try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet(title);
+        final Workbook workbook;
+        final Sheet sheet;
 
+        // Try to load template first
+        try (InputStream templateStream = getClass().getResourceAsStream(TEMPLATE_PATH)) {
+            if (templateStream != null) {
+                workbook = new XSSFWorkbook(templateStream);
+                sheet = workbook.getSheetAt(0);
+                isNewWorkbook = false;
+            } else {
+                workbook = new XSSFWorkbook();
+                sheet = workbook.createSheet(title);
+                isNewWorkbook = true;
+            }
+        }
+
+        try (workbook) {
             // Create cell styles
-            CellStyle headerStyle = createHeaderStyle(workbook);
             CellStyle dataStyle = createDataStyle(workbook);
             CellStyle currencyStyle = createCurrencyStyle(workbook);
             CellStyle centerStyle = createCenterStyle(workbook);
+            CellStyle headerStyle = createHeaderStyle(workbook);
 
-            // Style for subtotal label (right-aligned)
-            CellStyle subtotalLabelStyle = workbook.createCellStyle();
-            Font subtotalFont = workbook.createFont();
-            subtotalFont.setBold(true);
-            subtotalFont.setFontHeightInPoints((short) 14);
-            subtotalLabelStyle.setFont(subtotalFont);
-            subtotalLabelStyle.setAlignment(HorizontalAlignment.RIGHT);
-            subtotalLabelStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            addBorders(subtotalLabelStyle);
-
-            // Set column widths
-            sheet.setColumnWidth(0, 5 * 256); // No. column
-            sheet.setColumnWidth(1, 40 * 256); // Name column
-
-            // Calculate weeks and total days
+            // Calculate weeks
             List<List<LocalDate>> weeks = getWorkWeeks();
             int totalDays = weeks.stream().mapToInt(List::size).sum();
 
-            // Set uniform width for day columns
-            final int DAY_COLUMN_WIDTH = 3 * 256;
-            for (int i = 2; i < 2 + totalDays; i++) {
-                sheet.setColumnWidth(i, DAY_COLUMN_WIDTH);
-            }
-
-            // Set widths for remaining columns
-            int totalDaysCol = 2 + totalDays;
-            sheet.setColumnWidth(totalDaysCol, 5 * 256); // Total Days
-            sheet.setColumnWidth(totalDaysCol + 1, 7 * 256); // Trans Daily Rate
-            sheet.setColumnWidth(totalDaysCol + 2, 7 * 256); // Trans Amount Due
-            sheet.setColumnWidth(totalDaysCol + 3, 7 * 256); // Meal Daily Rate
-            sheet.setColumnWidth(totalDaysCol + 4, 7 * 256); // Meal Amount Due
-            int totalAmountCol = totalDaysCol + 5;
-            sheet.setColumnWidth(totalAmountCol, 8 * 256); // Total Amount
-            sheet.setColumnWidth(totalAmountCol + 1, 4 * 256); // No. for signature
-            sheet.setColumnWidth(totalAmountCol + 2, 20 * 256); // Signature
-
-            // Define row heights
-            short normalRowHeight = (short) (25 * 20);
-            short headerRowHeight = (short) (30 * 20);
-            short titleRowHeight = (short) (35 * 20);
-
-            // Title row setup
-            Row titleRow = sheet.createRow(0);
-            titleRow.setHeight(titleRowHeight);
-            Cell formCell = titleRow.createCell(0);
-            formCell.setCellValue("GENERAL FORM NO. 7(A)");
-            CellStyle formStyle = workbook.createCellStyle();
-            Font formFont = workbook.createFont();
-            formFont.setBold(true);
-            formFont.setFontHeightInPoints((short) 11);
-            formStyle.setFont(formFont);
-            formStyle.setAlignment(HorizontalAlignment.LEFT);
-            formCell.setCellStyle(formStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 7));
-
-            Cell mainTitleCell = titleRow.createCell(8);
-            mainTitleCell.setCellValue("TIME BOOK AND PAYROLL");
-            CellStyle mainTitleStyle = workbook.createCellStyle();
-            Font mainTitleFont = workbook.createFont();
-            mainTitleFont.setBold(true);
-            mainTitleFont.setFontHeightInPoints((short) 14);
-            mainTitleStyle.setFont(mainTitleFont);
-            mainTitleStyle.setAlignment(HorizontalAlignment.CENTER);
-            mainTitleCell.setCellStyle(mainTitleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 8, 26));
-
-            // Period description row
-            Row periodRow = sheet.createRow(1);
-            periodRow.setHeight(headerRowHeight);
-            Cell periodCell = periodRow.createCell(0);
-            CellStyle periodStyle = workbook.createCellStyle();
-            Font periodFont = workbook.createFont();
-            periodFont.setFontHeightInPoints((short) 14);
-            periodStyle.setFont(periodFont);
-            periodStyle.setAlignment(HorizontalAlignment.CENTER);
-            periodStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            periodCell.setCellValue(
-                    "For labor on _________ - Baybay Data Center, at Baybay National High School, Baybay City, Leyte, Philippines, for the period,    "
-                            + month.getMonth().toString() + " " + month.getYear());
-            periodCell.setCellStyle(periodStyle);
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 34));
-
-            // Spacer row
-            sheet.createRow(2).setHeight((short) (15 * 20));
-
-            // Store column indices
-            totalDaysColumn = totalDaysCol;
-            totalAmountColumn = totalAmountCol;
-
-            // Create table headers
-            totalDays = createTableHeaders(sheet, 3, headerStyle, centerStyle, weeks);
+            // Create headers if this is a new sheet
+            createTableHeaders(sheet, 3, headerStyle, centerStyle, weeks);
 
             // Write student data rows
             int rowNum = 7;
             double grandTotal = 0;
             int noCounter = 1;
+
             for (Student student : table.getItems()) {
                 Row row = sheet.createRow(rowNum++);
-                row.setHeight(normalRowHeight);
-                grandTotal += writeStudentRow(row, student, weeks, dataStyle, currencyStyle, centerStyle, noCounter++);
+                row.setHeight((short) (25 * 20));
+                grandTotal += writeStudentRow(row, student, weeks, dataStyle,
+                        currencyStyle, centerStyle, noCounter++);
             }
 
-            // Subtotal row
-            Row subtotalRow = sheet.createRow(rowNum++);
-            subtotalRow.setHeight(normalRowHeight);
-            Cell subtotalLabel = subtotalRow.createCell(0);
-            subtotalLabel.setCellValue("SUB - TOTAL FOR THIS PAGE:  ");
-            subtotalLabel.setCellStyle(subtotalLabelStyle);
-            sheet.addMergedRegion(
-                    new CellRangeAddress(subtotalRow.getRowNum(), subtotalRow.getRowNum(), 0, totalAmountCol - 1));
-            Cell subtotalAmount = subtotalRow.createCell(totalAmountCol);
-            subtotalAmount.setCellValue(grandTotal);
-            subtotalAmount.setCellStyle(currencyStyle);
+            // Update subtotal
+            // Row subtotalRow = sheet.createRow(rowNum++);
+            // subtotalRow.setHeight((short) (25 * 20));
+            // createSubtotalRow(subtotalRow, grandTotal, workbook);
 
-            // Certification section
-            rowNum += 2;
-            createCertificationSection(sheet, rowNum);
-
-            // Write to file
+            // Write to output file
             try (FileOutputStream fileOut = new FileOutputStream(outputPath)) {
                 workbook.write(fileOut);
+            }
+        }
+    }
+
+    /**
+     * Updates the certification section dates.
+     */
+    private void updateCertificationDates(Sheet sheet, int startRow) {
+        Row certRow = sheet.getRow(startRow);
+        if (certRow != null) {
+            Cell cert3 = certRow.getCell(totalAmountColumn - 2);
+            if (cert3 != null) {
+                LocalDate now = LocalDate.now();
+                String certText = cert3.getStringCellValue()
+                        .replace("[DAY]", String.valueOf(now.getDayOfMonth()))
+                        .replace("[MONTH]", now.getMonth().toString());
+                cert3.setCellValue(certText);
             }
         }
     }
@@ -236,46 +176,6 @@ public class DetailedPayrollExporter {
                 .map(CommonAttendanceUtil::computeAttendanceStatus)
                 .findFirst()
                 .orElse(CommonAttendanceUtil.ABSENT_MARK);
-    }
-
-    /**
-     * Calculates the total number of days a student was present or had excused
-     * absences.
-     *
-     * @param student The student.
-     * @param month   The month to calculate for.
-     * @return The total days attended.
-     */
-    public double calculateStudentDays(Student student, YearMonth month) {
-        try {
-            double totalDays = 0;
-            List<AttendanceLog> studentLogs = attendanceLogs.stream()
-                    .filter(log -> log != null
-                            && log.getStudentID() != null
-                            && log.getStudentID().getStudentID() == student.getStudentID()
-                            && log.getRecordID() != null
-                            && YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth()).equals(month)
-                            && !CommonAttendanceUtil.isWeekend(LocalDate.of(
-                                    log.getRecordID().getYear(), log.getRecordID().getMonth(),
-                                    log.getRecordID().getDay())))
-                    .collect(Collectors.toList());
-
-            for (AttendanceLog log : studentLogs) {
-                String status = CommonAttendanceUtil.computeAttendanceStatus(log);
-                switch (status) {
-                    case CommonAttendanceUtil.PRESENT_MARK,
-                            CommonAttendanceUtil.EXCUSED_MARK,
-                            CommonAttendanceUtil.HOLIDAY_MARK ->
-                        totalDays += 1.0;
-                    case CommonAttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
-                }
-            }
-            return totalDays;
-        } catch (Exception e) {
-            System.err.println("Error calculating days for student " + student.getStudentID());
-            e.printStackTrace();
-            return 0;
-        }
     }
 
     /**
@@ -336,21 +236,37 @@ public class DetailedPayrollExporter {
      */
     private int createTableHeaders(Sheet sheet, int startRow, CellStyle headerStyle,
             CellStyle centerStyle, List<List<LocalDate>> weeks) {
+        if (!isNewWorkbook) {
+            return weeks.stream().mapToInt(List::size).sum();
+        }
+
+        // First clear any existing merged regions to avoid conflicts
+        while (sheet.getNumMergedRegions() > 0) {
+            sheet.removeMergedRegion(0);
+        }
+
+        // Create rows
         Row headerRow1 = sheet.createRow(startRow);
         Row headerRow2 = sheet.createRow(startRow + 1);
         Row headerRow3 = sheet.createRow(startRow + 2);
         Row headerRow4 = sheet.createRow(startRow + 3);
 
+        // Set row heights
+        headerRow1.setHeight((short) (30 * 20));
+        headerRow2.setHeight((short) (25 * 20));
+        headerRow3.setHeight((short) (25 * 20));
+        headerRow4.setHeight((short) (25 * 20));
+
         // No. and Name headers
         Cell noHeader = headerRow1.createCell(0);
         noHeader.setCellValue("No.");
         noHeader.setCellStyle(headerStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, 0, 0));
+        addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow, startRow + 3, 0, 0));
 
         Cell nameHeader = headerRow1.createCell(1);
         nameHeader.setCellValue("Student Name");
         nameHeader.setCellStyle(headerStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, 1, 1));
+        addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow, startRow + 3, 1, 1));
 
         // Time roll header
         int currentCol = 2;
@@ -365,7 +281,8 @@ public class DetailedPayrollExporter {
         for (int i = 0; i < totalDays; i++) {
             sheet.setColumnWidth(currentCol + i, TIME_ROLL_WIDTH);
         }
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, currentCol, currentCol + totalDays - 1));
+        addMergedRegionIfNotExists(sheet,
+                new CellRangeAddress(startRow, startRow, currentCol, currentCol + totalDays - 1));
 
         // Week and day headers
         int weekStartCol = currentCol;
@@ -378,7 +295,7 @@ public class DetailedPayrollExporter {
                 weekHeader.setCellStyle(centerStyle);
 
                 if (daysInWeek > 1) {
-                    sheet.addMergedRegion(new CellRangeAddress(startRow + 1, startRow + 1, weekStartCol,
+                    addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow + 1, startRow + 1, weekStartCol,
                             weekStartCol + daysInWeek - 1));
                 }
 
@@ -409,7 +326,9 @@ public class DetailedPayrollExporter {
         sheet.setColumnWidth(remainingCol + 7, 20 * 256);
 
         addRemainingHeaders(sheet, startRow, remainingCol, headerStyle, centerStyle);
-        return totalDays;
+
+        // Calculate total days for return value
+        return weeks.stream().mapToInt(List::size).sum();
     }
 
     /**
@@ -423,63 +342,92 @@ public class DetailedPayrollExporter {
      */
     private void addRemainingHeaders(Sheet sheet, int startRow, int startCol,
             CellStyle headerStyle, CellStyle centerStyle) {
+        if (!isNewWorkbook) {
+            return;
+        }
         CellStyle subHeaderStyle = createSubHeaderStyle(sheet.getWorkbook());
         int currentCol = startCol;
 
         Cell totalDaysHeader = sheet.getRow(startRow).createCell(currentCol);
         totalDaysHeader.setCellValue("Total Days");
         totalDaysHeader.setCellStyle(headerStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
+        addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
         currentCol++;
 
         Cell transHeader = sheet.getRow(startRow).createCell(currentCol);
         transHeader.setCellValue("Transportation Allowance");
         transHeader.setCellStyle(headerStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, currentCol, currentCol + 1));
+        addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow, startRow, currentCol, currentCol + 1));
 
         Cell transRateHeader = sheet.getRow(startRow + 1).createCell(currentCol);
         transRateHeader.setCellValue("Daily Rate");
         transRateHeader.setCellStyle(subHeaderStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 1, startRow + 3, currentCol, currentCol));
+        addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow + 1, startRow + 3, currentCol, currentCol));
 
         Cell transAmountHeader = sheet.getRow(startRow + 1).createCell(currentCol + 1);
         transAmountHeader.setCellValue("Amount Due");
         transAmountHeader.setCellStyle(subHeaderStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 1, startRow + 3, currentCol + 1, currentCol + 1));
+        addMergedRegionIfNotExists(sheet,
+                new CellRangeAddress(startRow + 1, startRow + 3, currentCol + 1, currentCol + 1));
         currentCol += 2;
 
         Cell mealHeader = sheet.getRow(startRow).createCell(currentCol);
         mealHeader.setCellValue("Meal Allowance");
         mealHeader.setCellStyle(headerStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, currentCol, currentCol + 1));
+        addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow, startRow, currentCol, currentCol + 1));
 
         Cell mealRateHeader = sheet.getRow(startRow + 1).createCell(currentCol);
         mealRateHeader.setCellValue("Daily Rate");
         mealRateHeader.setCellStyle(subHeaderStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 1, startRow + 3, currentCol, currentCol));
+        addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow + 1, startRow + 3, currentCol, currentCol));
 
         Cell mealAmountHeader = sheet.getRow(startRow + 1).createCell(currentCol + 1);
         mealAmountHeader.setCellValue("Amount Due");
         mealAmountHeader.setCellStyle(subHeaderStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 1, startRow + 3, currentCol + 1, currentCol + 1));
+        addMergedRegionIfNotExists(sheet,
+                new CellRangeAddress(startRow + 1, startRow + 3, currentCol + 1, currentCol + 1));
         currentCol += 2;
 
         Cell totalAmountHeader = sheet.getRow(startRow).createCell(totalAmountColumn);
         totalAmountHeader.setCellValue("Total Amount Received");
         totalAmountHeader.setCellStyle(headerStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, totalAmountColumn, totalAmountColumn));
+        addMergedRegionIfNotExists(sheet,
+                new CellRangeAddress(startRow, startRow + 3, totalAmountColumn, totalAmountColumn));
         currentCol = totalAmountColumn + 1;
 
         Cell signNoHeader = sheet.getRow(startRow).createCell(currentCol);
         signNoHeader.setCellValue("No.");
         signNoHeader.setCellStyle(headerStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
+        addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
         currentCol++;
 
         Cell signatureHeader = sheet.getRow(startRow).createCell(currentCol);
         signatureHeader.setCellValue("Signature");
         signatureHeader.setCellStyle(headerStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
+        addMergedRegionIfNotExists(sheet, new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
+    }
+
+    private void addMergedRegionIfNotExists(Sheet sheet, CellRangeAddress newRegion) {
+        // Check for any overlapping regions
+        boolean hasOverlap = false;
+        for (int i = 0; i < sheet.getNumMergedRegions(); i++) {
+            CellRangeAddress existing = sheet.getMergedRegion(i);
+            if (overlaps(existing, newRegion)) {
+                hasOverlap = true;
+                break;
+            }
+        }
+
+        if (!hasOverlap) {
+            sheet.addMergedRegion(newRegion);
+        }
+    }
+
+    private boolean overlaps(CellRangeAddress range1, CellRangeAddress range2) {
+        return !(range1.getLastRow() < range2.getFirstRow() ||
+                range1.getFirstRow() > range2.getLastRow() ||
+                range1.getLastColumn() < range2.getFirstColumn() ||
+                range1.getFirstColumn() > range2.getLastColumn());
     }
 
     /**
@@ -557,127 +505,6 @@ public class DetailedPayrollExporter {
         signatureCell.setCellStyle(dataStyle);
 
         return totalAmount;
-    }
-
-    /**
-     * Creates the certification section at the bottom of the sheet.
-     *
-     * @param sheet    The sheet to modify.
-     * @param startRow The starting row for the certification.
-     */
-    private void createCertificationSection(Sheet sheet, int startRow) {
-        CellStyle certStyle = sheet.getWorkbook().createCellStyle();
-        Font certFont = sheet.getWorkbook().createFont();
-        certFont.setFontHeightInPoints((short) 10);
-        certStyle.setFont(certFont);
-        certStyle.setAlignment(HorizontalAlignment.CENTER);
-        certStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        certStyle.setWrapText(true);
-
-        CellStyle nameStyle = sheet.getWorkbook().createCellStyle();
-        Font nameFont = sheet.getWorkbook().createFont();
-        nameFont.setBold(true);
-        nameFont.setUnderline(Font.U_SINGLE);
-        nameFont.setFontHeightInPoints((short) 10);
-        nameStyle.setFont(nameFont);
-        nameStyle.setAlignment(HorizontalAlignment.CENTER);
-        nameStyle.setVerticalAlignment(VerticalAlignment.BOTTOM);
-        nameStyle.setWrapText(true);
-
-        CellStyle roleStyle = sheet.getWorkbook().createCellStyle();
-        Font roleFont = sheet.getWorkbook().createFont();
-        roleFont.setFontHeightInPoints((short) 10);
-        roleStyle.setFont(roleFont);
-        roleStyle.setAlignment(HorizontalAlignment.CENTER);
-        roleStyle.setVerticalAlignment(VerticalAlignment.TOP);
-        roleStyle.setWrapText(true);
-
-        Row certRow = sheet.createRow(startRow);
-        certRow.setHeight((short) (50 * 20));
-
-        Cell cert1 = certRow.createCell(0);
-        cert1.setCellValue(
-                "1. I HEREBY CERTIFY on my official oath to the correctness of the above roll. Payment is hereby approved from the appropriation indicated.");
-        cert1.setCellStyle(certStyle);
-        int cert1EndColumn = Math.max(7, totalDaysColumn / 3);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, 0, cert1EndColumn));
-
-        int cert2StartColumn = cert1EndColumn + 1;
-        int cert2EndColumn = cert2StartColumn + 8;
-
-        Cell cert2 = certRow.createCell(cert2StartColumn);
-        cert2.setCellValue("2. APPROVED");
-        cert2.setCellStyle(certStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, cert2StartColumn, cert2EndColumn));
-
-        Row nameRow = sheet.createRow(startRow + 3);
-        Row roleRow = sheet.createRow(startRow + 4);
-        nameRow.setHeight((short) (20 * 20));
-        roleRow.setHeight((short) (15 * 20));
-
-        Cell name1 = nameRow.createCell(0);
-        Cell role1 = roleRow.createCell(0);
-        name1.setCellValue("JESCYN KATE N. RAMOS");
-        role1.setCellValue("E2P - ICT Coordinator");
-        name1.setCellStyle(nameStyle);
-        role1.setCellStyle(roleStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 3, startRow + 3, 0, cert1EndColumn));
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 4, startRow + 4, 0, cert1EndColumn));
-
-        Cell name2 = nameRow.createCell(cert2StartColumn);
-        Cell role2 = roleRow.createCell(cert2StartColumn);
-        name2.setCellValue("CARLOS JERICHO L. PETILLA");
-        role2.setCellValue("Provincial Governor");
-        name2.setCellStyle(nameStyle);
-        role2.setCellStyle(roleStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 3, startRow + 3, cert2StartColumn, cert2EndColumn));
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 4, startRow + 4, cert2StartColumn, cert2EndColumn));
-
-        Cell cert3 = certRow.createCell(cert2EndColumn + 1);
-        cert3.setCellValue(
-                "3. I HEREBY CERTIFY on my official oath that I have this ___ day of ____ paid in cash to each man whose name appears on the above roll, the amount set opposite his name, he having presented himself, established his identity and affixed his signature or thumbmark on the space provided therefor.");
-        cert3.setCellStyle(certStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, cert2EndColumn + 1, totalAmountColumn + 2));
-
-        Cell name3 = nameRow.createCell(totalAmountColumn);
-        Cell role3 = roleRow.createCell(totalAmountColumn);
-        name3.setCellValue("JOAN FLORLYN JUSTISA");
-        role3.setCellValue("E2P - ICT");
-        name3.setCellStyle(nameStyle);
-        role3.setCellStyle(roleStyle);
-        sheet.addMergedRegion(
-                new CellRangeAddress(startRow + 3, startRow + 3, totalAmountColumn, totalAmountColumn + 2));
-        sheet.addMergedRegion(
-                new CellRangeAddress(startRow + 4, startRow + 4, totalAmountColumn, totalAmountColumn + 2));
-
-        Row noteRow = sheet.createRow(startRow + 6);
-        noteRow.setHeight((short) (30 * 20));
-        Cell note = noteRow.createCell(0);
-        note.setCellValue(
-                "*NOTE: Where thumbmark is to be used in place of signature, and the space available is not sufficient, the thumbmark may be impressed on the back hereof with proper indication of the corresponding student's number and on the corresponding line on the payroll\n"
-                        +
-                        "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0or remark 'see thumbmark on the back' should be written.");
-        CellStyle noteStyle = sheet.getWorkbook().createCellStyle();
-        noteStyle.cloneStyleFrom(certStyle);
-        noteStyle.setWrapText(true);
-        noteStyle.setAlignment(HorizontalAlignment.LEFT);
-        noteStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        note.setCellStyle(noteStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 6, startRow + 6, 0, totalAmountColumn + 2));
-
-        Row taglineRow = sheet.createRow(startRow + 7);
-        Cell tagline = taglineRow.createCell(0);
-        taglineRow.setHeight((short) (30 * 20));
-        tagline.setCellValue("\"IPAKITA SA MUNDO, UMAASENSO NA TAYO\"");
-        CellStyle taglineStyle = sheet.getWorkbook().createCellStyle();
-        Font taglineFont = sheet.getWorkbook().createFont();
-        taglineFont.setBold(true);
-        taglineFont.setFontHeightInPoints((short) 16);
-        taglineStyle.setFont(taglineFont);
-        taglineStyle.setAlignment(HorizontalAlignment.CENTER);
-        taglineStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        tagline.setCellStyle(taglineStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow + 7, startRow + 7, 0, totalAmountColumn + 2));
     }
 
     /**
@@ -794,5 +621,45 @@ public class DetailedPayrollExporter {
         style.setBottomBorderColor(IndexedColors.BLACK.getIndex());
         style.setLeftBorderColor(IndexedColors.BLACK.getIndex());
         style.setRightBorderColor(IndexedColors.BLACK.getIndex());
+    }
+
+    /**
+     * Calculates the total number of days a student was present or had excused
+     * absences.
+     *
+     * @param student The student.
+     * @param month   The month to calculate for.
+     * @return The total days attended.
+     */
+    public double calculateStudentDays(Student student, YearMonth month) {
+        try {
+            double totalDays = 0;
+            List<AttendanceLog> studentLogs = attendanceLogs.stream()
+                    .filter(log -> log != null
+                            && log.getStudentID() != null
+                            && log.getStudentID().getStudentID() == student.getStudentID()
+                            && log.getRecordID() != null
+                            && YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth()).equals(month)
+                            && !CommonAttendanceUtil.isWeekend(LocalDate.of(
+                                    log.getRecordID().getYear(), log.getRecordID().getMonth(),
+                                    log.getRecordID().getDay())))
+                    .collect(Collectors.toList());
+
+            for (AttendanceLog log : studentLogs) {
+                String status = CommonAttendanceUtil.computeAttendanceStatus(log);
+                switch (status) {
+                    case CommonAttendanceUtil.PRESENT_MARK,
+                            CommonAttendanceUtil.EXCUSED_MARK,
+                            CommonAttendanceUtil.HOLIDAY_MARK ->
+                        totalDays += 1.0;
+                    case CommonAttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
+                }
+            }
+            return totalDays;
+        } catch (Exception e) {
+            System.err.println("Error calculating days for student " + student.getStudentID());
+            e.printStackTrace();
+            return 0;
+        }
     }
 }
