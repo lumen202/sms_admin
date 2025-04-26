@@ -1,114 +1,114 @@
+/* Base Colors */
+* {
+  -sms-primary: #003366;
+  -sms-primary-light: #004d99;
+  -sms-primary-dark: #002147;
+  -sms-secondary: #800000;
+  -sms-secondary-light: #b30000;
+  -sms-secondary-dark: #660000;
+  -sms-background: #f8f9fa;
+  -sms-border: #dee2e6;
+  -sms-accent: #ffd700;
+}
+
 /* Root styles */
 .root {
-    -fx-background-color: -sms-background;
-    -fx-padding: 15px;
+  -fx-background-color: -sms-background;
+  -fx-padding: 15px;
 }
 
-/* Search Section */
-.search-section {
-    -fx-background-color: white;
-    -fx-background-radius: 8px;
-    -fx-padding: 10px;
-    -fx-spacing: 10px;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);
+/* Header Box */
+.header-box {
+  -fx-background-color: linear-gradient(to right, -sms-primary, -sms-secondary);
+  -fx-padding: 12px 16px;
+  -fx-spacing: 10;
 }
 
+.header-title {
+  -fx-text-fill: white;
+  -fx-font-size: 24px;
+  -fx-font-weight: bold;
+  -fx-font-family: "Segoe UI Semibold";
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 4, 0, 0, 1);
+}
+
+.header-icon {
+  -fx-fill: -sms-accent;
+  -fx-font-size: 20px;
+}
+
+/* Search Field */
 .search-field {
-    -fx-background-radius: 20px;
-    -fx-padding: 8px 15px;
-    -fx-prompt-text-fill: #95a5a6;
+  -fx-background-radius: 4px;
+  -fx-border-color: -sms-secondary-light;
+  -fx-border-radius: 4px;
+  -fx-padding: 6px;
+  -fx-min-width: 120;
+  -fx-pref-width: 180;
+}
+
+.search-field:focused {
+  -fx-border-color: -sms-secondary;
+  -fx-effect: dropshadow(gaussian, derive(-sms-secondary, 70%), 4, 0, 0, 0);
+}
+
+/* Search Controls Box */
+.search-controls {
+  -fx-spacing: 10;
+  -fx-padding: 4 0 8 0; /* Reduced padding by 75% */
+  -fx-fill-width: true;
 }
 
 /* Table Styles */
 .table-view {
-    -fx-background-color: transparent;
-    -fx-border-color: -sms-border;
-    -fx-border-radius: 5px;
+  -fx-background-color: white;
+  -fx-border-color: -sms-primary;
+  -fx-border-width: 2px;
+  -fx-border-radius: 4px;
+  -fx-table-cell-border-color: transparent;
+  -fx-min-width: 400;
 }
 
 .table-view .column-header {
-    -fx-background-color: -sms-secondary;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-padding: 10px;
-}
-
-.table-view .table-row-cell:odd {
-    -fx-background-color: derive(-sms-background, 5%);
-}
-
-.table-view .table-row-cell:even {
-    -fx-background-color: white;
+  -fx-background-color: white;
+  -fx-text-fill: -sms-primary;
+  -fx-font-weight: bold;
+  -fx-padding: 10px;
+  -fx-border-color: transparent transparent -sms-primary transparent;
+  -fx-border-width: 0 0 2 0;
+  -fx-size: 35px;
 }
 
 .table-view .table-row-cell:selected {
-    -fx-background-color: derive(-sms-secondary, 80%);
+  -fx-background-color: derive(-sms-secondary, 95%);
 }
 
-/* Action Buttons */
-.button {
-    -fx-background-color: -sms-secondary;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-padding: 8 15;
-    -fx-background-radius: 4;
-}
-
-.button:hover {
-    -fx-background-color: derive(-sms-secondary, 10%);
-    -fx-cursor: hand;
-}
-
-.button:pressed {
-    -fx-background-color: derive(-sms-secondary, -10%);
+.table-view .table-column {
+  -fx-alignment: CENTER-LEFT;
 }
 
 /* ComboBox Styles */
 .combo-box {
-    -fx-background-color: white;
-    -fx-border-color: -sms-border;
-    -fx-border-radius: 4;
-    -fx-padding: 4;
+  -fx-background-color: white;
+  -fx-border-color: -sms-secondary-light;
+  -fx-border-radius: 4px;
+  -fx-padding: 4px;
 }
 
 .combo-box:hover {
-    -fx-border-color: -sms-secondary;
+  -fx-border-color: -sms-secondary;
 }
 
-.combo-box .list-cell {
-    -fx-padding: 4 8;
+/* Context Menu Items */
+.context-menu {
+  -fx-background-color: white;
+  -fx-border-color: -sms-border;
 }
 
-/* No Records Message */
-.empty-table-message {
-    -fx-text-fill: #666;
-    -fx-font-size: 14px;
-    -fx-font-style: italic;
+.menu-item {
+  -fx-padding: 5px 10px;
 }
 
-/* Action Column */
-.action-column {
-    -fx-alignment: CENTER;
-}
-
-.restore-button {
-    -fx-background-color: #28a745;
-    -fx-text-fill: white;
-    -fx-font-size: 12px;
-    -fx-padding: 4 8;
-}
-
-.restore-button:hover {
-    -fx-background-color: derive(#28a745, 10%);
-}
-
-.delete-button {
-    -fx-background-color: #dc3545;
-    -fx-text-fill: white;
-    -fx-font-size: 12px;
-    -fx-padding: 4 8;
-}
-
-.delete-button:hover {
-    -fx-background-color: derive(#dc3545, 10%);
+.menu-item:hover {
+  -fx-background-color: derive(-sms-secondary, 90%);
 }

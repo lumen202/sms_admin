@@ -16,6 +16,7 @@ public class DeletedStudentLoader extends FXLoader {
     public void load() {
         try {
             Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/sms/admin/app/deleted_student/deleted_student.css").toExternalForm());
             Stage stage = new Stage();
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle("Deleted Students");
