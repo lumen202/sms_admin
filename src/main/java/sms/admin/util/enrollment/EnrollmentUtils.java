@@ -10,6 +10,7 @@ import dev.finalproject.data.StudentDAO;
 import dev.finalproject.database.DataManager;
 import dev.finalproject.models.Address;
 import dev.finalproject.models.Cluster;
+import dev.finalproject.models.Guardian;
 import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 
@@ -41,8 +42,7 @@ public class EnrollmentUtils {
             String firstName, String middleName, String lastName, String nameExt,
             String email, String status, String contact, Date dateOfBirth,
             double fare, String street, String barangay, String city, String municipality,
-            String postalCode, String guardianName, String guardianContact,
-            String clusterName, SchoolYear schoolYear) throws Exception {
+            String postalCode, Guardian guardian, String clusterName, SchoolYear schoolYear) throws Exception {
 
         // Use provided studentId if valid; otherwise generate one.
         int studentIdInt;
@@ -113,13 +113,12 @@ public class EnrollmentUtils {
             String firstName, String middleName, String lastName, String nameExt,
             String email, String status, String contact, Date dateOfBirth,
             double fare, String street, String barangay, String city, String municipality,
-            String postalCode, String guardianName, String guardianContact,
-            SchoolYear schoolYear) throws Exception {
+            String postalCode, Guardian guardian, SchoolYear schoolYear) throws Exception {
 
         return enrollStudent(studentId, firstName, middleName, lastName, nameExt,
                 email, status, contact, dateOfBirth, fare,
                 street, barangay, city, municipality, postalCode,
-                guardianName, guardianContact, null, schoolYear);
+                guardian, null, schoolYear);
     }
 
     /**
@@ -151,8 +150,7 @@ public class EnrollmentUtils {
                 addressParts[2], // city
                 addressParts[3], // municipality
                 "0", // postalCode (adjust as needed)
-                "",
-                "",
+                null, // guardian is not included in CSV
                 csvStudent.getCluster(),
                 schoolYear);
     }

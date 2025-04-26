@@ -1,26 +1,29 @@
 package sms.admin.app.schoolyear;
 
-import dev.finalproject.data.SchoolYearDAO;
-import dev.finalproject.models.SchoolYear;
-import javafx.fxml.FXML;
-import javafx.scene.control.*;
-import javafx.stage.Stage;
-import sms.admin.util.dialog.DialogManager;
-import java.time.Month;
 import java.time.LocalDate;
-import javafx.collections.FXCollections;
+import java.time.Month;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+
+import dev.finalproject.data.SchoolYearDAO;
+import dev.finalproject.models.SchoolYear;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import java.time.YearMonth;
+import javafx.collections.FXCollections;
+import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.stage.Stage;
+import sms.admin.util.dialog.DialogManager;
 
 /**
  * Controller for the school year dialog, handling both creation and editing of
- * school years.
- * This class manages the UI elements and logic for selecting start and end
- * years and months,
- * ensuring that the selected dates form a valid school year period.
+ * school years. This class manages the UI elements and logic for selecting
+ * start and end years and months, ensuring that the selected dates form a valid
+ * school year period.
  */
 public class SchoolYearDialogController {
 
@@ -47,7 +50,8 @@ public class SchoolYearDialogController {
     private final ObjectProperty<SchoolYear> schoolYearProperty = new SimpleObjectProperty<>();
 
     /**
-     * Returns the property holding the current school year being edited or created.
+     * Returns the property holding the current school year being edited or
+     * created.
      *
      * @return the school year property
      */
@@ -56,8 +60,8 @@ public class SchoolYearDialogController {
     }
 
     // Define months as a class field for reuse
-    private final String[] months = { "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-            "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER" };
+    private final String[] months = {"JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+        "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"};
 
     /**
      * Initializes the controller, setting up the UI components and listeners.
@@ -101,8 +105,8 @@ public class SchoolYearDialogController {
     }
 
     /**
-     * Updates the end year options based on the selected start year.
-     * Ensures that the end year is at least the start year.
+     * Updates the end year options based on the selected start year. Ensures
+     * that the end year is at least the start year.
      */
     private void updateEndYearOptions() {
         Integer startYear = startYearCombo.getValue();
@@ -120,10 +124,9 @@ public class SchoolYearDialogController {
     }
 
     /**
-     * Updates the end month options based on the selected start year, start month,
-     * and end year.
-     * Ensures that the end month is after the start month if the years are the
-     * same.
+     * Updates the end month options based on the selected start year, start
+     * month, and end year. Ensures that the end month is after the start month
+     * if the years are the same.
      */
     private void updateEndMonthOptions() {
         Integer startYear = startYearCombo.getValue();
@@ -298,7 +301,7 @@ public class SchoolYearDialogController {
     /**
      * Gets the last day of the specified month and year.
      *
-     * @param year      The year.
+     * @param year The year.
      * @param monthName The name of the month.
      * @return The last day of the month.
      */
@@ -333,7 +336,7 @@ public class SchoolYearDialogController {
                 errorMessage += "End year must be greater than org equal to start year!\n";
             } else if (endYearCombo.getValue().equals(startYearCombo.getValue())
                     && Month.valueOf(endMonthCombo.getValue()).getValue() <= Month.valueOf(startMonthCombo.getValue())
-                            .getValue()) {
+                    .getValue()) {
                 errorMessage += "End month must be after start month for the same year!\n";
             }
         }

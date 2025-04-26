@@ -8,13 +8,11 @@ import java.util.List;
 
 /**
  * Utility class for importing student data from a CSV file.
- * 
+ *
  * <p>
  * This class reads a CSV file, parses its contents, and returns a list of
- * {@link CsvStudent}
- * objects, one for each student row (excluding the header). It handles quoted
- * values properly
- * using a regex-based split.
+ * {@link CsvStudent} objects, one for each student row (excluding the header).
+ * It handles quoted values properly using a regex-based split.
  * </p>
  */
 public class CsvImporter {

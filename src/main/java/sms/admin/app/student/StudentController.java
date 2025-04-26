@@ -39,9 +39,9 @@ import sms.admin.util.exporter.StudentTableExporter;
 
 /**
  * Controller for the student management view, handling the display, filtering,
- * and management of student records.
- * This class manages the UI elements and logic for viewing, adding, editing,
- * deleting, importing, and exporting student data.
+ * and management of student records. This class manages the UI elements and
+ * logic for viewing, adding, editing, deleting, importing, and exporting
+ * student data.
  */
 public class StudentController extends FXController {
 
@@ -98,7 +98,8 @@ public class StudentController extends FXController {
     private String searchText = ""; // Current search text
 
     /**
-     * Loads the initial fields and configurations for the student management view.
+     * Loads the initial fields and configurations for the student management
+     * view.
      */
     @Override
     protected void load_fields() {
@@ -201,8 +202,8 @@ public class StudentController extends FXController {
     }
 
     /**
-     * Populates the master student list with students matching the selected year
-     * and not marked as deleted.
+     * Populates the master student list with students matching the selected
+     * year and not marked as deleted.
      *
      * @param year The academic year to filter students by.
      */
@@ -214,8 +215,8 @@ public class StudentController extends FXController {
         masterStudentList.setAll(
                 students.stream()
                         .filter(s -> s != null && s.getYearID() != null
-                                && s.getYearID().getYearStart() == startYear
-                                && s.isDeleted() == 0)
+                        && s.getYearID().getYearStart() == startYear
+                        && s.isDeleted() == 0)
                         .collect(Collectors.toList()));
     }
 
@@ -238,8 +239,8 @@ public class StudentController extends FXController {
     }
 
     /**
-     * Updates the status label with the total number of students in the filtered
-     * list.
+     * Updates the status label with the total number of students in the
+     * filtered list.
      */
     private void updateStatusLabel() {
         int totalStudents = filteredList.size();
@@ -267,9 +268,9 @@ public class StudentController extends FXController {
         confirmDialog.setTitle("Confirm Student Deletion");
         confirmDialog.setHeaderText("Are you sure you want to delete this student?");
         confirmDialog.setContentText(
-                "Student Details:\n" +
-                        "ID: " + student.getStudentID() + "\n" +
-                        "Name: " + student.getFullName() + "\n");
+                "Student Details:\n"
+                + "ID: " + student.getStudentID() + "\n"
+                + "Name: " + student.getFullName() + "\n");
 
         // Style the dialog buttons
         Button okButton = (Button) confirmDialog.getDialogPane().lookupButton(ButtonType.OK);
@@ -369,19 +370,35 @@ public class StudentController extends FXController {
             String title = "Student List Report";
             String outputPath = getExportPath(type.equals("excel") ? "xlsx" : type.toLowerCase());
             StudentTableExporter exporter = new StudentTableExporter();
+
             switch (type) {
-                case "excel" ->
+                case "excel" -> {
                     exporter.exportToExcel(studentTableView, title, outputPath);
-                case "pdf" ->
+                    showSuccessAlert("Export Complete", "Successfully exported to Excel", outputPath);
+                }
+                case "pdf" -> {
                     exporter.exportToPdf(studentTableView, title, outputPath);
-                case "csv" ->
+                    showSuccessAlert("Export Complete", "Successfully exported to PDF", outputPath);
+                }
+                case "csv" -> {
                     exporter.exportToCsv(studentTableView, title, outputPath);
+                    showSuccessAlert("Export Complete", "Successfully exported to CSV", outputPath);
+                }
             }
-            System.out.println("Export completed: " + outputPath);
         } catch (Exception e) {
             e.printStackTrace();
-            showErrorAlert("Export Error", "Failed to export students", e.getMessage());
+            showErrorAlert("Export Error",
+                    "Failed to export students to " + type.toUpperCase(),
+                    "Error: " + e.getMessage() + "\nPlease check if the output file is not open in another program.");
         }
+    }
+
+    private void showSuccessAlert(String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText("File saved to:\n" + content);
+        alert.showAndWait();
     }
 
     /**
@@ -489,8 +506,8 @@ public class StudentController extends FXController {
     /**
      * Displays an error alert with the specified details.
      *
-     * @param title   The title of the alert.
-     * @param header  The header text of the alert.
+     * @param title The title of the alert.
+     * @param header The header text of the alert.
      * @param content The content text of the alert.
      */
     private void showErrorAlert(String title, String header, String content) {

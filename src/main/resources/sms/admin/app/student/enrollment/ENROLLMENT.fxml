@@ -13,13 +13,10 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox fx:id="contentBox" spacing="15.0" styleClass="profile-container" stylesheets="@../styles/main.css,@enrollment.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.student.enrollment.EnrollmentController">
+<VBox fx:id="contentBox" spacing="15.0" styleClass="profile-container" stylesheets="@../styles/main.css,@enrollment.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.student.enrollment.EnrollmentController">
     <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="profile-content" VBox.vgrow="ALWAYS">
         <content>
             <VBox spacing="15">
-                <padding>
-                    <Insets bottom="15.0" left="20.0" right="20.0" top="10.0" />
-                </padding>
 
                 <!-- Personal Information Section -->
                 <VBox spacing="8" styleClass="profile-section">
@@ -124,11 +121,20 @@
                             <ColumnConstraints minWidth="120" />
                             <ColumnConstraints hgrow="ALWAYS" />
                         </columnConstraints>
-                        <Label text="Guardian Name:" GridPane.rowIndex="0" />
-                        <TextField fx:id="guardianNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-                        <Label text="Contact Number:" GridPane.rowIndex="1" />
-                        <TextField fx:id="guardianContactField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <Label text="First Name:" GridPane.rowIndex="0" />
+                        <TextField fx:id="guardianFirstNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        <Label text="Middle Name:" GridPane.rowIndex="1" />
+                        <TextField fx:id="guardianMiddleNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <Label text="Last Name:" GridPane.rowIndex="2" />
+                        <TextField fx:id="guardianLastNameField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <Label text="Relationship:" GridPane.rowIndex="3" />
+                        <TextField fx:id="guardianRelationshipField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <Label text="Contact Info:" GridPane.rowIndex="4" />
+                        <TextField fx:id="guardianContactInfoField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                         <rowConstraints>
+                            <RowConstraints />
+                            <RowConstraints />
+                            <RowConstraints />
                             <RowConstraints />
                             <RowConstraints />
                         </rowConstraints>

@@ -31,10 +31,9 @@ import sms.admin.util.profile.ProfilePhotoManager;
 
 /**
  * Controller for the student profile view, managing the display and editing of
- * student information.
- * This class handles the UI elements and logic for viewing and updating student
- * details, including
- * personal information, address, guardian, cluster, and profile photo.
+ * student information. This class handles the UI elements and logic for viewing
+ * and updating student details, including personal information, address,
+ * guardian, cluster, and profile photo.
  */
 public class StudentProfileController extends FXController {
 
@@ -42,11 +41,11 @@ public class StudentProfileController extends FXController {
     private Stage stage; // The stage for this dialog
     private Student student; // The student whose profile is being viewed
     private static final String STUDENT_PHOTOS_DIR = "src/main/resources/sms/admin/assets/img/profile"; // Directory for
-                                                                                                        // student
-                                                                                                        // photos
+    // student
+    // photos
     private static final String DEFAULT_PHOTO_PATH = "/assets/img/default-profile.png"; // Default profile photo path
     private static final String BACKUP_PHOTO_PATH = "/sms/admin/assets/img/default-profile.png"; // Backup default photo
-                                                                                                 // path
+    // path
 
     // Data lists
     private ObservableList<Address> addressMasterList; // List of all addresses
@@ -143,7 +142,8 @@ public class StudentProfileController extends FXController {
     }
 
     /**
-     * Loads bindings for UI components. Currently empty as no bindings are needed.
+     * Loads bindings for UI components. Currently empty as no bindings are
+     * needed.
      */
     @Override
     protected void load_bindings() {
@@ -151,7 +151,8 @@ public class StudentProfileController extends FXController {
     }
 
     /**
-     * Initializes the controller after FXML injection, setting the initial state.
+     * Initializes the controller after FXML injection, setting the initial
+     * state.
      */
     @FXML
     public void initialize() {
@@ -308,7 +309,7 @@ public class StudentProfileController extends FXController {
         }
         Optional<Address> studentAddress = addressMasterList.stream()
                 .filter(addr -> addr.getStudentID() != null
-                        && addr.getStudentID().getStudentID() == student.getStudentID())
+                && addr.getStudentID().getStudentID() == student.getStudentID())
                 .findFirst();
 
         studentAddress.ifPresentOrElse(addr -> {
@@ -339,15 +340,15 @@ public class StudentProfileController extends FXController {
                 .filter(sg -> sg.getStudentId().getStudentID() == student.getStudentID())
                 .findFirst()
                 .ifPresent(sg -> guardianMasterList.stream()
-                        .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
-                        .findFirst()
-                        .ifPresent(guardian -> {
-                            guardianFirstNameField.setText(guardian.getFirstName());
-                            guardianMiddleNameField.setText(guardian.getMiddleName());
-                            guardianLastNameField.setText(guardian.getLastName());
-                            guardianRelationshipField.setText(guardian.getRelationship());
-                            guardianContactInfoField.setText(guardian.getContact());
-                        }));
+                .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
+                .findFirst()
+                .ifPresent(guardian -> {
+                    guardianFirstNameField.setText(guardian.getFirstName());
+                    guardianMiddleNameField.setText(guardian.getMiddleName());
+                    guardianLastNameField.setText(guardian.getLastName());
+                    guardianRelationshipField.setText(guardian.getRelationship());
+                    guardianContactInfoField.setText(guardian.getContact());
+                }));
     }
 
     /**
@@ -417,8 +418,8 @@ public class StudentProfileController extends FXController {
     }
 
     /**
-     * Handles the update of the student's address, creating a new address if none
-     * exists.
+     * Handles the update of the student's address, creating a new address if
+     * none exists.
      */
     private void handleAddressUpdate() {
         Address studentAddress = findOrCreateStudentAddress();
@@ -433,7 +434,8 @@ public class StudentProfileController extends FXController {
     }
 
     /**
-     * Handles the update of the student's guardian, creating or updating as needed.
+     * Handles the update of the student's guardian, creating or updating as
+     * needed.
      *
      * @return The updated Guardian object.
      */
@@ -492,13 +494,14 @@ public class StudentProfileController extends FXController {
                 .filter(sg -> sg.getStudentId().getStudentID() == student.getStudentID())
                 .findFirst()
                 .flatMap(sg -> guardianMasterList.stream()
-                        .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
-                        .findFirst())
+                .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
+                .findFirst())
                 .orElse(null);
     }
 
     /**
-     * Updates the student-guardian relationship in the database and master list.
+     * Updates the student-guardian relationship in the database and master
+     * list.
      *
      * @param guardian The guardian to associate with the student.
      */

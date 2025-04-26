@@ -6,9 +6,22 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.poi.ss.usermodel.*;
+
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataFormat;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.Student;
 import javafx.collections.ObservableList;
@@ -19,6 +32,7 @@ import sms.admin.util.attendance.CommonAttendanceUtil;
  * Exports detailed payroll data to an Excel file.
  */
 public class DetailedPayrollExporter {
+
     // Constants
     private static final double MAX_TOTAL_AMOUNT = 1300.00;
 
@@ -32,9 +46,9 @@ public class DetailedPayrollExporter {
     /**
      * Constructor for DetailedPayrollExporter.
      *
-     * @param month    The month for which the payroll is being generated.
+     * @param month The month for which the payroll is being generated.
      * @param endMonth The end month (not used in this implementation).
-     * @param logs     The list of attendance logs.
+     * @param logs The list of attendance logs.
      */
     public DetailedPayrollExporter(YearMonth month, YearMonth endMonth, ObservableList<AttendanceLog> logs) {
         this.month = month;
@@ -53,8 +67,8 @@ public class DetailedPayrollExporter {
     /**
      * Exports the payroll data to an Excel file.
      *
-     * @param table      The TableView containing student data.
-     * @param title      The title of the sheet.
+     * @param table The TableView containing student data.
+     * @param title The title of the sheet.
      * @param outputPath The path to save the Excel file.
      * @throws Exception If an error occurs during export.
      */
@@ -128,7 +142,7 @@ public class DetailedPayrollExporter {
             CellStyle mainTitleStyle = workbook.createCellStyle();
             Font mainTitleFont = workbook.createFont();
             mainTitleFont.setBold(true);
-            mainTitleFont.setFontHeightInPoints((short) 14);
+            mainTitleFont.setFontHeightInPoints((short) 16);
             mainTitleStyle.setFont(mainTitleFont);
             mainTitleStyle.setAlignment(HorizontalAlignment.CENTER);
             mainTitleCell.setCellStyle(mainTitleStyle);
@@ -137,16 +151,55 @@ public class DetailedPayrollExporter {
             // Period description row
             Row periodRow = sheet.createRow(1);
             periodRow.setHeight(headerRowHeight);
+
+// Create the full text for the period cell
+            String fullText = "For labor on _________ - Baybay Data Center, at Baybay National High School, Baybay City, Leyte, Philippines, for the period, "
+                    + month.getMonth().toString() + " " + month.getYear();
+
+// Create RichTextString for underlining specific parts
+            XSSFRichTextString richText = new XSSFRichTextString(fullText);
+
+// Create fonts for underlined and non-underlined text
+            Font regularFont = workbook.createFont();
+            regularFont.setFontHeightInPoints((short) 14);
+
+            Font underlineFont = workbook.createFont();
+            underlineFont.setFontHeightInPoints((short) 14);
+            underlineFont.setUnderline(Font.U_SINGLE);
+
+// Identify the substrings to underline
+            String dataCenter = "Baybay Data Center";
+            String schoolLocation = "Baybay National High School, Baybay City, Leyte";
+            String monthYear = month.getMonth().toString() + " " + month.getYear();
+
+// Find starting indices of each substring
+            int dataCenterStart = fullText.indexOf(dataCenter);
+            int schoolLocationStart = fullText.indexOf(schoolLocation);
+            int monthYearStart = fullText.indexOf(monthYear);
+
+// Apply regular font to the entire text initially
+            richText.applyFont(0, fullText.length(), regularFont);
+
+// Apply underline font to specific substrings
+            if (dataCenterStart >= 0) {
+                richText.applyFont(dataCenterStart, dataCenterStart + dataCenter.length(), underlineFont);
+            }
+            if (schoolLocationStart >= 0) {
+                richText.applyFont(schoolLocationStart, schoolLocationStart + schoolLocation.length(), underlineFont);
+            }
+            if (monthYearStart >= 0) {
+                richText.applyFont(monthYearStart, monthYearStart + monthYear.length(), underlineFont);
+            }
+
+// Set the rich text in the cell
             Cell periodCell = periodRow.createCell(0);
+            periodCell.setCellValue(richText);
+
+// Apply cell style
             CellStyle periodStyle = workbook.createCellStyle();
-            Font periodFont = workbook.createFont();
-            periodFont.setFontHeightInPoints((short) 14);
-            periodStyle.setFont(periodFont);
+            periodStyle.setFont(regularFont);
             periodStyle.setAlignment(HorizontalAlignment.CENTER);
             periodStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            periodCell.setCellValue(
-                    "For labor on _________ - Baybay Data Center, at Baybay National High School, Baybay City, Leyte, Philippines, for the period,    "
-                            + month.getMonth().toString() + " " + month.getYear());
             periodCell.setCellStyle(periodStyle);
             sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 34));
 
@@ -196,8 +249,8 @@ public class DetailedPayrollExporter {
     /**
      * Retrieves work weeks for the specified month, excluding weekends.
      *
-     * @return A list of lists, where each inner list represents a week of working
-     *         days.
+     * @return A list of lists, where each inner list represents a week of
+     * working days.
      */
     private List<List<LocalDate>> getWorkWeeks() {
         List<LocalDate> workingDays = new ArrayList<>();
@@ -221,21 +274,24 @@ public class DetailedPayrollExporter {
      * Determines the attendance status for a student on a specific date.
      *
      * @param student The student.
-     * @param date    The date to check.
+     * @param date The date to check.
      * @return The attendance status (e.g., "P", "A").
      */
     private String getAttendanceStatus(Student student, LocalDate date) {
         return attendanceLogs.stream()
                 .filter(log -> log != null
-                        && log.getStudentID() != null
-                        && log.getStudentID().getStudentID() == student.getStudentID()
-                        && log.getRecordID() != null
-                        && log.getRecordID().getYear() == date.getYear()
-                        && log.getRecordID().getMonth() == date.getMonthValue()
-                        && log.getRecordID().getDay() == date.getDayOfMonth())
-                .map(CommonAttendanceUtil::computeAttendanceStatus)
-                .findFirst()
-                .orElse(CommonAttendanceUtil.ABSENT_MARK);
+                && log.getStudentID() != null
+                && log.getStudentID().getStudentID() == student.getStudentID()
+                && log.getRecordID() != null
+                && log.getRecordID().getYear() == date.getYear()
+                && log.getRecordID().getMonth() == date.getMonthValue()
+                && log.getRecordID().getDay() == date.getDayOfMonth())
+                .map(log -> {
+                    String status = CommonAttendanceUtil.computeAttendanceStatus(log);
+                    return status.equals(CommonAttendanceUtil.HALF_DAY_MARK) ? CommonAttendanceUtil.ABSENT_MARK : status;
+                })
+                .findFirst().orElse(CommonAttendanceUtil.ABSENT_MARK);
+
     }
 
     /**
@@ -243,7 +299,7 @@ public class DetailedPayrollExporter {
      * absences.
      *
      * @param student The student.
-     * @param month   The month to calculate for.
+     * @param month The month to calculate for.
      * @return The total days attended.
      */
     public double calculateStudentDays(Student student, YearMonth month) {
@@ -251,23 +307,22 @@ public class DetailedPayrollExporter {
             double totalDays = 0;
             List<AttendanceLog> studentLogs = attendanceLogs.stream()
                     .filter(log -> log != null
-                            && log.getStudentID() != null
-                            && log.getStudentID().getStudentID() == student.getStudentID()
-                            && log.getRecordID() != null
-                            && YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth()).equals(month)
-                            && !CommonAttendanceUtil.isWeekend(LocalDate.of(
-                                    log.getRecordID().getYear(), log.getRecordID().getMonth(),
-                                    log.getRecordID().getDay())))
+                    && log.getStudentID() != null
+                    && log.getStudentID().getStudentID() == student.getStudentID()
+                    && log.getRecordID() != null
+                    && YearMonth.of(log.getRecordID().getYear(), log.getRecordID().getMonth()).equals(month)
+                    && !CommonAttendanceUtil.isWeekend(LocalDate.of(
+                            log.getRecordID().getYear(), log.getRecordID().getMonth(),
+                            log.getRecordID().getDay())))
                     .collect(Collectors.toList());
 
             for (AttendanceLog log : studentLogs) {
                 String status = CommonAttendanceUtil.computeAttendanceStatus(log);
                 switch (status) {
-                    case CommonAttendanceUtil.PRESENT_MARK,
-                            CommonAttendanceUtil.EXCUSED_MARK,
-                            CommonAttendanceUtil.HOLIDAY_MARK ->
+                    case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK, CommonAttendanceUtil.HOLIDAY_MARK ->
                         totalDays += 1.0;
-                    case CommonAttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
+                    case CommonAttendanceUtil.HALF_DAY_MARK ->
+                        totalDays += 0;
                 }
             }
             return totalDays;
@@ -327,11 +382,11 @@ public class DetailedPayrollExporter {
     /**
      * Creates the table headers in the Excel sheet.
      *
-     * @param sheet       The sheet to modify.
-     * @param startRow    The starting row for headers.
+     * @param sheet The sheet to modify.
+     * @param startRow The starting row for headers.
      * @param headerStyle Style for header cells.
      * @param centerStyle Style for centered text.
-     * @param weeks       List of work weeks.
+     * @param weeks List of work weeks.
      * @return The total number of days.
      */
     private int createTableHeaders(Sheet sheet, int startRow, CellStyle headerStyle,
@@ -415,9 +470,9 @@ public class DetailedPayrollExporter {
     /**
      * Adds remaining headers to the sheet (Total Days, Allowances, etc.).
      *
-     * @param sheet       The sheet.
-     * @param startRow    Starting row for headers.
-     * @param startCol    Starting column for remaining headers.
+     * @param sheet The sheet.
+     * @param startRow Starting row for headers.
+     * @param startCol Starting column for remaining headers.
      * @param headerStyle Style for headers.
      * @param centerStyle Style for centered text.
      */
@@ -485,13 +540,13 @@ public class DetailedPayrollExporter {
     /**
      * Writes a row of data for a student.
      *
-     * @param row           The row to write to.
-     * @param student       The student data.
-     * @param weeks         List of work weeks.
-     * @param dataStyle     Style for data cells.
+     * @param row The row to write to.
+     * @param student The student data.
+     * @param weeks List of work weeks.
+     * @param dataStyle Style for data cells.
      * @param currencyStyle Style for currency cells.
-     * @param centerStyle   Style for centered text.
-     * @param no            Student number.
+     * @param centerStyle Style for centered text.
+     * @param no Student number.
      * @return The total amount for the student.
      */
     private double writeStudentRow(Row row, Student student, List<List<LocalDate>> weeks,
@@ -513,11 +568,8 @@ public class DetailedPayrollExporter {
                 String status = getAttendanceStatus(student, date);
                 attendanceCell.setCellValue(status);
                 switch (status) {
-                    case CommonAttendanceUtil.PRESENT_MARK,
-                            CommonAttendanceUtil.EXCUSED_MARK,
-                            CommonAttendanceUtil.HOLIDAY_MARK ->
+                    case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK, CommonAttendanceUtil.HOLIDAY_MARK ->
                         totalDays++;
-                    case CommonAttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
                 }
                 attendanceCell.setCellStyle(centerStyle);
             }
@@ -562,7 +614,7 @@ public class DetailedPayrollExporter {
     /**
      * Creates the certification section at the bottom of the sheet.
      *
-     * @param sheet    The sheet to modify.
+     * @param sheet The sheet to modify.
      * @param startRow The starting row for the certification.
      */
     private void createCertificationSection(Sheet sheet, int startRow) {
@@ -637,26 +689,29 @@ public class DetailedPayrollExporter {
         cert3.setCellValue(
                 "3. I HEREBY CERTIFY on my official oath that I have this ___ day of ____ paid in cash to each man whose name appears on the above roll, the amount set opposite his name, he having presented himself, established his identity and affixed his signature or thumbmark on the space provided therefor.");
         cert3.setCellStyle(certStyle);
-        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, cert2EndColumn + 1, totalAmountColumn + 2));
+        int cert3EndColumn = totalAmountColumn + 2; // Keep original end column for cert3 text
+        sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, cert2EndColumn + 1, cert3EndColumn));
 
-        Cell name3 = nameRow.createCell(totalAmountColumn);
-        Cell role3 = roleRow.createCell(totalAmountColumn);
+        // Move name3 and role3 to a fixed column (e.g., column 20) to shift left
+        int cert3NameStartColumn = 20; // Adjust as needed
+        int cert3NameEndColumn = cert3NameStartColumn + 8; // Span 8 columns for width
+        Cell name3 = nameRow.createCell(cert3NameStartColumn);
+        Cell role3 = roleRow.createCell(cert3NameStartColumn);
         name3.setCellValue("JOAN FLORLYN JUSTISA");
         role3.setCellValue("E2P - ICT");
         name3.setCellStyle(nameStyle);
         role3.setCellStyle(roleStyle);
         sheet.addMergedRegion(
-                new CellRangeAddress(startRow + 3, startRow + 3, totalAmountColumn, totalAmountColumn + 2));
+                new CellRangeAddress(startRow + 3, startRow + 3, cert3NameStartColumn, cert3NameEndColumn));
         sheet.addMergedRegion(
-                new CellRangeAddress(startRow + 4, startRow + 4, totalAmountColumn, totalAmountColumn + 2));
+                new CellRangeAddress(startRow + 4, startRow + 4, cert3NameStartColumn, cert3NameEndColumn));
 
         Row noteRow = sheet.createRow(startRow + 6);
         noteRow.setHeight((short) (30 * 20));
         Cell note = noteRow.createCell(0);
         note.setCellValue(
                 "*NOTE: Where thumbmark is to be used in place of signature, and the space available is not sufficient, the thumbmark may be impressed on the back hereof with proper indication of the corresponding student's number and on the corresponding line on the payroll\n"
-                        +
-                        "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0or remark 'see thumbmark on the back' should be written.");
+                + "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0or remark 'see thumbmark on the back' should be written.");
         CellStyle noteStyle = sheet.getWorkbook().createCellStyle();
         noteStyle.cloneStyleFrom(certStyle);
         noteStyle.setWrapText(true);

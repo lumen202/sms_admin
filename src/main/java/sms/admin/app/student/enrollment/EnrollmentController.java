@@ -1,29 +1,37 @@
 package sms.admin.app.student.enrollment;
 
-import java.util.OptionalInt;
 import java.sql.Date;
+import java.util.OptionalInt;
 
+import dev.finalproject.App;
+import dev.finalproject.data.StudentGuardianDAO;
+import dev.finalproject.database.DataManager;
+import dev.finalproject.models.Guardian;
+import dev.finalproject.models.SchoolYear;
+import dev.finalproject.models.Student;
+import dev.finalproject.models.StudentGuardian;
 import dev.sol.core.application.FXController;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
-import dev.finalproject.App;
-import dev.finalproject.models.*;
-import sms.admin.util.enrollment.EnrollmentUtils;
+import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
 import sms.admin.util.DialogUtils;
 import sms.admin.util.dialog.ValidationUtils;
-import javafx.stage.Stage;
+import sms.admin.util.enrollment.EnrollmentUtils;
+import sms.admin.util.profile.ProfileDataManager;
 
 /**
  * Controller for the student enrollment form, managing the input and submission
- * of student data.
- * This class handles the UI elements and logic for entering student details,
- * validating input fields,
- * and enrolling students into the system for a specific school year.
+ * of student data. This class handles the UI elements and logic for entering
+ * student details, validating input fields, and enrolling students into the
+ * system for a specific school year.
  */
 public class EnrollmentController extends FXController {
+
     @FXML
     private TextField firstNameField; // Field for student's first name
     @FXML
@@ -45,9 +53,17 @@ public class EnrollmentController extends FXController {
     @FXML
     private TextField contactNumberField; // Field for student's contact number
     @FXML
-    private TextField guardianNameField; // Field for guardian's name
+    private TextField guardianFirstNameField; // Field for guardian's first name
     @FXML
-    private TextField guardianContactField; // Field for guardian's contact number
+    private TextField guardianMiddleNameField; // Field for guardian's middle name
+    @FXML
+    private TextField guardianLastNameField; // Field for guardian's last name
+    @FXML
+    private TextField guardianRelationshipField; // Field for guardian's relationship
+    @FXML
+    private TextField guardianContactInfoField; // Field for guardian's contact information
+    @FXML
+    private GridPane guardianEditGrid; // GridPane for guardian fields
     @FXML
     private DatePicker dateOfBirthPicker; // Picker for student's date of birth
     @FXML
@@ -89,8 +105,8 @@ public class EnrollmentController extends FXController {
     }
 
     /**
-     * Sets up real-time validation listeners for input fields to provide immediate
-     * feedback.
+     * Sets up real-time validation listeners for input fields to provide
+     * immediate feedback.
      */
     private void addValidationListeners() {
         // Email validation
@@ -112,11 +128,11 @@ public class EnrollmentController extends FXController {
         });
 
         // Phone number validation for guardian
-        guardianContactField.textProperty().addListener((observable, oldValue, newValue) -> {
+        guardianContactInfoField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (!newValue.isEmpty() && !ValidationUtils.isValidPhoneNumber(newValue)) {
-                ValidationUtils.setErrorStyle(guardianContactField);
+                ValidationUtils.setErrorStyle(guardianContactInfoField);
             } else {
-                ValidationUtils.resetStyle(guardianContactField);
+                ValidationUtils.resetStyle(guardianContactInfoField);
             }
         });
 
@@ -174,6 +190,23 @@ public class EnrollmentController extends FXController {
                         ? Date.valueOf(dateOfBirthPicker.getValue())
                         : null;
 
+                // Get the master list from DataManager
+                ObservableList<Guardian> guardianList = DataManager.getInstance()
+                        .getCollectionsRegistry().getList("GUARDIAN");
+
+                // Create new guardian using ProfileDataManager
+                Guardian guardian = ProfileDataManager.createOrUpdateGuardian(
+                        guardianFirstNameField.getText(),
+                        guardianContactInfoField.getText(),
+                        guardianFirstNameField,
+                        guardianMiddleNameField,
+                        guardianLastNameField,
+                        guardianRelationshipField,
+                        guardianContactInfoField,
+                        null, // passing null to create new guardian
+                        guardianList
+                );
+
                 // Enroll the student using the provided details
                 Student student = EnrollmentUtils.enrollStudent(
                         nextStudentId,
@@ -191,14 +224,16 @@ public class EnrollmentController extends FXController {
                         cityField.getText(),
                         municipalityField.getText(),
                         postalCodeField.getText(),
-                        guardianNameField.getText(),
-                        guardianContactField.getText(),
-                        null, // cluster name - using default
+                        guardian,
+                        null,
                         currentSchoolYear);
+
+                // Create student-guardian relationship
+                StudentGuardian studentGuardian = new StudentGuardian(student, guardian);
+                StudentGuardianDAO.insert(studentGuardian);
 
                 handleClear();
 
-                // Close the dialog if in dialog mode
                 if (dialogStage != null) {
                     dialogStage.close();
                 }
@@ -213,8 +248,8 @@ public class EnrollmentController extends FXController {
     }
 
     /**
-     * Validates all input fields to ensure required fields are filled and formats
-     * are correct.
+     * Validates all input fields to ensure required fields are filled and
+     * formats are correct.
      *
      * @return true if all validations pass, false otherwise.
      */
@@ -242,10 +277,6 @@ public class EnrollmentController extends FXController {
             ValidationUtils.setErrorStyle(municipalityField);
             isValid = false;
         }
-        if (ValidationUtils.isTextFieldEmpty(guardianNameField)) {
-            ValidationUtils.setErrorStyle(guardianNameField);
-            isValid = false;
-        }
         if (ValidationUtils.isTextFieldEmpty(barangayField)) {
             ValidationUtils.setErrorStyle(barangayField);
             isValid = false;
@@ -261,11 +292,6 @@ public class EnrollmentController extends FXController {
             ValidationUtils.setErrorStyle(contactNumberField);
             isValid = false;
         }
-        if (!ValidationUtils.isTextFieldEmpty(guardianContactField)
-                && !ValidationUtils.isValidPhoneNumber(guardianContactField.getText())) {
-            ValidationUtils.setErrorStyle(guardianContactField);
-            isValid = false;
-        }
         if (!ValidationUtils.isTextFieldEmpty(postalCodeField)
                 && !ValidationUtils.isValidPostalCode(postalCodeField.getText())) {
             ValidationUtils.setErrorStyle(postalCodeField);
@@ -273,6 +299,25 @@ public class EnrollmentController extends FXController {
         }
         if (!ValidationUtils.isTextFieldEmpty(fareField) && !ValidationUtils.isValidFare(fareField.getText())) {
             ValidationUtils.setErrorStyle(fareField);
+            isValid = false;
+        }
+
+        // Validate guardian fields
+        if (ValidationUtils.isTextFieldEmpty(guardianFirstNameField)) {
+            ValidationUtils.setErrorStyle(guardianFirstNameField);
+            isValid = false;
+        }
+        if (ValidationUtils.isTextFieldEmpty(guardianLastNameField)) {
+            ValidationUtils.setErrorStyle(guardianLastNameField);
+            isValid = false;
+        }
+        if (ValidationUtils.isTextFieldEmpty(guardianRelationshipField)) {
+            ValidationUtils.setErrorStyle(guardianRelationshipField);
+            isValid = false;
+        }
+        if (!ValidationUtils.isTextFieldEmpty(guardianContactInfoField)
+                && !ValidationUtils.isValidPhoneNumber(guardianContactInfoField.getText())) {
+            ValidationUtils.setErrorStyle(guardianContactInfoField);
             isValid = false;
         }
 
@@ -307,12 +352,14 @@ public class EnrollmentController extends FXController {
         postalCodeField.clear();
         emailField.clear();
         contactNumberField.clear();
-        guardianNameField.clear();
-        guardianContactField.clear();
-        dateOfBirthPicker.setValue(null);
-        statusComboBox.setValue(null);
-        fareField.clear();
         barangayField.clear();
+
+        // Clear guardian fields
+        guardianFirstNameField.clear();
+        guardianMiddleNameField.clear();
+        guardianLastNameField.clear();
+        guardianRelationshipField.clear();
+        guardianContactInfoField.clear();
 
         // Reset all styles
         ValidationUtils.resetStyle(firstNameField);
@@ -325,16 +372,19 @@ public class EnrollmentController extends FXController {
         ValidationUtils.resetStyle(postalCodeField);
         ValidationUtils.resetStyle(emailField);
         ValidationUtils.resetStyle(contactNumberField);
-        ValidationUtils.resetStyle(guardianNameField);
-        ValidationUtils.resetStyle(guardianContactField);
-        ValidationUtils.resetStyle(dateOfBirthPicker);
-        ValidationUtils.resetStyle(statusComboBox);
-        ValidationUtils.resetStyle(fareField);
         ValidationUtils.resetStyle(barangayField);
+
+        // Reset guardian field styles
+        ValidationUtils.resetStyle(guardianFirstNameField);
+        ValidationUtils.resetStyle(guardianMiddleNameField);
+        ValidationUtils.resetStyle(guardianLastNameField);
+        ValidationUtils.resetStyle(guardianRelationshipField);
+        ValidationUtils.resetStyle(guardianContactInfoField);
     }
 
     /**
-     * Loads bindings for UI components. Currently empty as no bindings are needed.
+     * Loads bindings for UI components. Currently empty as no bindings are
+     * needed.
      */
     @Override
     protected void load_bindings() {
@@ -342,8 +392,8 @@ public class EnrollmentController extends FXController {
     }
 
     /**
-     * Loads event listeners for UI interactions. Currently empty as listeners are
-     * handled elsewhere.
+     * Loads event listeners for UI interactions. Currently empty as listeners
+     * are handled elsewhere.
      */
     @Override
     protected void load_listeners() {

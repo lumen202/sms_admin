@@ -29,6 +29,7 @@ import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
@@ -385,9 +386,11 @@ public class PayrollController extends FXController {
                 DetailedPayrollExporter detailedExporter = new DetailedPayrollExporter(startMonth, endMonth,
                         attendanceLog);
                 detailedExporter.exportToExcel(payrollTable, title, file.getAbsolutePath());
+                showSuccessAlert("Export Complete", "Successfully exported to Excel", file.getAbsolutePath());
             } else {
                 try (PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
                     exporter.writeDataToCsv(writer, payrollTable.getItems(), title);
+                    showSuccessAlert("Export Complete", "Successfully exported to CSV", file.getAbsolutePath());
                 }
             }
 
@@ -395,7 +398,40 @@ public class PayrollController extends FXController {
         } catch (Exception e) {
             System.err.println("Export failed: " + e.getMessage());
             e.printStackTrace();
+            showErrorAlert("Export Error", 
+                "Failed to export payroll to " + type.toUpperCase(), 
+                "Error: " + e.getMessage() + "\nPlease check if the output file is not open in another program.");
         }
+    }
+
+    /**
+     * Shows a success alert dialog with the specified details.
+     *
+     * @param title The title of the alert
+     * @param header The header text of the alert
+     * @param content The content text of the alert
+     */
+    private void showSuccessAlert(String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText("File saved to:\n" + content);
+        alert.showAndWait();
+    }
+
+    /**
+     * Shows an error alert dialog with the specified details.
+     *
+     * @param title The title of the alert
+     * @param header The header text of the alert
+     * @param content The content text of the alert
+     */
+    private void showErrorAlert(String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 
     /**
