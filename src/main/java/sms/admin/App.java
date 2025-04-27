@@ -16,9 +16,8 @@ import sms.admin.util.db.DatabaseConnection;
 /**
  * Main application class for the Student Management System Admin interface.
  * This class extends {@link FXApplication} and is responsible for initializing
- * the application,
- * configuring the UI, setting up the dataset, and handling application
- * shutdown.
+ * the application, configuring the UI, setting up the dataset, and handling
+ * application shutdown.
  */
 public class App extends FXApplication {
 
@@ -42,8 +41,8 @@ public class App extends FXApplication {
     }
 
     /**
-     * Configures the application settings, including title, skin, icon, and window
-     * properties.
+     * Configures the application settings, including title, skin, icon, and
+     * window properties.
      */
     private void configureApplication() {
         setTitle("Student Management System - Admin");
@@ -91,8 +90,8 @@ public class App extends FXApplication {
     }
 
     /**
-     * Handles the application close event, cleaning up resources and closing the
-     * database connection.
+     * Handles the application close event, cleaning up resources and closing
+     * the database connection.
      *
      * @param event The window close event.
      */
@@ -113,8 +112,8 @@ public class App extends FXApplication {
     private void clearCollections() {
         FXCollectionsRegister collectionsRegistry = DataManager.getInstance().getCollectionsRegistry();
         String[] knownCollections = {
-                "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
-                "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG", "SETTINGS"
+            "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
+            "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG", "SETTINGS"
         };
 
         for (String key : knownCollections) {

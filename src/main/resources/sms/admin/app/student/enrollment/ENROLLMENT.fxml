@@ -77,7 +77,7 @@
                         <Label text="Municipality:" GridPane.rowIndex="2" />
                         <TextField fx:id="municipalityField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                        <Label text="City:" GridPane.rowIndex="3" />
+                        <Label text="Province:" GridPane.rowIndex="3" />
                         <TextField fx:id="cityField" styleClass="profile-field" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                         <Label text="Postal Code:" GridPane.rowIndex="4" />

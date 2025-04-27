@@ -1,7 +1,10 @@
+
 package sms.admin.app.student.viewstudent;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
+import java.util.NoSuchElementException;
 
 import dev.finalproject.data.AddressDAO;
 import dev.finalproject.data.StudentDAO;
@@ -35,6 +38,7 @@ import sms.admin.util.profile.ProfilePhotoManager;
  * and updating student details, including personal information, address,
  * guardian, cluster, and profile photo.
  */
+
 public class StudentProfileController extends FXController {
 
     // Core fields
@@ -190,7 +194,18 @@ public class StudentProfileController extends FXController {
     private void initializeMasterLists() {
         try {
             addressMasterList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
-            studentGuardianMasterList = FXCollections.observableArrayList(StudentGuardianDAO.getStudentGuardianList());
+
+            // Handle empty student-guardian list gracefully
+            List<StudentGuardian> sgList;
+            try {
+                sgList = StudentGuardianDAO.getStudentGuardianList();
+            } catch (NoSuchElementException e) {
+                // If no student-guardian relationships exist yet, create empty list
+                sgList = FXCollections.observableArrayList();
+                System.out.println("No student-guardian relationships found, creating empty list");
+            }
+            studentGuardianMasterList = FXCollections.observableArrayList(sgList);
+
             // Use DataManager to retrieve shared collections
             guardianMasterList = DataManager.getInstance().getCollectionsRegistry().getList("GUARDIAN");
             clusterMasterList = DataManager.getInstance().getCollectionsRegistry().getList("CLUSTER");
@@ -332,23 +347,37 @@ public class StudentProfileController extends FXController {
      */
     private void loadGuardianInfo() {
         if (studentGuardianMasterList == null || guardianMasterList == null) {
-            clearGuardianFields();
-            return;
+            try {
+                // Try to refresh the lists from DataManager
+                studentGuardianMasterList = DataManager.getInstance()
+                        .getCollectionsRegistry().getList("STUDENT_GUARDIAN");
+                guardianMasterList = DataManager.getInstance()
+                        .getCollectionsRegistry().getList("GUARDIAN");
+                
+                if (studentGuardianMasterList == null || guardianMasterList == null) {
+                    clearGuardianFields();
+                    return;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                clearGuardianFields();
+                return;
+            }
         }
 
         studentGuardianMasterList.stream()
                 .filter(sg -> sg.getStudentId().getStudentID() == student.getStudentID())
                 .findFirst()
                 .ifPresent(sg -> guardianMasterList.stream()
-                .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
-                .findFirst()
-                .ifPresent(guardian -> {
-                    guardianFirstNameField.setText(guardian.getFirstName());
-                    guardianMiddleNameField.setText(guardian.getMiddleName());
-                    guardianLastNameField.setText(guardian.getLastName());
-                    guardianRelationshipField.setText(guardian.getRelationship());
-                    guardianContactInfoField.setText(guardian.getContact());
-                }));
+                        .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
+                        .findFirst()
+                        .ifPresent(guardian -> {
+                            guardianFirstNameField.setText(guardian.getFirstName());
+                            guardianMiddleNameField.setText(guardian.getMiddleName());
+                            guardianLastNameField.setText(guardian.getLastName());
+                            guardianRelationshipField.setText(guardian.getRelationship());
+                            guardianContactInfoField.setText(guardian.getContact());
+                        }));
     }
 
     /**

@@ -38,6 +38,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.MenuItem;
@@ -59,10 +60,9 @@ import sms.admin.util.scene.SceneLoaderUtil;
 
 /**
  * Controller for the root view of the application, managing navigation and
- * school year selection.
- * This class handles the UI elements and logic for switching between
- * attendance, payroll, and student views,
- * generating QR codes for students, and managing school year data.
+ * school year selection. This class handles the UI elements and logic for
+ * switching between attendance, payroll, and student views, generating QR codes
+ * for students, and managing school year data.
  */
 public class RootController extends FXController {
 
@@ -238,7 +238,8 @@ public class RootController extends FXController {
     /**
      * Retrieves the currently selected month from the active controller.
      *
-     * @return The selected month, or the default selected month if not available.
+     * @return The selected month, or the default selected month if not
+     * available.
      */
     private String getCurrentControllerMonth() {
         if (currentController instanceof AttendanceController controller) {
@@ -265,7 +266,8 @@ public class RootController extends FXController {
      * Retrieves the list of students for the specified school year who are not
      * deleted.
      *
-     * @param schoolYear The school year to filter students by (e.g., "2024-2025").
+     * @param schoolYear The school year to filter students by (e.g.,
+     * "2024-2025").
      * @return A list of students for the specified year.
      */
     private List<Student> getStudentsForYear(String schoolYear) {
@@ -280,22 +282,22 @@ public class RootController extends FXController {
                 .filter(obj -> obj instanceof Student)
                 .map(obj -> (Student) obj)
                 .filter(student -> student.getYearID() != null
-                        && student.getYearID().getYearStart() == startYear
-                        && student.isDeleted() == 0)
+                && student.getYearID().getYearStart() == startYear
+                && student.isDeleted() == 0)
                 .toList();
     }
 
     /**
-     * Generates a QR code with the specified data and student name, saving it to
-     * the given file path.
+     * Generates a QR code with the specified data and student name, saving it
+     * to the given file path.
      *
-     * @param data        The data to encode in the QR code.
-     * @param filePath    The file path to save the QR code image.
-     * @param width       The width of the QR code image.
-     * @param height      The height of the QR code image.
+     * @param data The data to encode in the QR code.
+     * @param filePath The file path to save the QR code image.
+     * @param width The width of the QR code image.
+     * @param height The height of the QR code image.
      * @param studentName The student's name to include below the QR code.
      * @throws WriterException If QR code generation fails.
-     * @throws IOException     If image writing fails.
+     * @throws IOException If image writing fails.
      */
     private void generateQRCode(String data, String filePath, int width, int height, String studentName)
             throws WriterException, IOException {
@@ -341,8 +343,8 @@ public class RootController extends FXController {
     }
 
     /**
-     * Handles the generation of QR codes for all students in the selected school
-     * year.
+     * Handles the generation of QR codes for all students in the selected
+     * school year.
      */
     @FXML
     private void handleGenerateKeyMenuItem() {
@@ -380,12 +382,26 @@ public class RootController extends FXController {
                 File qrFile = new File(qrDir, cleanName + ".png");
                 generateQRCode(encryptedKey, qrFile.getAbsolutePath(), 300, 300, student.getFullName());
 
-                System.out.println("Generated for: " + student.getFullName() +
-                        " (" + qrFile.getAbsolutePath() + ")");
+                System.out.println("Generated for: " + student.getFullName()
+                        + " (" + qrFile.getAbsolutePath() + ")");
             }
+
+            // Show success alert after generating all QR codes
+            showSuccessAlert("Export Complete",
+                    "Successfully generated QR codes",
+                    "QR codes saved to:\n" + qrDir.getAbsolutePath());
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void showSuccessAlert(String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 
     /**

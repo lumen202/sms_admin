@@ -232,6 +232,13 @@ public class EnrollmentController extends FXController {
                 StudentGuardian studentGuardian = new StudentGuardian(student, guardian);
                 StudentGuardianDAO.insert(studentGuardian);
 
+                // Update Collections Registry
+                ObservableList<StudentGuardian> studentGuardians = DataManager.getInstance()
+                        .getCollectionsRegistry().getList("STUDENT_GUARDIAN");
+                if (studentGuardians != null) {
+                    studentGuardians.add(studentGuardian);
+                }
+
                 handleClear();
 
                 if (dialogStage != null) {
