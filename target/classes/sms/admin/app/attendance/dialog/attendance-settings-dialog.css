@@ -1,70 +1,68 @@
-.dialog-container {
+.dialog-pane {
   -fx-background-color: white;
   -fx-background-radius: 8;
   -fx-border-radius: 8;
   -fx-border-color: #003366;
   -fx-border-width: 1;
   -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 15, 0, 0, 1);
-  -fx-padding: 15 12 20 12;
-  -fx-min-width: 400px;
-  -fx-max-width: 500px;
+  -fx-min-width: 400;
+  -fx-min-height: 230; /* reduced from 300 */
 }
 
-/* Header */
 .dialog-header {
-  -fx-font-size: 14px;
+  -fx-font-size: 20;
   -fx-font-weight: bold;
-  -fx-text-fill: #2b4865;
-  -fx-background-color: #75a7c9;
-  -fx-background-radius: 5;
-  -fx-padding: 10;
-  -fx-alignment: CENTER;
-  -fx-pref-width: infinity;
+  -fx-text-fill: #2c3e50;
+  -fx-padding: 0 0 10 0; /* Reduce vertical spacing */
 }
 
 .dialog-label {
-  -fx-text-fill: #2b4865;
-  -fx-font-size: 13px;
+  -fx-font-size: 14;
   -fx-font-weight: bold;
+  -fx-text-fill: #34495e;
 }
 
-/* Combo Box Styling */
-.combo-box {
-  -fx-background-color: white;
-  -fx-border-color: #003366;
-  -fx-border-radius: 5;
-  -fx-background-radius: 5;
-}
-
-.combo-box:hover {
-  -fx-border-color: #406e8e;
-}
-
-.combo-box:focused {
-  -fx-border-color: #406e8e;
-  -fx-border-width: 2;
-}
-
-/* Button Styling */
-.dialog-button {
+.primary-button {
   -fx-background-color: #003366;
   -fx-text-fill: white;
   -fx-font-weight: bold;
-  -fx-padding: 8 20;
-  -fx-background-radius: 5;
-  -fx-min-width: 70;
-  -fx-min-height: 28;
+  -fx-min-width: 80;
+  -fx-min-height: 32;
+  -fx-background-radius: 16;
   -fx-cursor: hand;
+  -fx-padding: 8 24;
 }
 
-.dialog-button:hover {
+.primary-button:hover {
   -fx-background-color: #004080;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 4, 0, 0, 1);
 }
 
-.dialog-button.primary-button {
-  -fx-background-color: #2b4865;
+.secondary-button {
+  -fx-background-color: #95a5a6;
+  -fx-text-fill: white;
+  -fx-font-weight: bold;
+  -fx-min-width: 80;
+  -fx-min-height: 32;
+  -fx-background-radius: 16;
+  -fx-cursor: hand;
+  -fx-padding: 8 24;
 }
 
-.dialog-button.primary-button:hover {
-  -fx-background-color: #406e8e;
+.secondary-button:hover {
+  -fx-background-color: #7f8c8d;
+}
+
+.combo-box {
+  -fx-background-color: white;
+  -fx-border-color: #003366;
+  -fx-border-radius: 4;
+  -fx-background-radius: 4;
+  -fx-padding: 4;
+  /* -fx-min-height: 28;
+  -fx-max-height: 28; Adjust combo box to be more compact */
+}
+
+.combo-box:hover {
+  -fx-border-color: #004080;
 }

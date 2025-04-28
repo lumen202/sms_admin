@@ -84,7 +84,7 @@ public class EnrollmentUtils {
                 firstName, middleName, lastName, nameExt,
                 email, status, contact, sqlDate, fare,
                 cluster,
-                schoolYear, 0);
+                schoolYear, 0, null);
 
         StudentDAO.insert(student);
         DataManager.getInstance().getCollectionsRegistry().getList("STUDENT").add(student);

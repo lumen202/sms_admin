@@ -76,8 +76,7 @@ public class StudentTableExporter extends BaseTableExporter<Student> {
      */
     @Override
     public void writeDataToWorkbook(Workbook workbook, ObservableList<Student> items, String title) {
-        Sheet sheet = workbook.createSheet(getSheetName());
-        writeBasicSheet(workbook, sheet, items, title);
+        throw new UnsupportedOperationException("Excel export is not supported");
     }
 
     /**

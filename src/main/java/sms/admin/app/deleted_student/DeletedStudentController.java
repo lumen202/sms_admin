@@ -14,7 +14,6 @@ import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -54,6 +53,8 @@ public class DeletedStudentController extends FXController {
                     student.getNameExtension() != null ? student.getNameExtension() : "");
             return new SimpleStringProperty(fullName.trim());
         });
+        dateDeletedColumn.setStyle("-fx-alignment: CENTER;");
+        dateDeletedColumn.setCellValueFactory(cell -> cell.getValue().deletedAtProperty());
     }
 
     @Override
@@ -118,9 +119,9 @@ public class DeletedStudentController extends FXController {
             masterStudentList.setAll(
                     students.stream()
                             .filter(student -> student != null
-                                    && student.getYearID() != null
-                                    && student.getYearID().getYearStart() == startYear
-                                    && student.isDeleted() == 1)
+                            && student.getYearID() != null
+                            && student.getYearID().getYearStart() == startYear
+                            && student.isDeleted() == 1)
                             .collect(Collectors.toList()));
 
             studentTableView.refresh();
@@ -135,6 +136,7 @@ public class DeletedStudentController extends FXController {
         Student selectedStudent = studentTableView.getSelectionModel().getSelectedItem();
         if (selectedStudent != null) {
             selectedStudent.setDeleted(0);
+            selectedStudent.setDeletedAt(null);
             StudentDAO.update(selectedStudent);
             masterStudentList.remove(selectedStudent);
             studentTableView.refresh();
@@ -170,7 +172,7 @@ public class DeletedStudentController extends FXController {
                 successAlert.setHeaderText(null);
                 successAlert.setContentText(
                         "Student " + selectedStudent.getFirstName() + " " + selectedStudent.getLastName()
-                                + " has been deleted permanently.");
+                        + " has been deleted permanently.");
                 successAlert.showAndWait();
             }
         } else {

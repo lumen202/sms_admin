@@ -11,7 +11,9 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="20" styleClass="dialog-container" xmlns="http://javafx.com/javafx/22"
+<VBox spacing="20" styleClass="dialog-pane" 
+    stylesheets="@attendance-settings-dialog.css,@../../styles/dialog.css,@../../styles/main.css"
+    xmlns="http://javafx.com/javafx/22"
     xmlns:fx="http://javafx.com/fxml/1"
     fx:controller="sms.admin.app.attendance.dialog.AttendanceSettingsDialogController">
     <padding>
@@ -41,12 +43,7 @@
     </GridPane>
 
     <HBox alignment="CENTER_RIGHT" spacing="10">
-        <Button fx:id="cancelButton" styleClass="dialog-button" text="Cancel" />
-        <Button fx:id="saveButton" defaultButton="true" text="Save">
-            <styleClass>
-                <String fx:value="dialog-button" />
-                <String fx:value="primary-button" />
-            </styleClass>
-        </Button>
+        <Button fx:id="cancelButton" styleClass="secondary-button" text="Cancel" />
+        <Button fx:id="saveButton" defaultButton="true" styleClass="primary-button" text="Save" />
     </HBox>
 </VBox>

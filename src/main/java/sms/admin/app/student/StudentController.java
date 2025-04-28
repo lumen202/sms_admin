@@ -2,6 +2,9 @@ package sms.admin.app.student;
 
 import java.io.File;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,6 +48,9 @@ import sms.admin.util.exporter.StudentTableExporter;
  */
 public class StudentController extends FXController {
 
+    private static final DateTimeFormatter DELETE_TIMESTAMP_FORMAT
+            = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss a");
+
     @FXML
     private TableView<Student> studentTableView; // Table displaying student records
     @FXML
@@ -73,8 +79,6 @@ public class StudentController extends FXController {
     private StackPane modalContainer; // Container for modal content
     @FXML
     private MenuButton exportButton; // Button for export options
-    @FXML
-    private MenuItem exportExcel; // Menu item for exporting to Excel
     @FXML
     private MenuItem exportCsv; // Menu item for exporting to CSV
     @FXML
@@ -161,7 +165,6 @@ public class StudentController extends FXController {
      */
     @Override
     protected void load_listeners() {
-        exportExcel.setOnAction(event -> handleExport("excel"));
         exportCsv.setOnAction(event -> handleExport("csv"));
         exportPdf.setOnAction(event -> handleExport("pdf"));
         importCsv.setOnAction(event -> handleImport());
@@ -284,6 +287,8 @@ public class StudentController extends FXController {
             if (response == ButtonType.OK) {
                 try {
                     student.setDeleted(1);
+                    String timestamp = LocalDateTime.now().format(DELETE_TIMESTAMP_FORMAT);
+                    student.setDeletedAt(timestamp);
                     StudentDAO.update(student);
                     masterStudentList.remove(student);
                     studentTableView.refresh();
@@ -353,7 +358,7 @@ public class StudentController extends FXController {
     /**
      * Generates the file path for exporting student data.
      *
-     * @param extension The file extension (e.g., "xlsx", "csv", "pdf").
+     * @param extension The file extension (e.g., "csv", "pdf").
      * @return The file path for the export.
      */
     private String getExportPath(String extension) {
@@ -363,19 +368,15 @@ public class StudentController extends FXController {
     /**
      * Handles the export of student data to the specified format.
      *
-     * @param type The export type ("excel", "csv", or "pdf").
+     * @param type The export type ("csv" or "pdf").
      */
     private void handleExport(String type) {
         try {
             String title = "Student List Report";
-            String outputPath = getExportPath(type.equals("excel") ? "xlsx" : type.toLowerCase());
+            String outputPath = getExportPath(type.toLowerCase());
             StudentTableExporter exporter = new StudentTableExporter();
 
             switch (type) {
-                case "excel" -> {
-                    exporter.exportToExcel(studentTableView, title, outputPath);
-                    showSuccessAlert("Export Complete", "Successfully exported to Excel", outputPath);
-                }
                 case "pdf" -> {
                     exporter.exportToPdf(studentTableView, title, outputPath);
                     showSuccessAlert("Export Complete", "Successfully exported to PDF", outputPath);
@@ -448,25 +449,28 @@ public class StudentController extends FXController {
     private void handleAddStudent() {
         try {
             SchoolYear currentSchoolYear = getCurrentSchoolYear();
-            if (currentSchoolYear != null) {
-                EnrollmentLoader loader = new EnrollmentLoader();
-                // Pass the selectedYear parameter
-                loader.addParameter("selectedYear", selectedYear);
-                loader.addParameter("OWNER_WINDOW", studentTableView.getScene().getWindow());
-                loader.load();
-
-                // Refresh the table after adding a student
-                initializeStudentList(selectedYear);
-                updateFilter();
-                studentTableView.refresh();
-                updateStatusLabel();
-            } else {
+            if (currentSchoolYear == null) {
                 showErrorAlert("Error", "No school year selected",
                         "Please select a school year before adding a student.");
+                return;
             }
+
+            EnrollmentLoader loader = new EnrollmentLoader();
+            loader.addParameter("selectedYear", selectedYear);
+            loader.addParameter("OWNER_WINDOW", studentTableView.getScene().getWindow());
+            loader.load();
+
+            // Manually refresh only the student list to avoid full DataManager refresh
+            initializeStudentList(selectedYear);
+            updateFilter();
+            studentTableView.refresh();
+            updateStatusLabel();
+
         } catch (Exception e) {
             e.printStackTrace();
-            showErrorAlert("Error", "Failed to open enrollment form", e.getMessage());
+            showErrorAlert("Error", "Failed to add student",
+                    "An error occurred while adding the student: " + e.getMessage()
+                    + "\nThe student may have been added, but some data may not be displayed correctly.");
         }
     }
 
@@ -483,11 +487,14 @@ public class StudentController extends FXController {
         int startYear = Integer.parseInt(years[0].trim());
         int endYear = Integer.parseInt(years[1].trim());
 
-        return DataManager.getInstance().getCollectionsRegistry().getList("SCHOOL_YEAR")
+        return DataManager.getInstance()
+                .getCollectionsRegistry()
+                .getList("SCHOOL_YEAR")
                 .stream()
                 .filter(sy -> sy instanceof SchoolYear)
                 .map(sy -> (SchoolYear) sy)
-                .filter(sy -> sy.getYearStart() == startYear && sy.getYearEnd() == endYear)
+                .filter(sy -> sy.getYearStart() == startYear
+                && sy.getYearEnd() == endYear)
                 .findFirst()
                 .orElse(null);
     }
