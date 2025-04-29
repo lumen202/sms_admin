@@ -130,8 +130,8 @@ public class DetailedPayrollExporter {
             formCell.setCellValue("GENERAL FORM NO. 7(A)");
             CellStyle formStyle = workbook.createCellStyle();
             Font formFont = workbook.createFont();
-            formFont.setBold(true);
-            formFont.setFontHeightInPoints((short) 11);
+            formFont.setBold(false);
+            formFont.setFontHeightInPoints((short) 9);
             formStyle.setFont(formFont);
             formStyle.setAlignment(HorizontalAlignment.LEFT);
             formCell.setCellStyle(formStyle);
@@ -142,7 +142,7 @@ public class DetailedPayrollExporter {
             CellStyle mainTitleStyle = workbook.createCellStyle();
             Font mainTitleFont = workbook.createFont();
             mainTitleFont.setBold(true);
-            mainTitleFont.setFontHeightInPoints((short) 16);
+            mainTitleFont.setFontHeightInPoints((short) 18);
             mainTitleStyle.setFont(mainTitleFont);
             mainTitleStyle.setAlignment(HorizontalAlignment.CENTER);
             mainTitleCell.setCellStyle(mainTitleStyle);
@@ -161,10 +161,10 @@ public class DetailedPayrollExporter {
 
             // Create fonts for underlined and non-underlined text
             Font regularFont = workbook.createFont();
-            regularFont.setFontHeightInPoints((short) 14);
+            regularFont.setFontHeightInPoints((short) 16);
 
             Font underlineFont = workbook.createFont();
-            underlineFont.setFontHeightInPoints((short) 14);
+            underlineFont.setFontHeightInPoints((short) 16);
             underlineFont.setUnderline(Font.U_SINGLE);
 
             // Identify the substrings to underline
@@ -584,6 +584,7 @@ public class DetailedPayrollExporter {
         Cell signNoHeader = sheet.getRow(startRow).createCell(currentCol);
         signNoHeader.setCellValue("No.");
         signNoHeader.setCellStyle(headerStyle);
+        sheet.setColumnWidth(currentCol, 5 * 256); // Increase width from 4 to 5 characters
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow + 3, currentCol, currentCol));
         currentCol++;
 
