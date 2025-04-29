@@ -1,6 +1,8 @@
 package sms.admin.app.student.enrollment;
 
 import java.sql.Date;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.OptionalInt;
 
 import dev.finalproject.App;
@@ -11,9 +13,12 @@ import dev.finalproject.models.SchoolYear;
 import dev.finalproject.models.Student;
 import dev.finalproject.models.StudentGuardian;
 import dev.sol.core.application.FXController;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
@@ -204,8 +209,7 @@ public class EnrollmentController extends FXController {
                         guardianRelationshipField,
                         guardianContactInfoField,
                         null, // passing null to create new guardian
-                        guardianList
-                );
+                        guardianList);
 
                 // Enroll the student using the provided details
                 Student student = EnrollmentUtils.enrollStudent(
@@ -228,24 +232,26 @@ public class EnrollmentController extends FXController {
                         null,
                         currentSchoolYear);
 
-                // Create student-guardian relationship
-                StudentGuardian studentGuardian = new StudentGuardian(student, guardian);
-                StudentGuardianDAO.insert(studentGuardian);
-
-                // Update Collections Registry
-                ObservableList<StudentGuardian> studentGuardians = DataManager.getInstance()
-                        .getCollectionsRegistry().getList("STUDENT_GUARDIAN");
-                if (studentGuardians != null) {
-                    studentGuardians.add(studentGuardian);
-                }
-
+                // Handle student-guardian relationship
+                handleStudentGuardianRelationship(student, guardian);
                 handleClear();
+
+                // Show success notification
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("Success");
+                successAlert.setHeaderText("Enrollment Successful");
+                successAlert.setContentText("Student has been successfully enrolled!\n\nStudent ID: " + nextStudentId +
+                        "\nName: " + firstNameField.getText() + " " + lastNameField.getText());
+
+                // Style the alert buttons
+                Button okButton = (Button) successAlert.getDialogPane().lookupButton(ButtonType.OK);
+                okButton.setStyle("-fx-background-color: #003366; -fx-text-fill: white;");
+
+                successAlert.showAndWait();
 
                 if (dialogStage != null) {
                     dialogStage.close();
                 }
-
-                showSuccessMessage("Student enrolled successfully!");
 
             } catch (Exception e) {
                 showErrorMessage("Failed to enroll student: " + e.getMessage());
@@ -479,6 +485,42 @@ public class EnrollmentController extends FXController {
     private void handleCancel() {
         if (dialogStage != null) {
             dialogStage.close();
+        }
+    }
+
+    /**
+     * Handles student-guardian relationship creation and registry updates
+     */
+    private void handleStudentGuardianRelationship(Student student, Guardian guardian) {
+        StudentGuardian studentGuardian = new StudentGuardian(student, guardian);
+        ObservableList<StudentGuardian> studentGuardians = null;
+
+        try {
+            // Get registry list first to minimize operations
+            studentGuardians = DataManager.getInstance()
+                    .getCollectionsRegistry().getList("STUDENT_GUARDIAN");
+
+            // Insert into database
+            StudentGuardianDAO.insert(studentGuardian);
+
+            // Update registry if needed
+            if (studentGuardians == null) {
+                studentGuardians = FXCollections.observableArrayList();
+                DataManager.getInstance()
+                        .getCollectionsRegistry().register("STUDENT_GUARDIAN", studentGuardians);
+            }
+
+            // Add to registry list
+            studentGuardians.add(studentGuardian);
+
+            System.out.printf("Student-Guardian relationship created: Student ID=%d, Guardian ID=%d%n",
+                    student.getStudentID(), guardian.getGuardianID());
+
+        } catch (Exception e) {
+            String error = String.format("Failed to create relationship: Student ID=%d, Guardian ID=%d - %s",
+                    student.getStudentID(), guardian.getGuardianID(), e.getMessage());
+            System.err.println(error);
+            // Don't throw - allow enrollment to continue
         }
     }
 }

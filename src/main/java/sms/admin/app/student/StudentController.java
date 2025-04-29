@@ -48,8 +48,8 @@ import sms.admin.util.exporter.StudentTableExporter;
  */
 public class StudentController extends FXController {
 
-    private static final DateTimeFormatter DELETE_TIMESTAMP_FORMAT
-            = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss a");
+    private static final DateTimeFormatter DELETE_TIMESTAMP_FORMAT = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd hh:mm:ss a");
 
     @FXML
     private TableView<Student> studentTableView; // Table displaying student records
@@ -218,8 +218,8 @@ public class StudentController extends FXController {
         masterStudentList.setAll(
                 students.stream()
                         .filter(s -> s != null && s.getYearID() != null
-                        && s.getYearID().getYearStart() == startYear
-                        && s.isDeleted() == 0)
+                                && s.getYearID().getYearStart() == startYear
+                                && s.isDeleted() == 0)
                         .collect(Collectors.toList()));
     }
 
@@ -272,8 +272,8 @@ public class StudentController extends FXController {
         confirmDialog.setHeaderText("Are you sure you want to delete this student?");
         confirmDialog.setContentText(
                 "Student Details:\n"
-                + "ID: " + student.getStudentID() + "\n"
-                + "Name: " + student.getFullName() + "\n");
+                        + "ID: " + student.getStudentID() + "\n"
+                        + "Name: " + student.getFullName() + "\n");
 
         // Style the dialog buttons
         Button okButton = (Button) confirmDialog.getDialogPane().lookupButton(ButtonType.OK);
@@ -436,6 +436,19 @@ public class StudentController extends FXController {
                 updateFilter();
                 studentTableView.refresh();
                 statusLabel.setText("Successfully imported " + successCount + " students");
+
+                // Show success dialog
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("Import Complete");
+                successAlert.setHeaderText("CSV Import Successful");
+                successAlert.setContentText(
+                        "Successfully imported " + successCount + " students from " + selectedFile.getName());
+
+                // Style the OK button
+                Button okButton = (Button) successAlert.getDialogPane().lookupButton(ButtonType.OK);
+                okButton.setStyle("-fx-background-color: #003366; -fx-text-fill: white;");
+
+                successAlert.showAndWait();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -470,7 +483,7 @@ public class StudentController extends FXController {
             e.printStackTrace();
             showErrorAlert("Error", "Failed to add student",
                     "An error occurred while adding the student: " + e.getMessage()
-                    + "\nThe student may have been added, but some data may not be displayed correctly.");
+                            + "\nThe student may have been added, but some data may not be displayed correctly.");
         }
     }
 
@@ -494,7 +507,7 @@ public class StudentController extends FXController {
                 .filter(sy -> sy instanceof SchoolYear)
                 .map(sy -> (SchoolYear) sy)
                 .filter(sy -> sy.getYearStart() == startYear
-                && sy.getYearEnd() == endYear)
+                        && sy.getYearEnd() == endYear)
                 .findFirst()
                 .orElse(null);
     }
@@ -513,8 +526,8 @@ public class StudentController extends FXController {
     /**
      * Displays an error alert with the specified details.
      *
-     * @param title The title of the alert.
-     * @param header The header text of the alert.
+     * @param title   The title of the alert.
+     * @param header  The header text of the alert.
      * @param content The content text of the alert.
      */
     private void showErrorAlert(String title, String header, String content) {

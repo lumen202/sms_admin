@@ -48,7 +48,7 @@ public class EnrollmentUtils {
         int studentIdInt;
         try {
             studentIdInt = Integer.parseInt(studentId);
-            if (studentIdInt <= 0) {  // treat 0 as invalid
+            if (studentIdInt <= 0) { // treat 0 as invalid
                 throw new NumberFormatException();
             }
         } catch (Exception e) {
@@ -177,7 +177,7 @@ public class EnrollmentUtils {
      */
     private static String[] parseAddress(String address, CsvStudent csvStudent) {
         if (address == null || address.trim().isEmpty()) {
-            return new String[]{"", "", "", ""};
+            return new String[] { "", "", "", "" };
         }
         if (address.contains(",")) {
             String[] parts = address.split(",");
@@ -254,37 +254,37 @@ public class EnrollmentUtils {
                 city = "";
                 municipality = "";
             }
-            return new String[]{
-                truncateString(street, MAX_STREET_LENGTH),
-                truncateString(barangay, MAX_BARANGAY_LENGTH),
-                truncateString(city, MAX_CITY_LENGTH),
-                truncateString(municipality, MAX_MUNICIPALITY_LENGTH)
+            return new String[] {
+                    truncateString(street, MAX_STREET_LENGTH),
+                    truncateString(barangay, MAX_BARANGAY_LENGTH),
+                    truncateString(city, MAX_CITY_LENGTH),
+                    truncateString(municipality, MAX_MUNICIPALITY_LENGTH)
             };
         } else {
             String[] tokens = address.trim().split("\\s+");
             if (tokens.length == 4 && tokens[0].equalsIgnoreCase("Barangay")) {
-                return new String[]{
-                    "", // street is empty
-                    tokens[0] + " " + tokens[1],
-                    tokens[2],
-                    tokens[3]
+                return new String[] {
+                        "", // street is empty
+                        tokens[0] + " " + tokens[1],
+                        tokens[2],
+                        tokens[3]
                 };
             } else if (tokens.length == 2) {
-                return new String[]{
-                    csvStudent.getMiddleName(),
-                    csvStudent.getLastName(),
-                    tokens[0],
-                    tokens[1]
+                return new String[] {
+                        csvStudent.getMiddleName(),
+                        csvStudent.getLastName(),
+                        tokens[0],
+                        tokens[1]
                 };
             } else if (tokens.length == 3) {
-                return new String[]{
-                    "", // street is empty
-                    tokens[0],
-                    tokens[1],
-                    tokens[2]
+                return new String[] {
+                        "", // street is empty
+                        tokens[0],
+                        tokens[1],
+                        tokens[2]
                 };
             } else {
-                return new String[]{address.trim(), "", "", ""};
+                return new String[] { address.trim(), "", "", "" };
             }
         }
     }

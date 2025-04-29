@@ -70,7 +70,7 @@ public class AttendanceController extends FXController {
     @FXML
     private MenuButton exportButton;
     @FXML
-    private MenuItem exportExcel, exportCsv, exportPdf;
+    private MenuItem exportExcel, exportCsv;
     @FXML
     private Button settingsButton;
     private AttendanceSettings settings = new AttendanceSettings();
@@ -101,12 +101,16 @@ public class AttendanceController extends FXController {
             updateStudentCountLabels();
         }
 
-        // Add listener for scene width changes to handle column resizing
-        rootPane.widthProperty().addListener((obs, oldWidth, newWidth) -> {
+        // Add listener to TableView's widthProperty for better resize handling
+        attendanceTable.widthProperty().addListener((obs, oldWidth, newWidth) -> {
             if (newWidth.doubleValue() > 0) {
-                TableColumnUtil.configureBasicColumns(colNo, colFullName, newWidth.doubleValue());
-                setupMonthColumns();
-                attendanceTable.refresh();
+                double width = newWidth.doubleValue();
+                System.out.println("TableView width changed to: " + width);
+                TableColumnUtil.configureBasicColumns(colNo, colFullName, width);
+                Platform.runLater(() -> {
+                    setupMonthColumns();
+                    attendanceTable.refresh();
+                });
             }
         });
     }
@@ -304,9 +308,23 @@ public class AttendanceController extends FXController {
      */
     @Override
     protected void load_bindings() {
-        attendanceTable.prefHeightProperty().bind(rootPane.heightProperty());
-        attendanceTable.setPrefWidth(1200);
-        attendanceTable.prefWidthProperty().bind(rootPane.widthProperty());
+        // Use BorderPane's natural layout behavior
+        attendanceTable.setMinWidth(800); // Set minimum width
+        attendanceTable.setMinHeight(400); // Set minimum height
+    }
+
+    private double calculateAvailableWidth() {
+        double tableWidth = attendanceTable.getWidth();
+        double noWidth = colNo.getWidth();
+        double nameWidth = colFullName.getWidth();
+        double padding = 20;
+
+        double available = Math.max(tableWidth - noWidth - nameWidth - padding, 400);
+        System.out.println("Available width: " + available +
+                " (Table: " + tableWidth +
+                ", No: " + noWidth +
+                ", Name: " + nameWidth + ")");
+        return available;
     }
 
     /**
@@ -359,8 +377,8 @@ public class AttendanceController extends FXController {
     private void setupMonthColumns() {
         if (isMonthChanging)
             return;
-
         isMonthChanging = true;
+
         monthAttendanceColumn.getColumns().clear();
         String monthYear = monthYearComboBox.getValue();
         if (monthYear == null) {
@@ -375,13 +393,10 @@ public class AttendanceController extends FXController {
         LocalDate startDate = firstDayOfMonth.withDayOfMonth(settings.getStartDay());
         LocalDate endDate = firstDayOfMonth.withDayOfMonth(settings.getEndDay());
 
-        System.out.println("Rendering columns from " + startDate + " to " + endDate);
-
-        // Get only the dates within our range
         List<WeeklyAttendanceUtil.WeekDates> allWeeks = WeeklyAttendanceUtil.splitIntoWeeks(startDate, endDate);
 
-        // Calculate widths
-        double availableWidth = attendanceTable.getWidth() - colNo.getWidth() - colFullName.getWidth() - 20;
+        // Use the new width calculation method
+        double availableWidth = calculateAvailableWidth();
         int totalDays = allWeeks.stream().mapToInt(WeeklyAttendanceUtil::calculateWorkingDays).sum();
         double dayWidth = Math.max(30, availableWidth / Math.max(totalDays, 1));
 

@@ -335,56 +335,35 @@ menu-button {
 }
 
 .icon-menu-button {
-  -fx-background-color: transparent !important;
-  -fx-padding: 0;
-  -fx-min-width: 35;
-  -fx-min-height: 35;
-  -fx-background-radius: 50%;
+  -fx-background-color: transparent;
+  -fx-padding: 8;
+  -fx-min-width: 40;
+  -fx-min-height: 40;
+  -fx-background-radius: 4;
+  -fx-cursor: hand;
 }
 
 .icon-menu-button:hover {
-  -fx-background-color: transparent !important;
+  -fx-background-color: #004480;
+}
+
+.icon-menu-button:pressed {
+  -fx-background-color: #002952;
 }
 
 .icon-menu-button:showing {
-  -fx-background-color: transparent !important;
+  -fx-background-color: #004480;
 }
 
 .icon-menu-button > .arrow-button {
   -fx-padding: 0;
+  visibility: hidden;
 }
 
 .icon-menu-button > .arrow-button > .arrow {
   -fx-padding: 0;
   -fx-shape: "";
-}
-
-.icon-menu-button {
-  -fx-background-color: transparent;
-  -fx-padding: 0;
-  -fx-min-width: 35;
-  -fx-min-height: 35;
-  -fx-background-radius: 50%;
-}
-
-.icon-menu-button:hover {
-  -fx-background-color: rgba(255, 255, 255, 0.1);
-}
-
-.icon-menu-button:showing {
-  -fx-background-color: transparent;
-}
-
-.icon-menu-button > .arrow-button {
-  -fx-padding: 0;
-  -fx-background-color: transparent;
-  visibility: hidden; /* Hide the arrow */
-}
-
-.icon-menu-button > .arrow-button > .arrow {
-  -fx-padding: 0;
-  -fx-shape: "";
-  visibility: hidden; /* Hide the arrow */
+  visibility: hidden;
 }
 
 .menu-icon {

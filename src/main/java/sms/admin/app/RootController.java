@@ -239,7 +239,7 @@ public class RootController extends FXController {
      * Retrieves the currently selected month from the active controller.
      *
      * @return The selected month, or the default selected month if not
-     * available.
+     *         available.
      */
     private String getCurrentControllerMonth() {
         if (currentController instanceof AttendanceController controller) {
@@ -263,11 +263,20 @@ public class RootController extends FXController {
     }
 
     /**
+     * Resets the highlighting of all navigation buttons to their default state.
+     */
+    private void resetButtonHighlights() {
+        String defaultStyle = "-fx-background-color: #800000; -fx-text-fill: white;";
+        Arrays.asList(attendanceButton, payrollButton, studentButton)
+                .forEach(btn -> btn.setStyle(defaultStyle));
+    }
+
+    /**
      * Retrieves the list of students for the specified school year who are not
      * deleted.
      *
      * @param schoolYear The school year to filter students by (e.g.,
-     * "2024-2025").
+     *                   "2024-2025").
      * @return A list of students for the specified year.
      */
     private List<Student> getStudentsForYear(String schoolYear) {
@@ -282,8 +291,8 @@ public class RootController extends FXController {
                 .filter(obj -> obj instanceof Student)
                 .map(obj -> (Student) obj)
                 .filter(student -> student.getYearID() != null
-                && student.getYearID().getYearStart() == startYear
-                && student.isDeleted() == 0)
+                        && student.getYearID().getYearStart() == startYear
+                        && student.isDeleted() == 0)
                 .toList();
     }
 
@@ -291,13 +300,13 @@ public class RootController extends FXController {
      * Generates a QR code with the specified data and student name, saving it
      * to the given file path.
      *
-     * @param data The data to encode in the QR code.
-     * @param filePath The file path to save the QR code image.
-     * @param width The width of the QR code image.
-     * @param height The height of the QR code image.
+     * @param data        The data to encode in the QR code.
+     * @param filePath    The file path to save the QR code image.
+     * @param width       The width of the QR code image.
+     * @param height      The height of the QR code image.
      * @param studentName The student's name to include below the QR code.
      * @throws WriterException If QR code generation fails.
-     * @throws IOException If image writing fails.
+     * @throws IOException     If image writing fails.
      */
     private void generateQRCode(String data, String filePath, int width, int height, String studentName)
             throws WriterException, IOException {
@@ -343,9 +352,20 @@ public class RootController extends FXController {
     }
 
     /**
-     * Handles the generation of QR codes for all students in the selected
-     * school year.
+     * Resets highlights and restores the current view's button highlight
      */
+    private void handleMenuItemCompletion() {
+        resetButtonHighlights();
+        // Restore highlight for current view
+        if (currentController instanceof StudentController) {
+            highlightButton(studentButton);
+        } else if (currentController instanceof AttendanceController) {
+            highlightButton(attendanceButton);
+        } else if (currentController instanceof PayrollController) {
+            highlightButton(payrollButton);
+        }
+    }
+
     @FXML
     private void handleGenerateKeyMenuItem() {
         try {
@@ -390,6 +410,7 @@ public class RootController extends FXController {
             showSuccessAlert("Export Complete",
                     "Successfully generated QR codes",
                     "QR codes saved to:\n" + qrDir.getAbsolutePath());
+            handleMenuItemCompletion();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -478,41 +499,44 @@ public class RootController extends FXController {
     @FXML
     private void handleNewSchoolYear() {
         setOverlayVisible(true);
-        SchoolYearDialog dialog = new SchoolYearDialog(null);
+        try {
+            SchoolYearDialog dialog = new SchoolYearDialog(null);
 
-        System.out.println("Opening new school year dialog...");
+            System.out.println("Opening new school year dialog...");
 
-        dialog.showAndWait().ifPresent(newSchoolYear -> {
-            System.out.println("Dialog returned school year: " + newSchoolYear);
-            if (newSchoolYear != null) {
-                // Update UI on JavaFX thread
-                Platform.runLater(() -> {
-                    System.out.println("Refreshing data from database...");
-                    DataManager.getInstance().refreshData();
-                    List<SchoolYear> updatedList = DataManager.getInstance().getCollectionsRegistry()
-                            .getList("SCHOOL_YEAR");
-                    System.out.println("Found " + updatedList.size() + " school years");
+            dialog.showAndWait().ifPresent(newSchoolYear -> {
+                System.out.println("Dialog returned school year: " + newSchoolYear);
+                if (newSchoolYear != null) {
+                    // Update UI on JavaFX thread
+                    Platform.runLater(() -> {
+                        System.out.println("Refreshing data from database...");
+                        DataManager.getInstance().refreshData();
+                        List<SchoolYear> updatedList = DataManager.getInstance().getCollectionsRegistry()
+                                .getList("SCHOOL_YEAR");
+                        System.out.println("Found " + updatedList.size() + " school years");
 
-                    schoolYearList.clear();
-                    schoolYearList.addAll(updatedList);
+                        schoolYearList.clear();
+                        schoolYearList.addAll(updatedList);
 
-                    ObservableList<String> formattedYears = SchoolYearUtil.convertToStringList(schoolYearList);
-                    System.out.println("Formatted years: " + formattedYears);
-                    yearComboBox.setItems(formattedYears);
+                        ObservableList<String> formattedYears = SchoolYearUtil.convertToStringList(schoolYearList);
+                        System.out.println("Formatted years: " + formattedYears);
+                        yearComboBox.setItems(formattedYears);
 
-                    String formattedNewYear = SchoolYearUtil.formatSchoolYear(newSchoolYear);
-                    System.out.println("Setting combo box to: " + formattedNewYear);
-                    yearComboBox.setValue(formattedNewYear);
+                        String formattedNewYear = SchoolYearUtil.formatSchoolYear(newSchoolYear);
+                        System.out.println("Setting combo box to: " + formattedNewYear);
+                        yearComboBox.setValue(formattedNewYear);
 
-                    // Verify the value was set
-                    System.out.println("Current combo box value: " + yearComboBox.getValue());
+                        // Verify the value was set
+                        System.out.println("Current combo box value: " + yearComboBox.getValue());
 
-                    updateCurrentController(formattedNewYear);
-                });
-            }
-        });
-
-        setOverlayVisible(false);
+                        updateCurrentController(formattedNewYear);
+                    });
+                }
+            });
+            handleMenuItemCompletion();
+        } finally {
+            setOverlayVisible(false);
+        }
     }
 
     /**
@@ -553,6 +577,7 @@ public class RootController extends FXController {
             loader.addParameter("OWNER_WINDOW", contentPane.getScene().getWindow());
             loader.addParameter("SELECTED_YEAR", yearComboBox.getValue());
             loader.load();
+            handleMenuItemCompletion();
         } catch (Exception e) {
             e.printStackTrace();
         }

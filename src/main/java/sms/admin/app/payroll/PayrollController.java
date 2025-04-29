@@ -398,17 +398,17 @@ public class PayrollController extends FXController {
         } catch (Exception e) {
             System.err.println("Export failed: " + e.getMessage());
             e.printStackTrace();
-            showErrorAlert("Export Error", 
-                "Failed to export payroll to " + type.toUpperCase(), 
-                "Error: " + e.getMessage() + "\nPlease check if the output file is not open in another program.");
+            showErrorAlert("Export Error",
+                    "Failed to export payroll to " + type.toUpperCase(),
+                    "Error: " + e.getMessage() + "\nPlease check if the output file is not open in another program.");
         }
     }
 
     /**
      * Shows a success alert dialog with the specified details.
      *
-     * @param title The title of the alert
-     * @param header The header text of the alert
+     * @param title   The title of the alert
+     * @param header  The header text of the alert
      * @param content The content text of the alert
      */
     private void showSuccessAlert(String title, String header, String content) {
@@ -422,8 +422,8 @@ public class PayrollController extends FXController {
     /**
      * Shows an error alert dialog with the specified details.
      *
-     * @param title The title of the alert
-     * @param header The header text of the alert
+     * @param title   The title of the alert
+     * @param header  The header text of the alert
      * @param content The content text of the alert
      */
     private void showErrorAlert(String title, String header, String content) {

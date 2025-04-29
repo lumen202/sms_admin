@@ -1,4 +1,3 @@
-
 package sms.admin.app.student.viewstudent;
 
 import java.io.File;
@@ -193,18 +192,28 @@ public class StudentProfileController extends FXController {
      */
     private void initializeMasterLists() {
         try {
+            // Initialize address list
             addressMasterList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
 
-            // Handle empty student-guardian list gracefully
-            List<StudentGuardian> sgList;
-            try {
-                sgList = StudentGuardianDAO.getStudentGuardianList();
-            } catch (NoSuchElementException e) {
-                // If no student-guardian relationships exist yet, create empty list
-                sgList = FXCollections.observableArrayList();
-                System.out.println("No student-guardian relationships found, creating empty list");
+            // Get existing student-guardian list from registry
+            studentGuardianMasterList = DataManager.getInstance()
+                    .getCollectionsRegistry().getList("STUDENT_GUARDIAN");
+
+            // If list doesn't exist in registry, create it
+            if (studentGuardianMasterList == null) {
+                studentGuardianMasterList = FXCollections.observableArrayList();
+                try {
+                    List<StudentGuardian> existingRelationships = StudentGuardianDAO.getStudentGuardianList();
+                    if (existingRelationships != null) {
+                        studentGuardianMasterList.addAll(existingRelationships);
+                    }
+                } catch (NoSuchElementException e) {
+                    // Expected when no relationships exist yet
+                    System.out.println("No existing student-guardian relationships found");
+                }
+                DataManager.getInstance()
+                        .getCollectionsRegistry().register("STUDENT_GUARDIAN", studentGuardianMasterList);
             }
-            studentGuardianMasterList = FXCollections.observableArrayList(sgList);
 
             // Use DataManager to retrieve shared collections
             guardianMasterList = DataManager.getInstance().getCollectionsRegistry().getList("GUARDIAN");
@@ -324,7 +333,7 @@ public class StudentProfileController extends FXController {
         }
         Optional<Address> studentAddress = addressMasterList.stream()
                 .filter(addr -> addr.getStudentID() != null
-                && addr.getStudentID().getStudentID() == student.getStudentID())
+                        && addr.getStudentID().getStudentID() == student.getStudentID())
                 .findFirst();
 
         studentAddress.ifPresentOrElse(addr -> {
@@ -353,7 +362,7 @@ public class StudentProfileController extends FXController {
                         .getCollectionsRegistry().getList("STUDENT_GUARDIAN");
                 guardianMasterList = DataManager.getInstance()
                         .getCollectionsRegistry().getList("GUARDIAN");
-                
+
                 if (studentGuardianMasterList == null || guardianMasterList == null) {
                     clearGuardianFields();
                     return;
@@ -523,8 +532,8 @@ public class StudentProfileController extends FXController {
                 .filter(sg -> sg.getStudentId().getStudentID() == student.getStudentID())
                 .findFirst()
                 .flatMap(sg -> guardianMasterList.stream()
-                .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
-                .findFirst())
+                        .filter(g -> g.getGuardianID() == sg.getGuardianId().getGuardianID())
+                        .findFirst())
                 .orElse(null);
     }
 

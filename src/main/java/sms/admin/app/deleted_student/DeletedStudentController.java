@@ -119,9 +119,9 @@ public class DeletedStudentController extends FXController {
             masterStudentList.setAll(
                     students.stream()
                             .filter(student -> student != null
-                            && student.getYearID() != null
-                            && student.getYearID().getYearStart() == startYear
-                            && student.isDeleted() == 1)
+                                    && student.getYearID() != null
+                                    && student.getYearID().getYearStart() == startYear
+                                    && student.isDeleted() == 1)
                             .collect(Collectors.toList()));
 
             studentTableView.refresh();
@@ -164,16 +164,28 @@ public class DeletedStudentController extends FXController {
                     selectedStudent.getMiddleName()));
 
             if (confirmAlert.showAndWait().get().getButtonData().isDefaultButton()) {
-                masterStudentList.remove(selectedStudent);
-                StudentDAO.delete(selectedStudent);
+                try {
+                    // Delete from database
+                    StudentDAO.delete(selectedStudent);
 
-                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
-                successAlert.setTitle("Delete Successful");
-                successAlert.setHeaderText(null);
-                successAlert.setContentText(
-                        "Student " + selectedStudent.getFirstName() + " " + selectedStudent.getLastName()
-                        + " has been deleted permanently.");
-                successAlert.showAndWait();
+                    // Refresh all data through DataManager
+                    DataManager.getInstance().refreshData();
+
+                    // Update the local list based on current year selection
+                    updateStudentList(yearComboBox.getValue());
+
+                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                    successAlert.setTitle("Delete Successful");
+                    successAlert.setHeaderText(null);
+                    successAlert.setContentText(
+                            "Student " + selectedStudent.getFirstName() + " " + selectedStudent.getLastName()
+                                    + " has been deleted permanently.");
+                    successAlert.showAndWait();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    showErrorAlert("Delete Error", "Failed to delete student",
+                            "An error occurred while deleting the student.");
+                }
             }
         } else {
             showWarningAlert("No Selection", "Please select a student to delete.");
