@@ -2,6 +2,7 @@ package sms.admin.app.payroll;
 
 import sms.admin.util.loader.BaseLoader;
 
+@SuppressWarnings("rawtypes")
 public class PayrollLoader extends BaseLoader {
     @Override
     public void load() {

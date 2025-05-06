@@ -39,7 +39,6 @@
                                 <items>
                                     <Menu text="Export">
                                         <items>
-                                            <MenuItem fx:id="exportExcel" text="Excel" />
                                             <MenuItem fx:id="exportCsv" text="CSV" />
                                             <MenuItem fx:id="exportPdf" text="PDF" />
                                         </items>

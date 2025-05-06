@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
@@ -33,16 +32,12 @@
                <ComboBox fx:id="yearMonthComboBox" prefWidth="200" promptText="Select Month and Year" />
                <Region HBox.hgrow="ALWAYS" />
                <HBox spacing="5">
-                  <MenuButton fx:id="exportButton" styleClass="payroll-export-button" prefHeight="35.0" prefWidth="90.0" text="Export">
+                  <MenuButton fx:id="exportButton" prefHeight="35.0" prefWidth="90.0" styleClass="payroll-export-button" text="Export">
                      <items>
-                        <MenuItem fx:id="exportExcel" text="Excel" />
+                        <MenuItem fx:id="exportDetailedExcel" text="Excel" />
                         <MenuItem fx:id="exportCsv" text="CSV" />
-                        <MenuItem fx:id="exportPdf" text="PDF" />
-                        <MenuItem fx:id="exportDetailedExcel" text="Detailed Excel" />
-                        <MenuItem fx:id="exportDetailedPdf" text="Detailed PDF" />
                      </items>
                   </MenuButton>
-                  <!-- Removed management MenuButton -->
                </HBox>
             </HBox>
          </VBox>
@@ -59,7 +54,7 @@
                         </toggleGroup>
                     </RadioButton>
                     <RadioButton fx:id="twoWayRadio" text="Two Way" toggleGroup="$fareTypeGroup" />
-                    <RadioButton fx:id="fourWayRadio" text="Four Way" toggleGroup="$fareTypeGroup" selected="true" />
+                    <RadioButton fx:id="fourWayRadio" selected="true" text="Four Way" toggleGroup="$fareTypeGroup" />
                </HBox>
             </HBox>
             <TableView fx:id="payrollTable" styleClass="payroll-table" VBox.vgrow="ALWAYS">

@@ -24,46 +24,68 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import sms.admin.util.attendance.AttendanceUtil;
 import sms.admin.util.attendance.CommonAttendanceUtil;
 import sms.admin.util.dialog.DialogManager;
 
+/**
+ * Controller for the attendance log dialog, displaying detailed attendance
+ * records for a student in a specific month.
+ * This class manages the UI elements and logic for showing daily attendance
+ * logs, including time in and out for morning and afternoon sessions.
+ */
 public class AttendanceLogDialogController extends FXController {
     private Stage stage;
 
     @FXML
-    private Label studentNameLabel;
+    private Label studentNameLabel; // Label to display the student's full name
     @FXML
-    private Label dateLabel;
+    private Label dateLabel; // Label to display the selected month and year
     @FXML
-    private TableView<AttendanceLog> logTable;
+    private TableView<AttendanceLog> logTable; // Table to display attendance logs
     @FXML
-    private TableColumn<AttendanceLog, String> dateColumn;
+    private TableColumn<AttendanceLog, String> dateColumn; // Column for the day of the month
     @FXML
-    private TableColumn<AttendanceLog, String> timeInAMColumn;
+    private TableColumn<AttendanceLog, String> timeInAMColumn; // Column for morning time in
     @FXML
-    private TableColumn<AttendanceLog, String> timeOutAMColumn;
+    private TableColumn<AttendanceLog, String> timeOutAMColumn; // Column for morning time out
     @FXML
-    private TableColumn<AttendanceLog, String> timeInPMColumn;
+    private TableColumn<AttendanceLog, String> timeInPMColumn; // Column for afternoon time in
     @FXML
-    private TableColumn<AttendanceLog, String> timeOutPMColumn;
+    private TableColumn<AttendanceLog, String> timeOutPMColumn; // Column for afternoon time out
     @FXML
-    private Button closeButton;
+    private Button closeButton; // Button to close the dialog
     @FXML
-    private VBox contentBox;
+    private VBox contentBox; // Container for the dialog content
 
-    private Student currentStudent;
-    private LocalDate currentDate;
-    private ObservableList<AttendanceLog> currentLogs;
+    private Student currentStudent; // The student whose attendance is being viewed
+    private LocalDate currentDate; // The date (month and year) for the attendance logs
+    private ObservableList<AttendanceLog> currentLogs; // List of attendance logs for the table
 
+    /**
+     * Sets the stage for this dialog.
+     *
+     * @param stage The stage to set for this dialog.
+     */
     public void setStage(Stage stage) {
         this.stage = stage;
     }
 
+    /**
+     * Default constructor for the controller. Prints a message to indicate
+     * instantiation.
+     */
     public AttendanceLogDialogController() {
         System.out.println("AttendanceLogDialogController constructor called");
     }
 
+    /**
+     * Initializes the dialog with the student, date, and attendance logs.
+     *
+     * @param student The student whose attendance is being viewed.
+     * @param date    The date (month and year) for which attendance is being
+     *                viewed.
+     * @param allLogs The list of all attendance logs to process.
+     */
     public void initData(Student student, LocalDate date, List<AttendanceLog> allLogs) {
         // Set fields first
         this.currentStudent = student;
@@ -83,10 +105,17 @@ public class AttendanceLogDialogController extends FXController {
             dateLabel.setText(currentDate.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
         }
 
-        // Now refresh logs after fields are set
+        // Refresh logs after fields are set
         refreshLogs(allLogs);
     }
 
+    /**
+     * Refreshes the attendance logs in the table based on the provided list of all
+     * logs.
+     * Excludes weekends and future dates, marking absent days appropriately.
+     *
+     * @param allLogs The list of all attendance logs to filter and display.
+     */
     public void refreshLogs(List<AttendanceLog> allLogs) {
         if (currentStudent == null || currentDate == null) {
             System.err.println("Cannot refresh logs - student or date is null");
@@ -101,7 +130,7 @@ public class AttendanceLogDialogController extends FXController {
         // Create a map for all days in the month
         Map<Integer, AttendanceLog> monthLogs = new TreeMap<>();
         int daysInMonth = currentDate.lengthOfMonth();
-        // Initialize all days with null (will be shown as absent), excluding weekends
+        // Initialize all weekdays with null (absent) up to the current date
         for (int day = 1; day <= daysInMonth; day++) {
             LocalDate currentDayDate = LocalDate.of(currentDate.getYear(), currentDate.getMonth(), day);
             if (!currentDayDate.isAfter(LocalDate.now()) && !CommonAttendanceUtil.isWeekend(currentDayDate)) {
@@ -129,13 +158,14 @@ public class AttendanceLogDialogController extends FXController {
         ObservableList<AttendanceLog> logList = FXCollections.observableArrayList();
         monthLogs.forEach((day, log) -> {
             if (log == null) {
+                // Create a dummy log for absent days
                 AttendanceRecord record = new AttendanceRecord(-1, currentDate.getMonthValue(), day,
                         currentDate.getYear());
                 AttendanceLog absentLog = new AttendanceLog(-1, record, currentStudent,
-                        AttendanceUtil.TIME_ABSENT,
-                        AttendanceUtil.TIME_ABSENT,
-                        AttendanceUtil.TIME_ABSENT,
-                        AttendanceUtil.TIME_ABSENT);
+                        CommonAttendanceUtil.TIME_ABSENT,
+                        CommonAttendanceUtil.TIME_ABSENT,
+                        CommonAttendanceUtil.TIME_ABSENT,
+                        CommonAttendanceUtil.TIME_ABSENT);
                 logList.add(absentLog);
             } else {
                 logList.add(log);
@@ -146,12 +176,21 @@ public class AttendanceLogDialogController extends FXController {
         logTable.refresh();
     }
 
+    /**
+     * Restores the state from a previous controller instance.
+     *
+     * @param previous The previous controller instance to restore state from.
+     */
     public void restoreState(AttendanceLogDialogController previous) {
         if (previous != null && previous.currentLogs != null) {
             this.currentLogs = previous.currentLogs;
         }
     }
 
+    /**
+     * Loads the initial fields and configurations for the UI, such as spacing and
+     * padding.
+     */
     @Override
     protected void load_fields() {
         if (contentBox != null) {
@@ -160,11 +199,18 @@ public class AttendanceLogDialogController extends FXController {
         }
     }
 
+    /**
+     * Loads bindings for UI components. No bindings are needed in this
+     * implementation.
+     */
     @Override
     protected void load_bindings() {
         // No bindings needed
     }
 
+    /**
+     * Loads event listeners for UI interactions, such as the close button action.
+     */
     @Override
     protected void load_listeners() {
         if (closeButton != null) {
@@ -172,6 +218,10 @@ public class AttendanceLogDialogController extends FXController {
         }
     }
 
+    /**
+     * Sets up the table columns for displaying attendance logs, organizing them
+     * into morning and afternoon groups.
+     */
     @SuppressWarnings("unchecked")
     private void setupTableColumns() {
         dateColumn.setText("Day");
@@ -213,7 +263,7 @@ public class AttendanceLogDialogController extends FXController {
         timeOutPMColumn.setCellValueFactory(
                 cellData -> new SimpleStringProperty(getCellValue(cellData.getValue(), AttendanceLog::getTimeOutPM)));
 
-        // Apply common styles
+        // Apply common styles to columns
         List.of(dateColumn, timeInAMColumn, timeOutAMColumn, timeInPMColumn, timeOutPMColumn)
                 .forEach(col -> {
                     col.setStyle("-fx-alignment: CENTER;");
@@ -222,6 +272,12 @@ public class AttendanceLogDialogController extends FXController {
                 });
     }
 
+    /**
+     * Formats the day for display in the table, showing "-" for future dates.
+     *
+     * @param log The attendance log to format.
+     * @return The formatted day string (e.g., "01" or "-").
+     */
     private String formatDay(AttendanceLog log) {
         if (log == null || log.getRecordID() == null)
             return "";
@@ -233,6 +289,12 @@ public class AttendanceLogDialogController extends FXController {
         return String.format("%02d", record.getDay());
     }
 
+    /**
+     * Creates a table cell with a tooltip for better user interaction.
+     *
+     * @param tooltipText The text to display in the tooltip.
+     * @return A configured TableCell instance.
+     */
     private TableCell<AttendanceLog, String> createTooltipCell(String tooltipText) {
         return new TableCell<>() {
             final Tooltip tooltip = new Tooltip(tooltipText);
@@ -252,14 +314,25 @@ public class AttendanceLogDialogController extends FXController {
         };
     }
 
+    /**
+     * Retrieves and formats the cell value for a specific time field (e.g., time
+     * in/out).
+     *
+     * @param log        The attendance log to process.
+     * @param timeGetter The function to extract the time value from the log.
+     * @return The formatted time string (e.g., "08:00" or "--:--").
+     */
     private String getCellValue(AttendanceLog log, java.util.function.Function<AttendanceLog, Integer> timeGetter) {
         if (log == null)
             return "";
         if (log.getLogID() == -1)
             return "--:--"; // Dummy log for absent
-        return AttendanceUtil.formatTime(timeGetter.apply(log));
+        return CommonAttendanceUtil.formatTime(timeGetter.apply(log));
     }
 
+    /**
+     * Handles the close action for the dialog, fading it out.
+     */
     @FXML
     private void handleClose() {
         DialogManager.closeWithFade(stage, null);

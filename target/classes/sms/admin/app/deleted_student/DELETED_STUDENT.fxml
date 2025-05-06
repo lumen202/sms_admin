@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import atlantafx.base.controls.Spacer?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<BorderPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" stylesheets="@deleted_student.css" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sms.admin.app.deleted_student.DeletedStudentController">
+   <top>
+      <VBox BorderPane.alignment="CENTER">
+         <children>
+            <HBox styleClass="header-box" alignment="CENTER_LEFT" spacing="10">
+               <children>
+                  <FontIcon iconLiteral="fas-trash-restore" styleClass="header-icon"/>
+                  <Label text="Deleted Students" styleClass="header-title"/>
+               </children>
+            </HBox>
+            <HBox styleClass="search-controls" alignment="CENTER_LEFT">
+               <children>
+                  <TextField fx:id="searchField" styleClass="search-field" promptText="Search Student" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
+                  <Spacer HBox.hgrow="ALWAYS" />
+                  <ComboBox fx:id="yearComboBox" prefWidth="150.0" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </top>
+   <center>
+      <TableView fx:id="studentTableView" styleClass="main-table" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" BorderPane.alignment="CENTER">
+         <columns>
+            <TableColumn fx:id="studentIDColumn" maxWidth="100.0" minWidth="75.0" prefWidth="75.0" text="ID" styleClass="id-column"/>
+            <TableColumn fx:id="colFullName" maxWidth="1.7976931348623157E308" minWidth="200.0" prefWidth="-1.0" text="Name" />
+            <TableColumn fx:id="dateDeletedColumn" maxWidth="200.0" minWidth="150.0" prefWidth="183.0" text="Date Deleted" />
+         </columns>
+         <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+         </columnResizePolicy>
+         <contextMenu>
+            <ContextMenu>
+               <items>
+                  <MenuItem fx:id="restoreMenuItem" onAction="#handleRestoreMenuItem" text="Restore" />
+                  <MenuItem fx:id="deleteMenuItem" onAction="#handleDeleteMenuItem" text="Delete Permanently" />
+               </items>
+            </ContextMenu>
+         </contextMenu>
+      </TableView>
+   </center>
+</BorderPane>

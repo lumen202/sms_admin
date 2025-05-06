@@ -2,6 +2,7 @@ package sms.admin.app.student;
 
 import sms.admin.util.loader.BaseLoader;
 
+@SuppressWarnings("rawtypes")
 public class StudentLoader extends BaseLoader {
     @Override
     public void load() {

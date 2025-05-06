@@ -10,30 +10,53 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class for configuring and managing table columns in the attendance
+ * view.
+ * Provides methods to create day-specific columns, configure responsive
+ * layouts, adjust column widths,
+ * and update column styles dynamically based on table size.
+ */
 public class TableColumnUtil {
-    private static final double MIN_COLUMN_WIDTH = 30.0;
-    public static final double DEFAULT_COLUMN_WIDTH = 120.0;
-    public static final double MIN_WEEK_WIDTH = 100.0;
-    public static final double MIN_DAY_WIDTH = 30.0;
 
-    private static final double MIN_FONT_SIZE = 8.0;
-    private static final double MAX_FONT_SIZE = 14.0;
-    private static final double MIN_CELL_HEIGHT = 24.0;
-    private static final double MAX_CELL_HEIGHT = 40.0;
+    private static final double MIN_COLUMN_WIDTH = 30.0; // Minimum width for any column
+    public static final double DEFAULT_COLUMN_WIDTH = 120.0; // Default width for day columns
+    public static final double MIN_WEEK_WIDTH = 100.0; // Minimum width for week columns
+    public static final double MIN_DAY_WIDTH = 30.0; // Minimum width for day columns
 
+    private static final double MIN_FONT_SIZE = 8.0; // Minimum font size for column text
+    private static final double MAX_FONT_SIZE = 14.0; // Maximum font size for column text
+    private static final double MIN_CELL_HEIGHT = 24.0; // Minimum cell height
+    private static final double MAX_CELL_HEIGHT = 40.0; // Maximum cell height
+
+    private static TableColumn<Student, String> nameColumnReference; // Reference to the name column for alignment
+
+    /**
+     * Creates a table column for a specific date, displaying attendance status for
+     * each student.
+     *
+     * @param date  The date for the column.
+     * @param logs  The list of attendance logs to determine status.
+     * @param width The preferred width of the column.
+     * @return The configured TableColumn, or null if date or logs are invalid.
+     */
     public static TableColumn<Student, String> createDayColumn(
             LocalDate date,
             ObservableList<AttendanceLog> logs,
             double width) {
-        if (date == null || logs == null)
+        if (date == null || logs == null) {
             return null;
+        }
 
         double effectiveWidth = (width <= 0) ? DEFAULT_COLUMN_WIDTH : width;
 
+        // Create column with header showing day of month and day initial (e.g., "15M"
+        // for Monday the 15th)
         TableColumn<Student, String> column = new TableColumn<>(
                 String.format("%d%s", date.getDayOfMonth(),
                         CommonAttendanceUtil.getDayInitial(date.getDayOfWeek())));
 
+        // Map student IDs to their attendance logs for quick lookup
         Map<Integer, AttendanceLog> studentLogs = logs.stream()
                 .filter(log -> log != null && log.getStudentID() != null)
                 .collect(Collectors.toMap(
@@ -41,6 +64,7 @@ public class TableColumnUtil {
                         log -> log,
                         (a, b) -> b));
 
+        // Set cell value factory to display attendance status
         column.setCellValueFactory(cellData -> {
             Student student = cellData.getValue();
             if (student != null) {
@@ -60,89 +84,187 @@ public class TableColumnUtil {
     }
 
     /**
-     * Dynamically configures basic columns.
-     * For full screen widths, the name column will have a larger width.
+     * Configures a responsive layout for the attendance table, adjusting column
+     * widths and styles dynamically.
+     *
+     * @param table       The TableView to configure.
+     * @param idColumn    The column for student IDs.
+     * @param nameColumn  The column for student names.
+     * @param monthColumn The parent column containing week and day columns.
+     */
+    public static void configureResponsiveLayout(TableView<Student> table,
+            TableColumn<Student, Integer> idColumn,
+            TableColumn<Student, String> nameColumn,
+            TableColumn<Student, ?> monthColumn) {
+
+        nameColumnReference = nameColumn;
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        // Adjust widths and styles when table width changes
+        table.widthProperty().addListener((obs, oldVal, newVal) -> {
+            adjustColumnWidths(table, idColumn, nameColumn, monthColumn);
+            updateColumnStyles(table, 12.0);
+        });
+
+        // Update styles when table height changes
+        table.heightProperty().addListener((obs, oldVal, newVal) -> updateColumnStyles(table, 12.0));
+
+        configureBasicColumns(idColumn, nameColumn, table.getWidth());
+        adjustColumnWidths(table, idColumn, nameColumn, monthColumn);
+        updateColumnStyles(table, 12.0);
+    }
+
+    /**
+     * Configures the basic columns (ID and name) with appropriate widths and
+     * styles.
+     *
+     * @param idColumn   The column for student IDs.
+     * @param nameColumn The column for student names.
+     * @param tableWidth The current width of the table.
      */
     public static void configureBasicColumns(
             TableColumn<Student, Integer> idColumn,
             TableColumn<Student, String> nameColumn,
             double tableWidth) {
-        // Configure the ID column.
-        idColumn.setPrefWidth(30);
-        idColumn.setMinWidth(30);
-        idColumn.setMaxWidth(50);
-        idColumn.setResizable(true);
+
+        double minTableWidth = 800; // Minimum expected table width
+        double maxTableWidth = 2000; // Maximum expected table width
+
+        // ID Column - Fixed width
+        idColumn.setPrefWidth(40);
+        idColumn.setMinWidth(40);
+        idColumn.setMaxWidth(80);
         idColumn.setStyle("-fx-alignment: CENTER;");
 
-        // Use 15% of the table width for the name column,
-        // with a lower minimum width (e.g., 120 pixels).
-        double nameColumnWidth = tableWidth * 0.15;
-        nameColumnWidth = Math.max(120, nameColumnWidth);
+        // Name Column - Dynamic width based on table width
+        double nameColumnPercentage = Math.max(0.15, Math.min(0.25, tableWidth / maxTableWidth));
+        double nameColumnWidth = Math.max(120, tableWidth * nameColumnPercentage);
+        nameColumnWidth = Math.min(nameColumnWidth, 300); // Cap maximum width
 
         nameColumn.setPrefWidth(nameColumnWidth);
         nameColumn.setMinWidth(120);
-        nameColumn.setMaxWidth(nameColumnWidth * 1.5);
-        nameColumn.setResizable(true);
+        nameColumn.setMaxWidth(nameColumnWidth * 1.2);
         nameColumn.setStyle("-fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 10;");
     }
 
-    public static double calculateDayColumnWidth(double availableWidth, int totalDays) {
-        return Math.max(MIN_DAY_WIDTH, availableWidth / Math.max(totalDays, 1));
-    }
-
+    /**
+     * Adjusts the widths of all columns based on the available table width.
+     *
+     * @param table       The TableView to adjust.
+     * @param idColumn    The column for student IDs.
+     * @param nameColumn  The column for student names.
+     * @param monthColumn The parent column containing week and day columns.
+     */
     public static void adjustColumnWidths(TableView<Student> table,
             TableColumn<Student, ?> idColumn,
             TableColumn<Student, ?> nameColumn,
             TableColumn<Student, ?> monthColumn) {
+
         double totalWidth = table.getWidth();
         if (totalWidth <= 0)
             return;
 
-        // Use actual widths instead of prefWidth to reflect current state
-        double fixedWidth = idColumn.getWidth() + nameColumn.getWidth() + 20;
-        double availableWidth = Math.max(0, totalWidth - fixedWidth);
+        double fixedWidth = idColumn.getWidth() + nameColumn.getWidth();
+        double availableWidth = totalWidth - fixedWidth - 40;
 
-        int totalLeafColumns = countLeafColumns(monthColumn);
-        if (totalLeafColumns == 0)
+        adjustMonthColumn(monthColumn, availableWidth);
+    }
+
+    /**
+     * Adjusts the widths of the month column and its nested week and day columns.
+     *
+     * @param monthColumn    The parent month column.
+     * @param availableWidth The width available for distribution.
+     */
+    private static void adjustMonthColumn(TableColumn<Student, ?> monthColumn, double availableWidth) {
+        if (monthColumn.getColumns().isEmpty())
             return;
 
-        double baseWidth = availableWidth / totalLeafColumns;
-        double minWidth = Math.max(MIN_DAY_WIDTH, baseWidth * 0.9);
-        double maxWidth = baseWidth * 1.5;
+        double totalLeafCount = countLeafColumns(monthColumn);
+        double baseWidth = availableWidth / totalLeafCount;
 
-        monthColumn.setMinWidth(availableWidth * 0.9);
-        monthColumn.setPrefWidth(availableWidth);
-        monthColumn.setMaxWidth(availableWidth * 1.1);
+        monthColumn.getColumns().forEach(weekColumn -> {
+            double weekLeafCount = countLeafColumns(weekColumn);
+            double weekWidth = weekLeafCount * baseWidth;
 
-        ObservableList<TableColumn<Student, ?>> weekColumns = monthColumn.getColumns();
-        weekColumns.forEach(weekCol -> {
-            int leafCount = countLeafColumns(weekCol);
-            double weekWidth = baseWidth * leafCount;
-            weekCol.setMinWidth(Math.max(MIN_WEEK_WIDTH, weekWidth * 0.9));
-            weekCol.setPrefWidth(weekWidth);
-            weekCol.setMaxWidth(weekWidth * 1.5);
-            weekCol.setResizable(true);
+            weekColumn.setPrefWidth(weekWidth);
+            weekColumn.setMinWidth(weekWidth * 0.8);
+            weekColumn.setMaxWidth(weekWidth * 1.2);
 
-            ObservableList<TableColumn<Student, ?>> dayColumns = weekCol.getColumns();
-            dayColumns.forEach(dayCol -> {
-                int dateCount = dayCol.getColumns().size();
-                double dayWidth = dateCount > 0 ? weekWidth / dateCount : weekWidth;
-                dayCol.setMinWidth(minWidth);
-                dayCol.setPrefWidth(dayWidth);
-                dayCol.setMaxWidth(maxWidth);
-                dayCol.setResizable(true);
-
-                ObservableList<TableColumn<Student, ?>> dateColumns = dayCol.getColumns();
-                dateColumns.forEach(dateCol -> {
-                    dateCol.setMinWidth(minWidth);
-                    dateCol.setPrefWidth(baseWidth);
-                    dateCol.setMaxWidth(maxWidth);
-                    dateCol.setResizable(true);
-                });
+            weekColumn.getColumns().forEach(dayColumn -> {
+                dayColumn.setPrefWidth(baseWidth);
+                dayColumn.setMinWidth(Math.max(MIN_DAY_WIDTH, baseWidth * 0.7));
+                dayColumn.setMaxWidth(baseWidth * 1.3);
             });
         });
     }
 
+    /**
+     * Updates the styles of all columns, including font size and cell height, based
+     * on table size.
+     *
+     * @param table        The TableView to style.
+     * @param baseFontSize The base font size to scale from.
+     */
+    public static void updateColumnStyles(TableView<Student> table, double baseFontSize) {
+        double tableWidth = table.getWidth();
+        int totalColumns = countAllLeafColumns(table);
+
+        // Scale font size based on table width
+        double fontSize = Math.min(
+                MAX_FONT_SIZE,
+                Math.max(MIN_FONT_SIZE, baseFontSize * (tableWidth / 1200)));
+
+        // Scale cell height based on font size
+        double cellHeight = MIN_CELL_HEIGHT +
+                (fontSize - MIN_FONT_SIZE) * (MAX_CELL_HEIGHT - MIN_CELL_HEIGHT) /
+                        (MAX_FONT_SIZE - MIN_FONT_SIZE);
+
+        table.setFixedCellSize(cellHeight);
+
+        // Apply styles to all columns
+        table.getColumns().forEach(column -> {
+            String style = String.format(
+                    "-fx-font-size: %.1fpx; -fx-alignment: %s; -fx-padding: 2px;",
+                    fontSize,
+                    getColumnAlignment(column));
+
+            column.setStyle(style);
+            applyStyleToNestedColumns(column, style);
+        });
+    }
+
+    /**
+     * Determines the alignment for a column, using CENTER-LEFT for the name column
+     * and CENTER for others.
+     *
+     * @param column The column to check.
+     * @return The alignment style string.
+     */
+    private static String getColumnAlignment(TableColumn<?, ?> column) {
+        return column == nameColumnReference ? "CENTER-LEFT" : "CENTER";
+    }
+
+    /**
+     * Recursively applies a style to a column and its nested columns.
+     *
+     * @param column The column to style.
+     * @param style  The CSS style string to apply.
+     */
+    private static void applyStyleToNestedColumns(TableColumn<?, ?> column, String style) {
+        column.getColumns().forEach(child -> {
+            child.setStyle(style);
+            applyStyleToNestedColumns(child, style);
+        });
+    }
+
+    /**
+     * Counts the number of leaf columns (columns with no sub-columns) under a given
+     * column.
+     *
+     * @param column The column to count.
+     * @return The number of leaf columns.
+     */
     private static int countLeafColumns(TableColumn<?, ?> column) {
         if (column.getColumns().isEmpty()) {
             return 1;
@@ -153,75 +275,14 @@ public class TableColumnUtil {
     }
 
     /**
-     * Dynamically updates column styles.
-     * In full screen mode, the name column font size is increased.
+     * Counts the total number of leaf columns in the table.
+     *
+     * @param table The TableView to count.
+     * @return The total number of leaf columns.
      */
-    public static void updateColumnStyles(TableView<Student> table, double baseFontSize) {
-        int totalColumns = countLeafColumns(table.getColumns().get(0)) +
-                countLeafColumns(table.getColumns().get(1)) +
-                countLeafColumns(table.getColumns().get(2));
-        double fontSize = calculateDynamicFontSize(table.getWidth(), totalColumns);
-        double nameFontSize = fontSize * 1.2;
-        if (table.getWidth() >= 1200) {
-            // Increase the name column font size more for full screen
-            nameFontSize = fontSize * 1.5;
-        }
-
-        // Define a larger font for the month column.
-        double monthFontSize = fontSize * 1.3;
-
-        double cellHeight = calculateCellHeight(fontSize);
-        String defaultStyle = String.format("-fx-font-size: %.1fpx; -fx-alignment: CENTER; -fx-padding: 2px;",
-                fontSize);
-        String nameStyle = String.format("-fx-font-size: %.1fpx; -fx-alignment: CENTER-LEFT; -fx-padding: 0 0 0 10;",
-                nameFontSize);
-        String monthStyle = String.format("-fx-font-size: %.1fpx; -fx-alignment: CENTER; -fx-padding: 2px;",
-                monthFontSize);
-
-        table.setFixedCellSize(cellHeight);
-
-        table.getColumns().forEach(column -> {
-            if (column == table.getColumns().get(1)) {
-                column.setStyle(nameStyle);
-            } else if (column == table.getColumns().get(2)) {
-                column.setStyle(monthStyle);
-            } else {
-                column.setStyle(defaultStyle);
-            }
-            if (column instanceof TableColumn) {
-                String nestedStyle = defaultStyle;
-                if (column == table.getColumns().get(1))
-                    nestedStyle = nameStyle;
-                else if (column == table.getColumns().get(2))
-                    nestedStyle = monthStyle;
-                applyStyleToNestedColumns((TableColumn<?, ?>) column, nestedStyle, cellHeight);
-            }
-        });
-    }
-
-    private static void applyStyleToNestedColumns(TableColumn<?, ?> column, String style, double cellHeight) {
-        column.getColumns().forEach(subColumn -> {
-            subColumn.setStyle(style);
-            double minWidth = Math.max(MIN_DAY_WIDTH, cellHeight * 1.5);
-            subColumn.setMinWidth(minWidth);
-            if (!subColumn.getColumns().isEmpty()) {
-                applyStyleToNestedColumns(subColumn, style, cellHeight);
-            }
-        });
-    }
-
-    private static double calculateCellHeight(double fontSize) {
-        double ratio = (fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE);
-        return MIN_CELL_HEIGHT + (ratio * (MAX_CELL_HEIGHT - MIN_CELL_HEIGHT));
-    }
-
-    public static double calculateDynamicFontSize(double tableWidth, int columnCount) {
-        if (tableWidth <= 0 || columnCount <= 0)
-            return MIN_FONT_SIZE;
-
-        double availableWidthPerColumn = tableWidth / columnCount;
-        double scaleFactor = availableWidthPerColumn / 100.0;
-        double fontSize = 11.0 * scaleFactor;
-        return Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, fontSize));
+    private static int countAllLeafColumns(TableView<Student> table) {
+        return table.getColumns().stream()
+                .mapToInt(TableColumnUtil::countLeafColumns)
+                .sum();
     }
 }

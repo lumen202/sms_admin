@@ -1,37 +1,37 @@
 package sms.admin;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import dev.finalproject.data.AddressDAO;
-import dev.finalproject.data.AttendanceLogDAO;
-import dev.finalproject.data.GuardianDAO;
-import dev.finalproject.data.SchoolYearDAO;
-import dev.finalproject.data.StudentDAO;
-import dev.finalproject.datbase.DataManager;
+
+import dev.finalproject.database.DataManager;
 import dev.sol.core.application.FXApplication;
 import dev.sol.core.application.loader.FXLoaderFactory;
 import dev.sol.core.registry.FXCollectionsRegister;
 import dev.sol.core.scene.FXSkin;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
 import javafx.scene.image.Image;
 import javafx.stage.WindowEvent;
 import sms.admin.app.RootLoader;
-import sms.admin.util.db.DatabaseChangeListener;
 import sms.admin.util.db.DatabaseConnection;
 
+/**
+ * Main application class for the Student Management System Admin interface.
+ * This class extends {@link FXApplication} and is responsible for initializing
+ * the application, configuring the UI, setting up the dataset, and handling
+ * application shutdown.
+ */
 public class App extends FXApplication {
-    private static final Logger LOGGER = Logger.getLogger(App.class.getName());
-    private DatabaseChangeListener dbChangeListener;
 
+    private static final Logger LOGGER = Logger.getLogger(App.class.getName()); // Logger for application events
+
+    /**
+     * Initializes the application by configuring settings, dataset, and UI.
+     *
+     * @throws Exception If initialization fails.
+     */
     @Override
     public void initialize() throws Exception {
         try {
             configureApplication();
-            initializeDatabaseListener();
-            // Instead of initializing dataset locally, reuse DataManager's initialization.
             initializeDataset();
             initializeApplication();
         } catch (Exception e) {
@@ -40,6 +40,10 @@ public class App extends FXApplication {
         }
     }
 
+    /**
+     * Configures the application settings, including title, skin, icon, and
+     * window properties.
+     */
     private void configureApplication() {
         setTitle("Student Management System - Admin");
         setSkin(FXSkin.PRIMER_LIGHT);
@@ -51,57 +55,8 @@ public class App extends FXApplication {
         applicationStage.setOnCloseRequest(this::handleApplicationClose);
     }
 
-    private void initializeDatabaseListener() {
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            dbChangeListener = new DatabaseChangeListener(conn);
-            dbChangeListener.addChangeHandler((tableName, changeType) -> {
-                Platform.runLater(() -> {
-                    LOGGER.info("Database change detected: " + tableName + " - " + changeType);
-                    refreshCollectionForTable(tableName);
-                });
-            });
-            dbChangeListener.startListening(5); // Check every 5 seconds
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Failed to initialize database listener", e);
-        }
-    }
-
-    private void refreshCollectionForTable(String tableName) {
-        try {
-            FXCollectionsRegister collectionsRegistry = DataManager.getInstance().getCollectionsRegistry();
-            switch (tableName.toLowerCase()) {
-                case "student" -> {
-                    var newList = FXCollections.observableArrayList(StudentDAO.getStudentList());
-                    collectionsRegistry.register("STUDENT", newList);
-                }
-                case "guardian" -> {
-                    var newList = FXCollections.observableArrayList(GuardianDAO.getGuardianList());
-                    collectionsRegistry.register("GUARDIAN", newList);
-                }
-                case "address" -> {
-                    var newList = FXCollections.observableArrayList(AddressDAO.getAddressesList());
-                    collectionsRegistry.register("ADDRESS", newList);
-                }
-                case "attendance_log" -> {
-                    var newList = FXCollections.observableArrayList(AttendanceLogDAO.getAttendanceLogList());
-                    collectionsRegistry.register("ATTENDANCE_LOG", newList);
-                }
-                case "school_year" -> {
-                    var newList = FXCollections.observableArrayList(SchoolYearDAO.getSchoolYearList());
-                    collectionsRegistry.register("SCHOOL_YEAR", newList);
-                }
-                default -> LOGGER.warning("Unknown table for refresh: " + tableName);
-            }
-            LOGGER.info("Successfully refreshed collection for table: " + tableName);
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error refreshing collection for table: " + tableName, e);
-        }
-    }
-
     /**
-     * Instead of initializing the dataset locally with separate DAO calls,
-     * delegate initialization to the shared DataManager from finalproject.
+     * Initializes the dataset for the application using the DataManager.
      */
     public void initializeDataset() {
         try {
@@ -113,11 +68,14 @@ public class App extends FXApplication {
         }
     }
 
+    /**
+     * Initializes the application UI by loading the root view.
+     */
     private void initializeApplication() {
         try {
             RootLoader rootLoader = (RootLoader) FXLoaderFactory
                     .createInstance(RootLoader.class,
-                            App.class.getResource("/sms/admin/app/ROOTv2.fxml"))
+                            App.class.getResource("/sms/admin/app/ROOT.fxml"))
                     .addParameter("scene", applicationScene)
                     .addParameter("OWNER", applicationStage)
                     .initialize();
@@ -131,31 +89,38 @@ public class App extends FXApplication {
         }
     }
 
+    /**
+     * Handles the application close event, cleaning up resources and closing
+     * the database connection.
+     *
+     * @param event The window close event.
+     */
     private void handleApplicationClose(WindowEvent event) {
         try {
-            if (dbChangeListener != null) {
-                dbChangeListener.stop();
-            }
+            // Close database connection and clear collections before exiting
             DatabaseConnection.closeConnection();
             clearCollections();
-            Platform.exit();
+            applicationStage.hide();
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Error during application cleanup", e);
         }
     }
 
+    /**
+     * Clears all collections in the DataManager to free up resources.
+     */
     private void clearCollections() {
         FXCollectionsRegister collectionsRegistry = DataManager.getInstance().getCollectionsRegistry();
         String[] knownCollections = {
-                "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
-                "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG"
+            "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
+            "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG", "SETTINGS"
         };
 
         for (String key : knownCollections) {
             try {
                 var collection = collectionsRegistry.getList(key);
                 if (collection != null) {
-                    collection.clear(); // Clears all elements from the collection
+                    collection.clear();
                 } else {
                     LOGGER.warning("Collection not found for key: " + key);
                 }
@@ -164,5 +129,4 @@ public class App extends FXApplication {
             }
         }
     }
-
 }

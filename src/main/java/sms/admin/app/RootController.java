@@ -1,72 +1,107 @@
 package sms.admin.app;
 
+import java.io.File;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import javax.crypto.KeyGenerator;
+import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import javax.imageio.ImageIO;
 
-import dev.finalproject.datbase.DataManager;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+
+import java.io.IOException;
+import java.awt.image.BufferedImage;
+import java.awt.Graphics2D;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+
+import dev.finalproject.database.DataManager;
 import dev.finalproject.models.SchoolYear;
+import dev.finalproject.models.Student;
 import dev.sol.core.application.FXController;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.MenuItem;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
+import javafx.stage.DirectoryChooser;
 import sms.admin.app.attendance.AttendanceController;
 import sms.admin.app.attendance.AttendanceLoader;
-import sms.admin.app.enrollment.EnrollmentController;
-import sms.admin.app.enrollment.EnrollmentLoader;
+import sms.admin.app.deleted_student.DeletedStudentLoader;
 import sms.admin.app.payroll.PayrollController;
 import sms.admin.app.payroll.PayrollLoader;
 import sms.admin.app.schoolyear.SchoolYearDialog;
 import sms.admin.app.student.StudentController;
 import sms.admin.app.student.StudentLoader;
-import sms.admin.util.SchoolYearUtil;
+import sms.admin.app.student.enrollment.EnrollmentController;
 import sms.admin.util.datetime.DateTimeUtils;
+import sms.admin.util.datetime.SchoolYearUtil;
 import sms.admin.util.scene.SceneLoaderUtil;
 
+/**
+ * Controller for the root view of the application, managing navigation and
+ * school year selection. This class handles the UI elements and logic for
+ * switching between attendance, payroll, and student views, generating QR codes
+ * for students, and managing school year data.
+ */
 public class RootController extends FXController {
 
     @FXML
-    private Button attendanceButton;
+    private Button attendanceButton; // Button to navigate to attendance view
     @FXML
-    private Button payrollButton;
+    private Button payrollButton; // Button to navigate to payroll view
     @FXML
-    private Button studentButton;
+    private Button studentButton; // Button to navigate to student view
     @FXML
-    private MenuItem generateKeyMenuItem;
+    private MenuItem generateKeyMenuItem; // Menu item to generate QR codes
     @FXML
-    private StackPane contentPane;
+    private StackPane contentPane; // Container for loading different views
     @FXML
-    private ComboBox<String> yearComboBox;
+    private ComboBox<String> yearComboBox; // ComboBox for selecting school year
     @FXML
-    private Scene scene;
+    private Scene scene; // The main application scene
     @FXML
-    private MenuItem newSchoolYearMenuItem;
+    private MenuItem newSchoolYearMenuItem; // Menu item to create a new school year
     @FXML
-    private MenuItem editSchoolYearMenuItem;
+    private MenuItem editSchoolYearMenuItem; // Menu item to edit the current school year
+    @FXML
+    private MenuItem deletedStudentMenuItem; // Menu item to view deleted students
 
-    private ObservableList<SchoolYear> schoolYearList;
-    private String selectedMonth;
-    private FXController currentController;
+    private ObservableList<SchoolYear> schoolYearList; // List of school years
+    private String selectedMonth; // Selected month for filtering data
+    private FXController currentController; // The currently active controller
 
+    /**
+     * Loads the initial fields and configurations for the root view.
+     */
     @Override
     protected void load_fields() {
-        // Use DataManager to obtain the shared SCHOOL_YEAR collection
+        // Initialize school year list from DataManager
         schoolYearList = FXCollections.observableArrayList(
                 DataManager.getInstance().getCollectionsRegistry().getList("SCHOOL_YEAR"));
         yearComboBox.setItems(SchoolYearUtil.convertToStringList(schoolYearList));
 
+        // Set selected month, defaulting to current month if not provided
         selectedMonth = (String) getParameter("selectedMonth");
         if (selectedMonth == null) {
             YearMonth current = YearMonth.now();
@@ -74,6 +109,7 @@ public class RootController extends FXController {
         }
         System.out.println("RootController initialized with month: " + selectedMonth);
 
+        // Set initial school year, defaulting to current year or first in list
         String initialYear = (String) getParameter("selectedYear");
         if (initialYear == null) {
             SchoolYear currentYear = SchoolYearUtil.findCurrentYear(schoolYearList);
@@ -81,16 +117,23 @@ public class RootController extends FXController {
                     : yearComboBox.getItems().get(0);
         }
         yearComboBox.setValue(initialYear);
-        handleStudentButton(); // Default view
+        handleStudentButton(); // Load student view by default
     }
 
+    /**
+     * Loads bindings for UI components.
+     */
     @Override
     protected void load_bindings() {
         scene = (Scene) getParameter("scene");
     }
 
+    /**
+     * Loads event listeners for UI interactions.
+     */
     @Override
     protected void load_listeners() {
+        // Update controller when school year changes
         yearComboBox.valueProperty().addListener((obs, oldYear, newYear) -> {
             if (newYear != null && !newYear.equals(oldYear)) {
                 System.out.println("RootController: Year changed to " + newYear);
@@ -104,15 +147,19 @@ public class RootController extends FXController {
         generateKeyMenuItem.setOnAction(event -> handleGenerateKeyMenuItem());
         newSchoolYearMenuItem.setOnAction(event -> handleNewSchoolYear());
         editSchoolYearMenuItem.setOnAction(event -> handleEditSchoolYear());
+        deletedStudentMenuItem.setOnAction(event -> handleDeletedStudentMenuItem());
     }
 
+    /**
+     * Handles navigation to the student view.
+     */
     @FXML
     private void handleStudentButton() {
         highlightButton(studentButton);
         Map<String, Object> params = new HashMap<>();
         params.put("selectedYear", yearComboBox.getValue());
         params.put("selectedMonth", selectedMonth);
-
+        DataManager.getInstance().refreshData();
         currentController = SceneLoaderUtil.loadScene(
                 "/sms/admin/app/student/STUDENT.fxml",
                 getClass(),
@@ -124,6 +171,9 @@ public class RootController extends FXController {
         }
     }
 
+    /**
+     * Handles navigation to the payroll view.
+     */
     @FXML
     private void handlePayrollButton() {
         highlightButton(payrollButton);
@@ -131,7 +181,9 @@ public class RootController extends FXController {
         String currentMonth = getCurrentControllerMonth();
         params.put("selectedYear", yearComboBox.getValue());
         params.put("selectedMonth", currentMonth);
+        DataManager.getInstance().refreshData();
 
+        // Pass attendance logs if coming from attendance view
         if (currentController instanceof AttendanceController attendanceController) {
             params.put("attendanceLogs", attendanceController.getAttendanceLogs());
         }
@@ -150,6 +202,9 @@ public class RootController extends FXController {
         }
     }
 
+    /**
+     * Handles navigation to the attendance view.
+     */
     @FXML
     private void handleAttendanceButton() {
         highlightButton(attendanceButton);
@@ -157,6 +212,7 @@ public class RootController extends FXController {
         String currentMonth = getCurrentControllerMonth();
         params.put("selectedYear", yearComboBox.getValue());
         params.put("selectedMonth", currentMonth);
+        DataManager.getInstance().refreshData();
 
         try {
             currentController = SceneLoaderUtil.loadScene(
@@ -179,6 +235,12 @@ public class RootController extends FXController {
         }
     }
 
+    /**
+     * Retrieves the currently selected month from the active controller.
+     *
+     * @return The selected month, or the default selected month if not
+     *         available.
+     */
     private String getCurrentControllerMonth() {
         if (currentController instanceof AttendanceController controller) {
             return controller.getSelectedMonth();
@@ -188,6 +250,11 @@ public class RootController extends FXController {
         return selectedMonth;
     }
 
+    /**
+     * Highlights the selected navigation button and resets others.
+     *
+     * @param button The button to highlight.
+     */
     private void highlightButton(Button button) {
         String defaultStyle = "-fx-background-color: #800000; -fx-text-fill: white;";
         Arrays.asList(attendanceButton, payrollButton, studentButton)
@@ -195,20 +262,224 @@ public class RootController extends FXController {
         button.setStyle("-fx-background-color: #ADD8E6; -fx-text-fill: black;");
     }
 
+    /**
+     * Resets the highlighting of all navigation buttons to their default state.
+     */
+    private void resetButtonHighlights() {
+        String defaultStyle = "-fx-background-color: #800000; -fx-text-fill: white;";
+        Arrays.asList(attendanceButton, payrollButton, studentButton)
+                .forEach(btn -> btn.setStyle(defaultStyle));
+    }
+
+    /**
+     * Retrieves the list of students for the specified school year who are not
+     * deleted.
+     *
+     * @param schoolYear The school year to filter students by (e.g.,
+     *                   "2024-2025").
+     * @return A list of students for the specified year.
+     */
+    private List<Student> getStudentsForYear(String schoolYear) {
+        ObservableList<?> rawList = DataManager.getInstance()
+                .getCollectionsRegistry()
+                .getList("STUDENT");
+
+        // Parse the year string
+        int startYear = Integer.parseInt(schoolYear.split("-")[0]);
+
+        return rawList.stream()
+                .filter(obj -> obj instanceof Student)
+                .map(obj -> (Student) obj)
+                .filter(student -> student.getYearID() != null
+                        && student.getYearID().getYearStart() == startYear
+                        && student.isDeleted() == 0)
+                .toList();
+    }
+
+    /**
+     * Generates a QR code with the specified data and student name, saving it
+     * to the given file path.
+     *
+     * @param data        The data to encode in the QR code.
+     * @param filePath    The file path to save the QR code image.
+     * @param width       The width of the QR code image.
+     * @param height      The height of the QR code image.
+     * @param studentName The student's name to include below the QR code.
+     * @throws WriterException If QR code generation fails.
+     * @throws IOException     If image writing fails.
+     */
+    private void generateQRCode(String data, String filePath, int width, int height, String studentName)
+            throws WriterException, IOException {
+        try {
+            QRCodeWriter qrCodeWriter = new QRCodeWriter();
+            Map<EncodeHintType, Object> hints = new HashMap<>();
+            hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+            BitMatrix bitMatrix = qrCodeWriter.encode(data, BarcodeFormat.QR_CODE, width, height, hints);
+
+            // Create image with space for text
+            int textHeight = 40;
+            BufferedImage qrImage = new BufferedImage(width, height + textHeight, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = qrImage.createGraphics();
+
+            // Draw white background
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, width, height + textHeight);
+
+            // Draw QR code
+            graphics.setColor(Color.BLACK);
+            for (int x = 0; x < width; x++) {
+                for (int y = 0; y < height; y++) {
+                    if (bitMatrix.get(x, y)) {
+                        graphics.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+
+            // Draw student name
+            graphics.setColor(Color.BLACK);
+            graphics.setFont(new Font("Arial", Font.BOLD, 14));
+            FontMetrics metrics = graphics.getFontMetrics();
+            int x = (width - metrics.stringWidth(studentName)) / 2;
+            int y = height + (textHeight - metrics.getHeight()) / 2 + metrics.getAscent();
+            graphics.drawString(studentName, x, y);
+
+            // Save image
+            ImageIO.write(qrImage, "PNG", new File(filePath));
+            graphics.dispose();
+        } catch (IOException e) {
+            throw new IOException("Failed to write QR code to file: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Resets highlights and restores the current view's button highlight
+     */
+    private void handleMenuItemCompletion() {
+        resetButtonHighlights();
+        // Restore highlight for current view
+        if (currentController instanceof StudentController) {
+            highlightButton(studentButton);
+        } else if (currentController instanceof AttendanceController) {
+            highlightButton(attendanceButton);
+        } else if (currentController instanceof PayrollController) {
+            highlightButton(payrollButton);
+        }
+    }
+
     @FXML
     private void handleGenerateKeyMenuItem() {
         try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-            keyGen.init(128);
-            SecretKey secretKey = keyGen.generateKey();
-            byte[] encodedKey = secretKey.getEncoded();
-            String encryptedKey = Base64.getEncoder().encodeToString(encodedKey);
-            System.out.println("Generated Encrypted Key: " + encryptedKey);
+            // Show directory chooser
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("Choose Directory to Save QR Codes");
+            directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+            File selectedDirectory = directoryChooser.showDialog(contentPane.getScene().getWindow());
+
+            if (selectedDirectory == null) {
+                return; // User cancelled
+            }
+
+            String currentYear = yearComboBox.getValue();
+            List<Student> students = getStudentsForYear(currentYear);
+            byte[] fixedKey = "MySuperSecretKey".getBytes();
+            SecretKey secretKey = new SecretKeySpec(fixedKey, "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+
+            // Create QR codes directory
+            File qrDir = new File(selectedDirectory, "qr_codes");
+            qrDir.mkdirs();
+
+            for (Student student : students) {
+                String dataToEncrypt = student.getStudentID() + "|" + currentYear;
+                byte[] encryptedBytes = cipher.doFinal(dataToEncrypt.getBytes());
+                String encryptedKey = Base64.getEncoder().encodeToString(encryptedBytes);
+
+                String cleanName = student.getFullName()
+                        .replaceAll("[^a-zA-Z0-9]", "_")
+                        .replaceAll("\\s+", "_");
+
+                File qrFile = new File(qrDir, cleanName + ".png");
+                generateQRCode(encryptedKey, qrFile.getAbsolutePath(), 300, 300, student.getFullName());
+
+                System.out.println("Generated for: " + student.getFullName()
+                        + " (" + qrFile.getAbsolutePath() + ")");
+            }
+
+            // Show success alert after generating all QR codes
+            showSuccessAlert("Export Complete",
+                    "Successfully generated QR codes",
+                    "QR codes saved to:\n" + qrDir.getAbsolutePath());
+            handleMenuItemCompletion();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    private void showSuccessAlert(String title, String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    /**
+     * Decrypts an encrypted student key and returns student information.
+     *
+     * @param encryptedKey The encrypted key to decrypt.
+     * @return A string containing the student information or an error message.
+     */
+    public static String decryptStudentKey(String encryptedKey) {
+        try {
+            byte[] fixedKey = "MySuperSecretKey".getBytes();
+            SecretKey secretKey = new SecretKeySpec(fixedKey, "AES");
+
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+
+            byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(encryptedKey));
+            String decryptedString = new String(decryptedBytes);
+
+            String[] parts = decryptedString.split("\\|");
+            int studentId = Integer.parseInt(parts[0]);
+            Student student = findStudentByStudentId(studentId);
+
+            String studentInfo = student != null
+                    ? String.format("Student: %s (Student ID: %d)", student.getFullName(), studentId)
+                    : "Unknown Student (Student ID: " + studentId + ")";
+
+            return studentInfo + ", School Year: " + parts[1];
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Invalid key";
+        }
+    }
+
+    /**
+     * Finds a student by their student ID.
+     *
+     * @param studentId The student ID to search for.
+     * @return The Student object, or null if not found.
+     */
+    private static Student findStudentByStudentId(int studentId) {
+        return DataManager.getInstance()
+                .getCollectionsRegistry()
+                .getList("STUDENT")
+                .stream()
+                .filter(obj -> obj instanceof Student)
+                .map(obj -> (Student) obj)
+                .filter(student -> student.getStudentID() == studentId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Toggles the visibility of the overlay for the content pane.
+     *
+     * @param visible True to show the overlay, false to hide it.
+     */
     private void setOverlayVisible(boolean visible) {
         if (contentPane.getScene() != null) {
             BorderPane root = (BorderPane) contentPane.getScene().getRoot();
@@ -222,18 +493,55 @@ public class RootController extends FXController {
         }
     }
 
+    /**
+     * Handles the creation of a new school year.
+     */
     @FXML
     private void handleNewSchoolYear() {
         setOverlayVisible(true);
-        SchoolYearDialog dialog = new SchoolYearDialog(null);
-        dialog.showAndWait().ifPresent(newSchoolYear -> {
-            schoolYearList.add(newSchoolYear);
-            yearComboBox.setValue(SchoolYearUtil.formatSchoolYear(newSchoolYear));
-            updateCurrentController(yearComboBox.getValue());
-        });
-        setOverlayVisible(false);
+        try {
+            SchoolYearDialog dialog = new SchoolYearDialog(null);
+
+            System.out.println("Opening new school year dialog...");
+
+            dialog.showAndWait().ifPresent(newSchoolYear -> {
+                System.out.println("Dialog returned school year: " + newSchoolYear);
+                if (newSchoolYear != null) {
+                    // Update UI on JavaFX thread
+                    Platform.runLater(() -> {
+                        System.out.println("Refreshing data from database...");
+                        DataManager.getInstance().refreshData();
+                        List<SchoolYear> updatedList = DataManager.getInstance().getCollectionsRegistry()
+                                .getList("SCHOOL_YEAR");
+                        System.out.println("Found " + updatedList.size() + " school years");
+
+                        schoolYearList.clear();
+                        schoolYearList.addAll(updatedList);
+
+                        ObservableList<String> formattedYears = SchoolYearUtil.convertToStringList(schoolYearList);
+                        System.out.println("Formatted years: " + formattedYears);
+                        yearComboBox.setItems(formattedYears);
+
+                        String formattedNewYear = SchoolYearUtil.formatSchoolYear(newSchoolYear);
+                        System.out.println("Setting combo box to: " + formattedNewYear);
+                        yearComboBox.setValue(formattedNewYear);
+
+                        // Verify the value was set
+                        System.out.println("Current combo box value: " + yearComboBox.getValue());
+
+                        updateCurrentController(formattedNewYear);
+                    });
+                }
+            });
+            handleMenuItemCompletion();
+        } finally {
+            setOverlayVisible(false);
+        }
     }
 
+    /**
+     * Handles the editing of the current school year.
+     */
     @FXML
     public void handleEditSchoolYear() {
         setOverlayVisible(true);
@@ -250,7 +558,7 @@ public class RootController extends FXController {
                     if (updatedSchoolYear != null) {
                         int index = schoolYearList.indexOf(selectedYear);
                         schoolYearList.set(index, updatedSchoolYear);
-                        // Update the shared collection via DataManager
+                        // Update the shared collection
                         DataManager.getInstance().getCollectionsRegistry().register("SCHOOL_YEAR", schoolYearList);
                         yearComboBox.setValue(SchoolYearUtil.formatSchoolYear(updatedSchoolYear));
                         updateCurrentController(yearComboBox.getValue());
@@ -262,9 +570,28 @@ public class RootController extends FXController {
         }
     }
 
+    @FXML
+    public void handleDeletedStudentMenuItem() {
+        try {
+            DeletedStudentLoader loader = new DeletedStudentLoader();
+            loader.addParameter("OWNER_WINDOW", contentPane.getScene().getWindow());
+            loader.addParameter("SELECTED_YEAR", yearComboBox.getValue());
+            loader.load();
+            handleMenuItemCompletion();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Updates the current controller with the new school year.
+     *
+     * @param newYear The new school year to apply.
+     */
     private void updateCurrentController(String newYear) {
-        if (currentController == null)
+        if (currentController == null) {
             return;
+        }
         if (currentController instanceof PayrollController controller) {
             controller.initializeWithYear(newYear);
             String currentMonth = getCurrentControllerMonth();
@@ -284,6 +611,11 @@ public class RootController extends FXController {
         }
     }
 
+    /**
+     * Sets the selected month for the current controller.
+     *
+     * @param monthYear The month and year to set (e.g., "September 2024").
+     */
     public void setSelectedMonth(String monthYear) {
         if (monthYear != null && !monthYear.equals(this.selectedMonth)) {
             this.selectedMonth = monthYear;
