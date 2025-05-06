@@ -97,6 +97,14 @@ public class SchoolYearDialogController {
             updateEndMonthOptions();
         });
 
+        // Add listener to startYear ComboBox
+        startYearCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                // Set endYear to startYear + 1
+                endYearCombo.setValue(newVal + 1);
+            }
+        });
+
         // Set default values for a new academic year
         startYearCombo.setValue(currentYear);
         startMonthCombo.setValue("SEPTEMBER");

@@ -16,7 +16,7 @@
 <VBox fx:id="contentBox" spacing="15.0" styleClass="profile-container" stylesheets="@enrollment.css"
     xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1"
     fx:controller="sms.admin.app.student.enrollment.EnrollmentController">
-    <ScrollPane fitToHeight="true" fitToWidth="true" styleClass="profile-content"
+    <ScrollPane fx:id="scrollPane" fitToHeight="true" fitToWidth="true" styleClass="profile-content"
         VBox.vgrow="ALWAYS">
         <content>
             <VBox spacing="15">
@@ -32,31 +32,31 @@
 
                         <Label text="First Name:" GridPane.rowIndex="0" />
                         <TextField fx:id="firstNameField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            promptText="Enter first name" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Middle Name:" GridPane.rowIndex="1" />
                         <TextField fx:id="middleNameField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            promptText="Enter middle name (optional)" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                         <Label text="Last Name:" GridPane.rowIndex="2" />
                         <TextField fx:id="lastNameField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                            promptText="Enter last name" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                         <Label text="Name Extension:" GridPane.rowIndex="3" />
                         <TextField fx:id="nameExtField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            promptText="Jr., Sr., III, etc. (optional)" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                         <Label text="Date of Birth:" GridPane.rowIndex="4" />
                         <DatePicker fx:id="dateOfBirthPicker" styleClass="date-picker"
-                            GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                            promptText="Select date of birth" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
                         <Label text="Status:" GridPane.rowIndex="5" />
                         <ComboBox fx:id="statusComboBox" styleClass="combo-box"
-                            GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                            promptText="Select status" GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
                         <Label text="Fare:" GridPane.rowIndex="6" />
                         <TextField fx:id="fareField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                            promptText="Enter fare amount (numbers only)" GridPane.columnIndex="1" GridPane.rowIndex="6" />
                         <rowConstraints>
                             <RowConstraints />
                             <RowConstraints />
@@ -80,23 +80,23 @@
 
                         <Label text="Street Address:" GridPane.rowIndex="0" />
                         <TextField fx:id="streetField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            promptText="Enter street address" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Barangay:" GridPane.rowIndex="1" />
                         <TextField fx:id="barangayField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            promptText="Enter barangay" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                         <Label text="Municipality:" GridPane.rowIndex="2" />
                         <TextField fx:id="municipalityField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                            promptText="Enter municipality" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                         <Label text="Province:" GridPane.rowIndex="3" />
                         <TextField fx:id="cityField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            promptText="Enter province" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                         <Label text="Postal Code:" GridPane.rowIndex="4" />
                         <TextField fx:id="postalCodeField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                            promptText="Enter 4-digit postal code" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                         <rowConstraints>
                             <RowConstraints />
                             <RowConstraints />
@@ -118,11 +118,35 @@
 
                         <Label text="Contact Number:" GridPane.rowIndex="0" />
                         <TextField fx:id="contactNumberField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            promptText="Enter 11-digit phone number" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                         <Label text="Email Address:" GridPane.rowIndex="1" />
                         <TextField fx:id="emailField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            promptText="Enter valid email address" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <rowConstraints>
+                            <RowConstraints />
+                            <RowConstraints />
+                        </rowConstraints>
+                    </GridPane>
+                </VBox>
+
+                <!-- Cluster Information Section -->
+                <VBox spacing="8" styleClass="profile-section">
+                    <Label styleClass="section-header" text="Cluster Information" />
+                    <GridPane hgap="15" vgap="10">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120" />
+                            <ColumnConstraints hgrow="ALWAYS" />
+                        </columnConstraints>
+
+                        <Label text="Cluster:" GridPane.rowIndex="0" />
+                        <TextField fx:id="clusterField" styleClass="profile-field"
+                            promptText="Enter cluster name" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                        <Label text="Details:" GridPane.rowIndex="1" />
+                        <TextField fx:id="clusterDetailsField" styleClass="profile-field"
+                            promptText="Enter cluster details" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
                         <rowConstraints>
                             <RowConstraints />
                             <RowConstraints />
@@ -140,19 +164,19 @@
                         </columnConstraints>
                         <Label text="First Name:" GridPane.rowIndex="0" />
                         <TextField fx:id="guardianFirstNameField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                            promptText="Enter guardian's first name" GridPane.columnIndex="1" GridPane.rowIndex="0" />
                         <Label text="Middle Name:" GridPane.rowIndex="1" />
                         <TextField fx:id="guardianMiddleNameField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                            promptText="Enter guardian's middle name (optional)" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                         <Label text="Last Name:" GridPane.rowIndex="2" />
                         <TextField fx:id="guardianLastNameField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                            promptText="Enter guardian's last name" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                         <Label text="Relationship:" GridPane.rowIndex="3" />
                         <TextField fx:id="guardianRelationshipField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                            promptText="Enter relationship to student" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                         <Label text="Contact Info:" GridPane.rowIndex="4" />
                         <TextField fx:id="guardianContactInfoField" styleClass="profile-field"
-                            GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                            promptText="Enter 11-digit phone number" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                         <rowConstraints>
                             <RowConstraints />
                             <RowConstraints />

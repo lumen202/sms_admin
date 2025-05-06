@@ -21,6 +21,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
@@ -81,6 +82,12 @@ public class EnrollmentController extends FXController {
     private Button clearButton; // Button to clear the form
     @FXML
     private TextField barangayField; // Field for student's barangay
+    @FXML
+    private TextField clusterField; // Field for cluster name
+    @FXML
+    private TextField clusterDetailsField; // Field for cluster details
+    @FXML
+    private ScrollPane scrollPane; // Add this field
 
     private SchoolYear currentSchoolYear; // The current school year for enrollment
     private Stage dialogStage; // The stage for the dialog, if opened as a dialog
@@ -103,6 +110,13 @@ public class EnrollmentController extends FXController {
             // Add listeners for real-time validation
             addValidationListeners();
 
+            // Add scroll listener to update tooltip positions if scrollPane exists
+            if (scrollPane != null) {
+                scrollPane.vvalueProperty().addListener((obs, old, new_) -> {
+                    ValidationUtils.updateAllTooltipPositions();
+                });
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
             showErrorMessage("Error initializing form");
@@ -116,48 +130,59 @@ public class EnrollmentController extends FXController {
     private void addValidationListeners() {
         // Email validation
         emailField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!newValue.isEmpty() && !ValidationUtils.isValidEmail(newValue)) {
-                ValidationUtils.setErrorStyle(emailField);
-            } else {
-                ValidationUtils.resetStyle(emailField);
-            }
+            ValidationUtils.validateEmailWithTooltip(emailField);
         });
 
         // Phone number validation for student
         contactNumberField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!newValue.isEmpty() && !ValidationUtils.isValidPhoneNumber(newValue)) {
-                ValidationUtils.setErrorStyle(contactNumberField);
-            } else {
-                ValidationUtils.resetStyle(contactNumberField);
-            }
+            ValidationUtils.validatePhoneWithTooltip(contactNumberField);
         });
 
         // Phone number validation for guardian
         guardianContactInfoField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!newValue.isEmpty() && !ValidationUtils.isValidPhoneNumber(newValue)) {
-                ValidationUtils.setErrorStyle(guardianContactInfoField);
-            } else {
-                ValidationUtils.resetStyle(guardianContactInfoField);
-            }
+            ValidationUtils.validatePhoneWithTooltip(guardianContactInfoField);
         });
 
         // Postal code validation
         postalCodeField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!newValue.isEmpty() && !ValidationUtils.isValidPostalCode(newValue)) {
-                ValidationUtils.setErrorStyle(postalCodeField);
-            } else {
-                ValidationUtils.resetStyle(postalCodeField);
-            }
+            ValidationUtils.validatePostalWithTooltip(postalCodeField);
         });
 
         // Fare validation
         fareField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (!newValue.isEmpty() && !ValidationUtils.isValidFare(newValue)) {
-                ValidationUtils.setErrorStyle(fareField);
-            } else {
-                ValidationUtils.resetStyle(fareField);
-            }
+            ValidationUtils.validateFareWithTooltip(fareField);
         });
+
+        // Date of birth validation
+        dateOfBirthPicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            ValidationUtils.validateDateOfBirthWithTooltip(dateOfBirthPicker);
+        });
+    }
+
+    /**
+     * Clears all tooltips from form fields
+     */
+    private void clearAllTooltips() {
+        firstNameField.setTooltip(null);
+        lastNameField.setTooltip(null);
+        middleNameField.setTooltip(null);
+        nameExtField.setTooltip(null);
+        streetField.setTooltip(null);
+        cityField.setTooltip(null);
+        municipalityField.setTooltip(null);
+        postalCodeField.setTooltip(null);
+        emailField.setTooltip(null);
+        contactNumberField.setTooltip(null);
+        barangayField.setTooltip(null);
+        guardianFirstNameField.setTooltip(null);
+        guardianMiddleNameField.setTooltip(null);
+        guardianLastNameField.setTooltip(null);
+        guardianRelationshipField.setTooltip(null);
+        guardianContactInfoField.setTooltip(null);
+        dateOfBirthPicker.setTooltip(null);
+        statusComboBox.setTooltip(null);
+        clusterField.setTooltip(null);
+        clusterDetailsField.setTooltip(null);
     }
 
     /**
@@ -229,7 +254,7 @@ public class EnrollmentController extends FXController {
                         municipalityField.getText(),
                         postalCodeField.getText(),
                         guardian,
-                        null,
+                        clusterField.getText(), // Pass cluster name
                         currentSchoolYear);
 
                 // Handle student-guardian relationship
@@ -239,9 +264,8 @@ public class EnrollmentController extends FXController {
                 // Show success notification
                 Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
                 successAlert.setTitle("Success");
-                successAlert.setHeaderText("Enrollment Successful");
-                successAlert.setContentText("Student has been successfully enrolled!\n\nStudent ID: " + nextStudentId +
-                        "\nName: " + firstNameField.getText() + " " + lastNameField.getText());
+                successAlert.setHeaderText(null);
+                successAlert.setContentText("Student Successfully Enrolled");
 
                 // Style the alert buttons
                 Button okButton = (Button) successAlert.getDialogPane().lookupButton(ButtonType.OK);
@@ -269,83 +293,25 @@ public class EnrollmentController extends FXController {
     private boolean validateFields() {
         boolean isValid = true;
 
-        // Validate required fields
-        if (ValidationUtils.isTextFieldEmpty(firstNameField)) {
-            ValidationUtils.setErrorStyle(firstNameField);
-            isValid = false;
-        }
-        if (ValidationUtils.isTextFieldEmpty(lastNameField)) {
-            ValidationUtils.setErrorStyle(lastNameField);
-            isValid = false;
-        }
-        if (ValidationUtils.isTextFieldEmpty(streetField)) {
-            ValidationUtils.setErrorStyle(streetField);
-            isValid = false;
-        }
-        if (ValidationUtils.isTextFieldEmpty(cityField)) {
-            ValidationUtils.setErrorStyle(cityField);
-            isValid = false;
-        }
-        if (ValidationUtils.isTextFieldEmpty(municipalityField)) {
-            ValidationUtils.setErrorStyle(municipalityField);
-            isValid = false;
-        }
-        if (ValidationUtils.isTextFieldEmpty(barangayField)) {
-            ValidationUtils.setErrorStyle(barangayField);
-            isValid = false;
-        }
+        // Clear any existing tooltips first
+        clearAllTooltips();
+
+        // Validate required fields with immediate tooltip display
+        isValid &= ValidationUtils.validateRequiredWithTooltip(firstNameField);
+        isValid &= ValidationUtils.validateRequiredWithTooltip(lastNameField);
+        isValid &= ValidationUtils.validateRequiredWithTooltip(cityField);
+        isValid &= ValidationUtils.validateRequiredWithTooltip(municipalityField);
 
         // Validate optional fields with specific formats
-        if (!ValidationUtils.isTextFieldEmpty(emailField) && !ValidationUtils.isValidEmail(emailField.getText())) {
-            ValidationUtils.setErrorStyle(emailField);
-            isValid = false;
-        }
-        if (!ValidationUtils.isTextFieldEmpty(contactNumberField)
-                && !ValidationUtils.isValidPhoneNumber(contactNumberField.getText())) {
-            ValidationUtils.setErrorStyle(contactNumberField);
-            isValid = false;
-        }
-        if (!ValidationUtils.isTextFieldEmpty(postalCodeField)
-                && !ValidationUtils.isValidPostalCode(postalCodeField.getText())) {
-            ValidationUtils.setErrorStyle(postalCodeField);
-            isValid = false;
-        }
-        if (!ValidationUtils.isTextFieldEmpty(fareField) && !ValidationUtils.isValidFare(fareField.getText())) {
-            ValidationUtils.setErrorStyle(fareField);
-            isValid = false;
-        }
-
-        // Validate guardian fields
-        if (ValidationUtils.isTextFieldEmpty(guardianFirstNameField)) {
-            ValidationUtils.setErrorStyle(guardianFirstNameField);
-            isValid = false;
-        }
-        if (ValidationUtils.isTextFieldEmpty(guardianLastNameField)) {
-            ValidationUtils.setErrorStyle(guardianLastNameField);
-            isValid = false;
-        }
-        if (ValidationUtils.isTextFieldEmpty(guardianRelationshipField)) {
-            ValidationUtils.setErrorStyle(guardianRelationshipField);
-            isValid = false;
-        }
-        if (!ValidationUtils.isTextFieldEmpty(guardianContactInfoField)
-                && !ValidationUtils.isValidPhoneNumber(guardianContactInfoField.getText())) {
-            ValidationUtils.setErrorStyle(guardianContactInfoField);
-            isValid = false;
-        }
+        isValid &= ValidationUtils.validateEmailWithTooltip(emailField);
+        isValid &= ValidationUtils.validatePhoneWithTooltip(contactNumberField);
+        isValid &= ValidationUtils.validatePhoneWithTooltip(guardianContactInfoField);
+        isValid &= ValidationUtils.validatePostalWithTooltip(postalCodeField);
 
         // Validate date of birth
-        if (dateOfBirthPicker.getValue() == null) {
-            ValidationUtils.setErrorStyle(dateOfBirthPicker);
-            isValid = false;
-        }
+        isValid &= ValidationUtils.validateDateOfBirthWithTooltip(dateOfBirthPicker);
 
-        // Validate status
-        if (statusComboBox.getValue() == null) {
-            ValidationUtils.setErrorStyle(statusComboBox);
-            isValid = false;
-        }
-
+        // Continue with other validations using the new methods...
         return isValid;
     }
 
@@ -374,6 +340,14 @@ public class EnrollmentController extends FXController {
         guardianRelationshipField.clear();
         guardianContactInfoField.clear();
 
+        // Clear cluster fields
+        clusterField.clear();
+        clusterDetailsField.clear();
+
+        // Clear date picker and reset to default status
+        dateOfBirthPicker.setValue(null);
+        statusComboBox.setValue("Single");
+
         // Reset all styles
         ValidationUtils.resetStyle(firstNameField);
         ValidationUtils.resetStyle(lastNameField);
@@ -386,6 +360,8 @@ public class EnrollmentController extends FXController {
         ValidationUtils.resetStyle(emailField);
         ValidationUtils.resetStyle(contactNumberField);
         ValidationUtils.resetStyle(barangayField);
+        ValidationUtils.resetStyle(dateOfBirthPicker);
+        ValidationUtils.resetStyle(statusComboBox);
 
         // Reset guardian field styles
         ValidationUtils.resetStyle(guardianFirstNameField);
@@ -393,6 +369,10 @@ public class EnrollmentController extends FXController {
         ValidationUtils.resetStyle(guardianLastNameField);
         ValidationUtils.resetStyle(guardianRelationshipField);
         ValidationUtils.resetStyle(guardianContactInfoField);
+
+        // Reset cluster field styles
+        ValidationUtils.resetStyle(clusterField);
+        ValidationUtils.resetStyle(clusterDetailsField);
     }
 
     /**

@@ -44,6 +44,21 @@ public class EnrollmentUtils {
             double fare, String street, String barangay, String city, String municipality,
             String postalCode, Guardian guardian, String clusterName, SchoolYear schoolYear) throws Exception {
 
+        // Handle empty or "" values
+        firstName = "".equals(firstName) ? "" : firstName;
+        middleName = "".equals(middleName) ? "" : middleName;
+        lastName = "".equals(lastName) ? "" : lastName;
+        nameExt = "".equals(nameExt) ? "" : nameExt;
+        email = "".equals(email) ? "" : email;
+        status = "".equals(status) ? "" : status;
+        contact = "".equals(contact) ? "" : contact;
+        street = "".equals(street) ? "" : street;
+        barangay = "".equals(barangay) ? "" : barangay;
+        city = "".equals(city) ? "" : city;
+        municipality = "".equals(municipality) ? "" : municipality;
+        postalCode = "".equals(postalCode) ? "0" : postalCode;
+        clusterName = "".equals(clusterName) ? "" : clusterName;
+
         // Use provided studentId if valid; otherwise generate one.
         int studentIdInt;
         try {

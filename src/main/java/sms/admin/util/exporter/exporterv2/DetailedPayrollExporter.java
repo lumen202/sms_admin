@@ -416,15 +416,14 @@ public class DetailedPayrollExporter {
         // Calculate total days for merging "Time Roll"
         int totalDays = weeks.stream().mapToInt(List::size).sum();
 
-        // Time roll data columns
+        // Time roll data columns setup
         int currentCol = timeRollStartCol;
         int maxDayDigits = String.valueOf(month.lengthOfMonth()).length();
         final int TIME_ROLL_WIDTH = (maxDayDigits + 2) * 256;
 
-        // Set uniform width for time roll columns and style for each cell
-        for (int i = 0; i < totalDays; i++) {
+        // Set uniform width and create cells
+        for (int i = 0; i < Math.max(totalDays, 1); i++) {
             sheet.setColumnWidth(currentCol + i, TIME_ROLL_WIDTH);
-            // Create and style individual cells to maintain borders
             Cell cell1 = headerRow1.createCell(currentCol + i);
             cell1.setCellStyle(headerStyle);
             Cell cell2 = headerRow2.createCell(currentCol + i);
@@ -435,18 +434,52 @@ public class DetailedPayrollExporter {
             cell4.setCellStyle(centerStyle);
         }
 
+        // Handle Time Roll header
+        Cell timeRollCell = headerRow1.createCell(labelCol);
+        timeRollCell.setCellStyle(headerStyle);
+        if (totalDays >= 2) {
+            timeRollCell.setCellValue("TIME ROLL");
+            // Create and style remaining cells
+            for (int c = labelCol + 1; c <= labelCol + totalDays - 1; c++) {
+                Cell cell = headerRow1.getCell(c);
+                if (cell == null) {
+                    cell = headerRow1.createCell(c);
+                }
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Single merge for time roll header
+            try {
+                CellRangeAddress timeRollRegion = new CellRangeAddress(
+                        startRow, startRow,
+                        labelCol, labelCol + totalDays - 1);
+                sheet.addMergedRegion(timeRollRegion);
+            } catch (IllegalStateException e) {
+                System.err.println("Warning: Could not merge time roll header - region may already exist");
+            }
+        } else if (totalDays == 1) {
+            timeRollCell.setCellValue("TIME ROLL");
+        } else {
+            timeRollCell.setCellValue("NO WORKING DAYS");
+        }
+
         // Week headers and day/date entries
-        int weekNum = 1;
+        int weekCounter = 1;
         for (List<LocalDate> week : weeks) {
             if (!week.isEmpty()) {
                 int daysInWeek = week.size();
 
                 // Create and style all cells in the merged region
-                CellRangeAddress weekRegion = new CellRangeAddress(startRow + 1, startRow + 1,
-                        currentCol, currentCol + daysInWeek - 1);
-                sheet.addMergedRegion(weekRegion);
+                if (daysInWeek > 1) {
+                    try {
+                        sheet.addMergedRegion(new CellRangeAddress(startRow + 1, startRow + 1,
+                                currentCol, currentCol + daysInWeek - 1));
+                    } catch (IllegalStateException e) {
+                        System.err.println("Warning: Could not merge week header - region may already exist");
+                    }
+                }
 
-                // Apply style to all cells in merged region
+                // Apply style and set week number
                 for (int c = currentCol; c <= currentCol + daysInWeek - 1; c++) {
                     Cell weekCell = headerRow2.getCell(c);
                     if (weekCell == null) {
@@ -454,14 +487,11 @@ public class DetailedPayrollExporter {
                     }
                     weekCell.setCellStyle(centerStyle);
                 }
+                headerRow2.getCell(currentCol).setCellValue(weekCounter++);
 
-                // Set week number in first cell
-                headerRow2.getCell(currentCol).setCellValue(weekNum++);
-
-                // Create individual day and date cells
+                // Create day and date cells
                 for (int i = 0; i < daysInWeek; i++) {
                     LocalDate date = week.get(i);
-
                     Cell dayNameCell = headerRow3.getCell(currentCol + i);
                     dayNameCell.setCellValue(formatDayName(date));
                     dayNameCell.setCellStyle(centerStyle);
@@ -473,18 +503,6 @@ public class DetailedPayrollExporter {
                 currentCol += daysInWeek;
             }
         }
-
-        // Style Time Roll header cells individually
-        CellRangeAddress timeRollRegion = new CellRangeAddress(startRow, startRow, labelCol, labelCol + totalDays);
-        sheet.addMergedRegion(timeRollRegion);
-        for (int c = labelCol; c <= labelCol + totalDays; c++) {
-            Cell cell = headerRow1.getCell(c);
-            if (cell == null) {
-                cell = headerRow1.createCell(c);
-            }
-            cell.setCellStyle(headerStyle);
-        }
-        headerRow1.getCell(labelCol).setCellValue("TIME ROLL");
 
         // Sub-labels in label column
         Cell weekLabel = headerRow2.createCell(labelCol);
@@ -499,7 +517,7 @@ public class DetailedPayrollExporter {
         dateLabel.setCellValue("Date");
         dateLabel.setCellStyle(centerStyle);
 
-        // Add remaining headers (Total Days, etc.)
+        // Add remaining headers
         addRemainingHeaders(sheet, startRow, currentCol, headerStyle, centerStyle);
     }
 
@@ -627,13 +645,16 @@ public class DetailedPayrollExporter {
             for (LocalDate date : week) {
                 Cell attendanceCell = row.createCell(colNum++);
                 String status = getAttendanceStatus(student, date);
-                attendanceCell.setCellValue(status);
+                // Only set cell value if it's not a holiday
+                if (!status.equals(CommonAttendanceUtil.HOLIDAY_MARK)) {
+                    attendanceCell.setCellValue(status);
+                }
+                attendanceCell.setCellStyle(centerStyle);
                 switch (status) {
                     case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK,
                             CommonAttendanceUtil.HOLIDAY_MARK ->
                         totalDays++;
                 }
-                attendanceCell.setCellStyle(centerStyle);
             }
         }
 

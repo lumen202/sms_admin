@@ -1,9 +1,6 @@
 package sms.admin.app;
 
 import java.io.File;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.security.MessageDigest;
 import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.Base64;
@@ -96,9 +93,19 @@ public class RootController extends FXController {
      */
     @Override
     protected void load_fields() {
-        // Initialize school year list from DataManager
+        // Initialize school year list from DataManager and sort in descending order
         schoolYearList = FXCollections.observableArrayList(
                 DataManager.getInstance().getCollectionsRegistry().getList("SCHOOL_YEAR"));
+
+        // Sort by both yearStart and yearEnd in descending order
+        FXCollections.sort(schoolYearList, (sy1, sy2) -> {
+            int startYearCompare = Integer.compare(sy2.getYearStart(), sy1.getYearStart());
+            if (startYearCompare != 0) {
+                return startYearCompare;
+            }
+            return Integer.compare(sy2.getYearEnd(), sy1.getYearEnd());
+        });
+
         yearComboBox.setItems(SchoolYearUtil.convertToStringList(schoolYearList));
 
         // Set selected month, defaulting to current month if not provided
@@ -109,14 +116,20 @@ public class RootController extends FXController {
         }
         System.out.println("RootController initialized with month: " + selectedMonth);
 
-        // Set initial school year, defaulting to current year or first in list
+        // Set initial school year if provided as parameter, otherwise set current year
+        // if available
         String initialYear = (String) getParameter("selectedYear");
-        if (initialYear == null) {
-            SchoolYear currentYear = SchoolYearUtil.findCurrentYear(schoolYearList);
-            initialYear = currentYear != null ? SchoolYearUtil.formatSchoolYear(currentYear)
-                    : yearComboBox.getItems().get(0);
+        if (initialYear != null) {
+            yearComboBox.setValue(initialYear);
+        } else if (!schoolYearList.isEmpty()) {
+            // Find the current school year based on today's date
+            int currentYear = YearMonth.now().getYear();
+            SchoolYear currentSchoolYear = schoolYearList.stream()
+                    .filter(sy -> sy.getYearStart() <= currentYear && sy.getYearEnd() >= currentYear)
+                    .findFirst()
+                    .orElseGet(() -> schoolYearList.get(0)); // Default to most recent since list is sorted
+            yearComboBox.setValue(SchoolYearUtil.formatSchoolYear(currentSchoolYear));
         }
-        yearComboBox.setValue(initialYear);
         handleStudentButton(); // Load student view by default
     }
 
@@ -501,35 +514,27 @@ public class RootController extends FXController {
         setOverlayVisible(true);
         try {
             SchoolYearDialog dialog = new SchoolYearDialog(null);
-
-            System.out.println("Opening new school year dialog...");
-
             dialog.showAndWait().ifPresent(newSchoolYear -> {
-                System.out.println("Dialog returned school year: " + newSchoolYear);
                 if (newSchoolYear != null) {
-                    // Update UI on JavaFX thread
                     Platform.runLater(() -> {
-                        System.out.println("Refreshing data from database...");
                         DataManager.getInstance().refreshData();
                         List<SchoolYear> updatedList = DataManager.getInstance().getCollectionsRegistry()
                                 .getList("SCHOOL_YEAR");
-                        System.out.println("Found " + updatedList.size() + " school years");
 
                         schoolYearList.clear();
                         schoolYearList.addAll(updatedList);
 
+                        // First update the items in the combo box
                         ObservableList<String> formattedYears = SchoolYearUtil.convertToStringList(schoolYearList);
-                        System.out.println("Formatted years: " + formattedYears);
-                        yearComboBox.setItems(formattedYears);
+                        yearComboBox.getItems().clear();
+                        yearComboBox.getItems().addAll(formattedYears);
 
+                        // Then set the value after a short delay to ensure the items are updated
                         String formattedNewYear = SchoolYearUtil.formatSchoolYear(newSchoolYear);
-                        System.out.println("Setting combo box to: " + formattedNewYear);
-                        yearComboBox.setValue(formattedNewYear);
-
-                        // Verify the value was set
-                        System.out.println("Current combo box value: " + yearComboBox.getValue());
-
-                        updateCurrentController(formattedNewYear);
+                        Platform.runLater(() -> {
+                            yearComboBox.setValue(formattedNewYear);
+                            updateCurrentController(formattedNewYear);
+                        });
                     });
                 }
             });

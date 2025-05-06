@@ -56,3 +56,55 @@
 .secondary-button:hover {
     -fx-background-color: #7f8c8d;
 }
+
+.combo-box {
+    -fx-background-color: white;
+    -fx-text-fill: -sms-primary;
+    -fx-font-size: 13px;
+    -fx-border-color: -sms-primary;
+    -fx-border-width: 1;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: -sms-primary;
+    -fx-background-color: white;
+}
+
+.combo-box:hover {
+    -fx-background-color: derive(white, -5%);
+}
+
+.combo-box .list-view {
+    -fx-background-color: white;
+    -fx-border-color: -sms-primary;
+    -fx-border-width: 1;
+}
+
+.combo-box .list-view .list-cell {
+    -fx-background-color: white;
+    -fx-text-fill: -sms-primary;
+}
+
+.combo-box .list-view .list-cell:hover {
+    -fx-background-color: derive(-sms-primary, 90%);
+}
+
+.combo-box .list-view .list-cell:selected {
+    -fx-background-color: derive(-sms-primary, 80%);
+}
+
+/* Header specific controls */
+.header-combo-box {
+    -fx-background-color: derive(-sms-primary, 30%);
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+.header-combo-box .list-cell {
+    -fx-text-fill: white;
+    -fx-background-color: derive(-sms-primary, 30%);
+}
+
+.header-combo-box:hover {
+    -fx-background-color: derive(-sms-primary, 40%);
+}

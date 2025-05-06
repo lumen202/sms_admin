@@ -54,15 +54,49 @@
 }
 
 .combo-box {
-  -fx-background-color: white;
-  -fx-border-color: #003366;
-  -fx-border-radius: 4;
-  -fx-background-radius: 4;
-  -fx-padding: 4;
-  /* -fx-min-height: 28;
-  -fx-max-height: 28; Adjust combo box to be more compact */
+  -fx-background-color: -sms-primary;
+  -fx-text-fill: white;
+  -fx-font-size: 13px;
+}
+
+.combo-box .list-cell {
+  -fx-text-fill: white;
+  -fx-background-color: -sms-primary;
 }
 
 .combo-box:hover {
-  -fx-border-color: #004080;
+  -fx-background-color: derive(-sms-primary, 20%);
+}
+
+.combo-box .list-view {
+  -fx-background-color: -sms-primary;
+}
+
+.combo-box .list-view .list-cell {
+  -fx-background-color: white;
+  -fx-text-fill: -sms-primary;
+}
+
+.combo-box .list-view .list-cell:hover {
+  -fx-background-color: derive(-sms-primary, 30%);
+}
+
+.combo-box .list-view .list-cell:selected {
+  -fx-background-color: derive(-sms-primary, 80%);
+}
+
+/* Header specific controls */
+.header-combo-box {
+  -fx-background-color: derive(-sms-primary, 30%);
+  -fx-text-fill: white;
+  -fx-font-size: 13px;
+}
+
+.header-combo-box .list-cell {
+  -fx-text-fill: white;
+  -fx-background-color: derive(-sms-primary, 30%);
+}
+
+.header-combo-box:hover {
+  -fx-background-color: derive(-sms-primary, 40%);
 }
