@@ -85,3 +85,8 @@
 2025-04-29 16:28:13.651 [JavaFX Application Thread] WARN  org.apache.poi.xssf.usermodel.XSSFWorkbook - Sheet 'Payroll Report - April 2025 to April 2025' will be added with a trimmed name 'Payroll Report - April 2025 to ' for MS Excel compliance.
 2025-04-29 16:28:25.270 [JavaFX Application Thread] WARN  org.apache.poi.xssf.usermodel.XSSFWorkbook - Sheet 'Payroll Report - April 2025 to April 2025' will be added with a trimmed name 'Payroll Report - April 2025 to ' for MS Excel compliance.
 2025-05-06 10:32:38.197 [JavaFX Application Thread] WARN  org.apache.poi.xssf.usermodel.XSSFWorkbook - Sheet 'Payroll Report - May 2025 to May 2025' will be added with a trimmed name 'Payroll Report - May 2025 to Ma' for MS Excel compliance.
+2025-05-06 15:14:50.013 [JavaFX Application Thread] WARN  com.itextpdf.layout.renderer.TableWidths - Table width is more than expected due to min width of cell(s).
+2025-05-06 15:18:46.656 [JavaFX Application Thread] WARN  com.itextpdf.layout.renderer.TableWidths - Table width is more than expected due to min width of cell(s).
+2025-05-06 15:20:40.789 [JavaFX Application Thread] WARN  com.itextpdf.layout.renderer.TableWidths - Table width is more than expected due to min width of cell(s).
+2025-05-06 15:22:27.702 [JavaFX Application Thread] WARN  com.itextpdf.layout.renderer.TableWidths - Table width is more than expected due to min width of cell(s).
+2025-05-06 15:24:06.113 [JavaFX Application Thread] WARN  com.itextpdf.layout.renderer.TableWidths - Table width is more than expected due to min width of cell(s).

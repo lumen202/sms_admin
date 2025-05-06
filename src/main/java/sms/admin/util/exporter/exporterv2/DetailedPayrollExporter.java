@@ -131,7 +131,7 @@ public class DetailedPayrollExporter {
             CellStyle formStyle = workbook.createCellStyle();
             Font formFont = workbook.createFont();
             formFont.setBold(false);
-            formFont.setFontHeightInPoints((short) 9);
+            formFont.setFontHeightInPoints((short) 11);
             formStyle.setFont(formFont);
             formStyle.setAlignment(HorizontalAlignment.LEFT);
             formCell.setCellStyle(formStyle);
@@ -323,11 +323,11 @@ public class DetailedPayrollExporter {
             for (AttendanceLog log : studentLogs) {
                 String status = CommonAttendanceUtil.computeAttendanceStatus(log);
                 switch (status) {
-                    case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK,
-                            CommonAttendanceUtil.HOLIDAY_MARK ->
+                    case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK ->
                         totalDays += 1.0;
                     case CommonAttendanceUtil.HALF_DAY_MARK ->
                         totalDays += 0;
+                    // Holiday is treated as absent by default since it's not included in the switch
                 }
             }
             return totalDays;
@@ -440,7 +440,7 @@ public class DetailedPayrollExporter {
         if (totalDays >= 2) {
             timeRollCell.setCellValue("TIME ROLL");
             // Create and style remaining cells
-            for (int c = labelCol + 1; c <= labelCol + totalDays - 1; c++) {
+            for (int c = labelCol + 1; c < timeRollStartCol + totalDays; c++) {
                 Cell cell = headerRow1.getCell(c);
                 if (cell == null) {
                     cell = headerRow1.createCell(c);
@@ -452,7 +452,7 @@ public class DetailedPayrollExporter {
             try {
                 CellRangeAddress timeRollRegion = new CellRangeAddress(
                         startRow, startRow,
-                        labelCol, labelCol + totalDays - 1);
+                        labelCol, timeRollStartCol + totalDays - 1);
                 sheet.addMergedRegion(timeRollRegion);
             } catch (IllegalStateException e) {
                 System.err.println("Warning: Could not merge time roll header - region may already exist");
@@ -645,14 +645,10 @@ public class DetailedPayrollExporter {
             for (LocalDate date : week) {
                 Cell attendanceCell = row.createCell(colNum++);
                 String status = getAttendanceStatus(student, date);
-                // Only set cell value if it's not a holiday
-                if (!status.equals(CommonAttendanceUtil.HOLIDAY_MARK)) {
-                    attendanceCell.setCellValue(status);
-                }
+                attendanceCell.setCellValue(status);
                 attendanceCell.setCellStyle(centerStyle);
                 switch (status) {
-                    case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK,
-                            CommonAttendanceUtil.HOLIDAY_MARK ->
+                    case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK ->
                         totalDays++;
                 }
             }
@@ -738,21 +734,21 @@ public class DetailedPayrollExporter {
         // First certification
         Cell cert1 = certRow.createCell(0);
         cert1.setCellValue(
-                "1. I HEREBY CERTIFY on my official oath to the correctness of the above roll.\n" +
-                        "Payment is hereby approved from the appropriation indicated.");
+                "   1. I HEREBY CERTIFY on my official oath to the correctness of the above roll.\n" +
+                        "   Payment is hereby approved from the appropriation indicated.");
         cert1.setCellStyle(certStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, 0, cert1Width - 1));
 
         // Second certification
         Cell cert2 = certRow.createCell(cert1Width);
-        cert2.setCellValue("2. APPROVED");
+        cert2.setCellValue("    2. APPROVED");
         cert2.setCellStyle(certStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, cert1Width, cert1Width + cert2Width - 1));
 
         // Third certification
         Cell cert3 = certRow.createCell(cert1Width + cert2Width);
         cert3.setCellValue(
-                "3. I HEREBY CERTIFY on my official oath that I have this ___ day of ____ paid in cash to each man whose name appears on the above roll, the amount set opposite his name, he having presented himself, established his identity and affixed his signature or thumbmark on the space provided therefor.");
+                "   3. I HEREBY CERTIFY on my official oath that I have this ___ day of ____ paid in cash to each man whose name appears on the above roll, the amount set opposite his name, he having presented himself, established his identity and affixed his signature or thumbmark on the space provided therefor.");
         cert3.setCellStyle(certStyle);
         sheet.addMergedRegion(new CellRangeAddress(startRow, startRow, cert1Width + cert2Width, totalColumns));
 
@@ -806,9 +802,9 @@ public class DetailedPayrollExporter {
         noteRow.setHeight((short) (40 * 20));
         Cell note = noteRow.createCell(0);
         note.setCellValue(
-                "*NOTE: Where thumbmark is to be used in place of signature, and the space available is not sufficient, the thumbmark may be impressed on the back hereof with proper indication of the corresponding student's number and on the corresponding line on the payroll\n"
+                "   *NOTE: Where thumbmark is to be used in place of signature, and the space available is not sufficient, the thumbmark may be impressed on the back hereof with proper indication of the corresponding student's number and on the corresponding line on the payroll\n"
                         +
-                        "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0or remark 'see thumbmark on the back' should be written.");
+                        "   \u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0or remark 'see thumbmark on the back' should be written.");
         CellStyle noteStyle = sheet.getWorkbook().createCellStyle();
         noteStyle.cloneStyleFrom(certStyle);
         noteStyle.setWrapText(true);

@@ -341,7 +341,7 @@ public class StudentProfileController extends FXController {
             barangayField.setText(addr.getBarangay());
             cityField.setText(addr.getCity());
             municipalityField.setText(addr.getMunicipality());
-            zipCodeField.setText(String.valueOf(addr.getZipCode()));
+            zipCodeField.setText(addr.getZipCode() == 0 ? "" : String.valueOf(addr.getZipCode()));
         }, () -> {
             streetAddressField.clear();
             barangayField.clear();

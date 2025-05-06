@@ -275,6 +275,7 @@ public class PayrollController extends FXController {
     /**
      * Calculates total attendance days for a student in the selected month.
      * Uses DetailedPayrollExporter for consistent calculations.
+     * Treats holidays as absent days.
      * 
      * @param student Student to calculate days for
      * @return Total number of days present (including half days)
@@ -514,8 +515,7 @@ public class PayrollController extends FXController {
                 String status = CommonAttendanceUtil.computeAttendanceStatus(log);
                 switch (status) {
                     case CommonAttendanceUtil.PRESENT_MARK,
-                            CommonAttendanceUtil.EXCUSED_MARK,
-                            CommonAttendanceUtil.HOLIDAY_MARK ->
+                            CommonAttendanceUtil.EXCUSED_MARK ->
                         totalDays += 1.0;
                     case CommonAttendanceUtil.HALF_DAY_MARK -> totalDays += 0.5;
                 }

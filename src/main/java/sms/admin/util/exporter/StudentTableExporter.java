@@ -14,12 +14,22 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.colors.DeviceRgb;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
+import com.itextpdf.io.font.constants.StandardFonts;
 import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class StudentTableExporter extends BaseTableExporter<Student> {
 
@@ -41,8 +51,8 @@ public class StudentTableExporter extends BaseTableExporter<Student> {
     @Override
     public List<String> getHeaders() {
         return Arrays.asList(
-                "ID", "First Name", "Last Name", "Middle Name",
-                "Extension", "Cluster", "Contact", "Email");
+                "Timestamp", "Email", "FirstName", "MiddleName", "LastName",
+                "Address", "Cluster", "Contact");
     }
 
     /**
@@ -54,15 +64,18 @@ public class StudentTableExporter extends BaseTableExporter<Student> {
      */
     @Override
     public List<String> getRowData(Student student) {
+        // Get current timestamp in desired format
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("M/d/yyyy HH:mm:ss"));
+
         return Arrays.asList(
-                String.valueOf(student.getStudentID()),
+                timestamp,
+                student.getEmail(),
                 student.getFirstName(),
-                student.getLastName(),
                 student.getMiddleName(),
-                student.getNameExtension(),
+                student.getLastName(),
                 student.getClusterID().getClusterName(),
-                student.getContact(),
-                student.getEmail());
+                student.getContact());
     }
 
     /**
@@ -148,35 +161,6 @@ public class StudentTableExporter extends BaseTableExporter<Student> {
     }
 
     /**
-     * Writes the core PDF content: title and a table with headers and row data.
-     *
-     * @param document the PDF Document to populate
-     * @param items    the data rows to write
-     * @param title    the document title
-     */
-    protected void writeBasicPdf(Document document, ObservableList<Student> items, String title) {
-        document.add(new Paragraph(title));
-
-        List<String> headers = getHeaders();
-        Table table = new Table(headers.size());
-
-        // Add header cells
-        for (String header : headers) {
-            table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(header)));
-        }
-
-        // Add data cells
-        for (Student item : items) {
-            List<String> rowData = getRowData(item);
-            for (String value : rowData) {
-                table.addCell(new com.itextpdf.layout.element.Cell().add(new Paragraph(value)));
-            }
-        }
-
-        document.add(table);
-    }
-
-    /**
      * Writes the core CSV content: title, blank line, headers, and row data.
      *
      * @param writer the PrintWriter to write CSV data to
@@ -184,15 +168,135 @@ public class StudentTableExporter extends BaseTableExporter<Student> {
      * @param title  the CSV title
      */
     protected void writeBasicCsv(PrintWriter writer, ObservableList<Student> items, String title) {
-        writer.println(title);
-        writer.println();
-
+        // Skip title and blank line for this format
         List<String> headers = getHeaders();
         writer.println(String.join(",", headers));
 
         for (Student item : items) {
             List<String> rowData = getRowData(item);
-            writer.println(String.join(",", rowData));
+            // Properly escape and quote values
+            String row = rowData.stream()
+                    .map(value -> {
+                        if (value == null)
+                            value = "";
+                        // Quote values containing commas or quotes
+                        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+                            return "\"" + value.replace("\"", "\"\"") + "\"";
+                        }
+                        return value;
+                    })
+                    .collect(Collectors.joining(","));
+            writer.println(row);
+        }
+    }
+
+    /**
+     * Writes the core PDF content: title, headers, rows, and summary footer.
+     *
+     * @param document the iText PDF Document to add content to
+     * @param items    the data rows to write
+     * @param title    the PDF title
+     */
+    protected void writeBasicPdf(Document document, ObservableList<Student> items, String title) {
+        try {
+            // Set document margins (further reduced)
+            document.setMargins(25, 25, 25, 25); // Reduced from 30 to 25
+
+            // Set up fonts
+            PdfFont headerFont = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+            PdfFont normalFont = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+
+            // Add title with smaller font
+            Paragraph titlePara = new Paragraph(title)
+                    .setFont(headerFont)
+                    .setFontSize(12) // Reduced from 14
+                    .setTextAlignment(TextAlignment.CENTER)
+                    .setMarginBottom(8); // Reduced from 10
+            document.add(titlePara);
+
+            // Add timestamp with smaller font
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy h:mm a"));
+            Paragraph datePara = new Paragraph("Generated on: " + timestamp)
+                    .setFont(normalFont)
+                    .setFontSize(7) // Reduced from 8
+                    .setTextAlignment(TextAlignment.RIGHT)
+                    .setMarginBottom(8); // Reduced from 10
+            document.add(datePara);
+
+            // Further optimized column widths
+            float[] columnWidths = new float[] {
+                    6, // ID (reduced)
+                    12, // First Name
+                    12, // Last Name
+                    12, // Middle Name
+                    6, // Extension (reduced)
+                    24, // Cluster (increased for better readability)
+                    14, // Contact
+                    14 // Email
+            };
+
+            Table table = new Table(UnitValue.createPercentArray(columnWidths))
+                    .setWidth(UnitValue.createPercentValue(100))
+                    .setMarginBottom(8)
+                    .setFontSize(7) // Reduced from 8
+                    .setAutoLayout();
+
+            // Style headers
+            DeviceRgb headerBgColor = new DeviceRgb(0, 51, 102);
+            List<String> headers = getHeaders();
+            for (String header : headers) {
+                table.addHeaderCell(
+                        new com.itextpdf.layout.element.Cell()
+                                .setBackgroundColor(headerBgColor)
+                                .setFontColor(ColorConstants.WHITE)
+                                .setFont(headerFont)
+                                .setFontSize(7) // Reduced from 8
+                                .setPadding(2) // Reduced from 3
+                                .add(new Paragraph(header))
+                                .setKeepTogether(true));
+            }
+
+            // Add data with smaller font and padding
+            DeviceRgb altRowColor = new DeviceRgb(240, 240, 240);
+            boolean alternate = false;
+
+            for (Student item : items) {
+                List<String> rowData = getRowData(item);
+                for (String value : rowData) {
+                    com.itextpdf.layout.element.Cell cell = new com.itextpdf.layout.element.Cell()
+                            .setFont(normalFont)
+                            .setFontSize(7) // Reduced from 8
+                            .setPadding(2) // Reduced from 3
+                            .setKeepTogether(true);
+
+                    if (alternate) {
+                        cell.setBackgroundColor(altRowColor);
+                    }
+
+                    Paragraph cellContent = new Paragraph(value)
+                            .setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.LEFT);
+
+                    cell.add(cellContent);
+                    table.addCell(cell);
+                }
+                alternate = !alternate;
+            }
+
+            // Enable table splitting across pages
+            table.setKeepTogether(false);
+
+            // Add summary footer
+            Paragraph summary = new Paragraph(String.format("Total Students: %d", items.size()))
+                    .setFont(headerFont)
+                    .setFontSize(8) // Reduced from 9
+                    .setTextAlignment(TextAlignment.RIGHT)
+                    .setMarginTop(6); // Reduced from 8
+
+            document.add(table);
+            document.add(summary);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating PDF: " + e.getMessage(), e);
         }
     }
 }

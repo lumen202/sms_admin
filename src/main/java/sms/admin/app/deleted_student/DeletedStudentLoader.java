@@ -16,7 +16,8 @@ public class DeletedStudentLoader extends FXLoader {
     public void load() {
         try {
             Scene scene = new Scene(root);
-            scene.getStylesheets().add(getClass().getResource("/sms/admin/app/deleted_student/deleted_student.css").toExternalForm());
+            scene.getStylesheets()
+                    .add(getClass().getResource("/sms/admin/app/deleted_student/deleted_student.css").toExternalForm());
             Stage stage = new Stage();
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.setTitle("Deleted Students");
@@ -33,6 +34,10 @@ public class DeletedStudentLoader extends FXLoader {
             }
 
             DeletedStudentController controller = loader.getController();
+            // Pass the selected year to the controller
+            if (params != null && params.containsKey("selectedYear")) {
+                controller.getYearComboBox().setValue((String) params.get("selectedYear"));
+            }
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();

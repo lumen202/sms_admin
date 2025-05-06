@@ -35,6 +35,10 @@ public class DeletedStudentController extends FXController {
     @FXML
     private ComboBox<String> yearComboBox;
 
+    public ComboBox<String> getYearComboBox() {
+        return yearComboBox;
+    }
+
     private Stage stage;
     private ObservableList<SchoolYear> schoolYearList;
     private ObservableList<Student> masterStudentList = FXCollections.observableArrayList();

@@ -44,20 +44,20 @@ public class EnrollmentUtils {
             double fare, String street, String barangay, String city, String municipality,
             String postalCode, Guardian guardian, String clusterName, SchoolYear schoolYear) throws Exception {
 
-        // Handle empty or "" values
-        firstName = "".equals(firstName) ? "" : firstName;
-        middleName = "".equals(middleName) ? "" : middleName;
-        lastName = "".equals(lastName) ? "" : lastName;
-        nameExt = "".equals(nameExt) ? "" : nameExt;
-        email = "".equals(email) ? "" : email;
-        status = "".equals(status) ? "" : status;
-        contact = "".equals(contact) ? "" : contact;
-        street = "".equals(street) ? "" : street;
-        barangay = "".equals(barangay) ? "" : barangay;
-        city = "".equals(city) ? "" : city;
-        municipality = "".equals(municipality) ? "" : municipality;
-        postalCode = "".equals(postalCode) ? "0" : postalCode;
-        clusterName = "".equals(clusterName) ? "" : clusterName;
+        // Use values as-is, handle null values
+        firstName = firstName == null ? "" : firstName;
+        middleName = middleName == null ? "" : middleName;
+        lastName = lastName == null ? "" : lastName;
+        nameExt = nameExt == null ? "" : nameExt;
+        email = email == null ? "" : email;
+        status = status == null ? "" : status;
+        contact = contact == null ? "" : contact;
+        street = street == null ? "" : street;
+        barangay = barangay == null ? "" : barangay;
+        city = city == null ? "" : city;
+        municipality = municipality == null ? "" : municipality;
+        postalCode = postalCode == null ? "0" : postalCode;
+        clusterName = clusterName == null ? "" : clusterName;
 
         // Use provided studentId if valid; otherwise generate one.
         int studentIdInt;
@@ -141,33 +141,37 @@ public class EnrollmentUtils {
      * enrollment parameters.
      */
     public static Student enrollStudentFromCsv(CsvStudent csvStudent, SchoolYear schoolYear) throws Exception {
-        // Generate a new student ID once here.
         int studentId;
         synchronized (STUDENT_ID_LOCK) {
             studentId = generateNextStudentId();
         }
-        // Parse address components from CSV.
-        String[] addressParts = parseAddress(csvStudent.getAddress(), csvStudent);
+
+        // Clean CSV data - convert empty/whitespace strings to null
+        String firstName = cleanCsvField(csvStudent.getFirstName());
+        String middleName = cleanCsvField(csvStudent.getMiddleName());
+        String lastName = cleanCsvField(csvStudent.getLastName());
+        String nameExt = cleanCsvField(csvStudent.getNameExtension());
+        String email = cleanCsvField(csvStudent.getEmail());
+        String contact = cleanCsvField(csvStudent.getContact());
+        String cluster = cleanCsvField(csvStudent.getCluster());
+
+        // Parse address components from CSV with null handling
+        String[] addressParts = parseAddress(cleanCsvField(csvStudent.getAddress()), csvStudent);
 
         return enrollStudent(
-                String.valueOf(studentId), // pass the generated ID
-                csvStudent.getFirstName(),
-                csvStudent.getMiddleName(),
-                csvStudent.getLastName(),
-                csvStudent.getNameExtension(),
-                csvStudent.getEmail(),
-                "Active",
-                csvStudent.getContact(),
-                new Date(),
+                String.valueOf(studentId),
+                firstName, middleName, lastName, nameExt,
+                email, "Active", contact, new Date(),
                 0.0,
-                addressParts[0], // street
-                addressParts[1], // barangay
-                addressParts[2], // city
-                addressParts[3], // municipality
-                "0", // postalCode (adjust as needed)
-                null, // guardian is not included in CSV
-                csvStudent.getCluster(),
-                schoolYear);
+                addressParts[0], addressParts[1], addressParts[2], addressParts[3],
+                "0", null, cluster, schoolYear);
+    }
+
+    private static String cleanCsvField(String field) {
+        if (field == null)
+            return null;
+        field = field.replaceAll("^\"|\"$", "").trim();
+        return field.isEmpty() ? null : field;
     }
 
     /**
@@ -191,18 +195,20 @@ public class EnrollmentUtils {
      * Updated parser for CSV address.
      */
     private static String[] parseAddress(String address, CsvStudent csvStudent) {
-        if (address == null || address.trim().isEmpty()) {
-            return new String[] { "", "", "", "" };
+        address = emptyToNull(address);
+        if (address == null) {
+            return new String[] { null, null, null, null };
         }
+
         if (address.contains(",")) {
             String[] parts = address.split(",");
             for (int i = 0; i < parts.length; i++) {
-                parts[i] = parts[i].trim();
+                parts[i] = emptyToNull(parts[i]);
             }
             String street, barangay, city, municipality;
             if (parts.length == 2) {
                 String part0 = parts[0];
-                int idx = part0.toLowerCase().indexOf("brgy");
+                int idx = part0 != null ? part0.toLowerCase().indexOf("brgy") : -1;
                 if (idx != -1) {
                     String[] tokens = part0.split("\\s+");
                     int foundIndex = -1;
@@ -213,61 +219,63 @@ public class EnrollmentUtils {
                         }
                     }
                     if (foundIndex != -1) {
-                        street = foundIndex > 0 ? String.join(" ", java.util.Arrays.copyOfRange(tokens, 0, foundIndex))
-                                : "";
-                        barangay = String.join(" ", java.util.Arrays.copyOfRange(tokens, foundIndex, tokens.length));
+                        street = foundIndex > 0
+                                ? emptyToNull(String.join(" ", java.util.Arrays.copyOfRange(tokens, 0, foundIndex)))
+                                : null;
+                        barangay = emptyToNull(
+                                String.join(" ", java.util.Arrays.copyOfRange(tokens, foundIndex, tokens.length)));
                     } else {
-                        street = part0;
-                        barangay = "";
+                        street = emptyToNull(part0);
+                        barangay = null;
                     }
                 } else {
-                    street = part0;
-                    barangay = "";
+                    street = emptyToNull(part0);
+                    barangay = null;
                 }
-                String[] cm = parts[1].split("\\s+");
+                String[] cm = parts[1] != null ? parts[1].split("\\s+") : new String[0];
                 if (cm.length >= 2) {
-                    city = cm[0];
-                    municipality = cm[1];
+                    city = emptyToNull(cm[0]);
+                    municipality = emptyToNull(cm[1]);
                 } else {
-                    city = parts[1];
-                    municipality = "";
+                    city = emptyToNull(parts[1]);
+                    municipality = null;
                 }
             } else if (parts.length == 3) {
-                String first = parts[0].toLowerCase();
+                String first = parts[0] != null ? parts[0].toLowerCase() : "";
                 if (first.contains("st") || first.contains("street") || first.contains("ave")) {
-                    street = parts[0];
+                    street = emptyToNull(parts[0]);
                     String middle = parts[1];
-                    municipality = parts[2];
-                    int idx = middle.indexOf("Brgy.");
+                    municipality = emptyToNull(parts[2]);
+                    int idx = middle != null ? middle.indexOf("Brgy.") : -1;
                     if (idx != -1) {
-                        barangay = middle.substring(0, idx + "Brgy.".length()).trim();
-                        city = middle.substring(idx + "Brgy.".length()).trim();
+                        barangay = emptyToNull(middle.substring(0, idx + "Brgy.".length()).trim());
+                        city = emptyToNull(middle.substring(idx + "Brgy.".length()).trim());
                     } else {
-                        String[] tokens = middle.split("\\s+", 2);
+                        String[] tokens = middle != null ? middle.split("\\s+", 2) : new String[0];
                         if (tokens.length == 2) {
-                            barangay = tokens[0].trim();
-                            city = tokens[1].trim();
+                            barangay = emptyToNull(tokens[0].trim());
+                            city = emptyToNull(tokens[1].trim());
                         } else {
-                            barangay = middle;
-                            city = "";
+                            barangay = emptyToNull(middle);
+                            city = null;
                         }
                     }
                 } else {
-                    street = "";
-                    barangay = parts[0];
-                    city = parts[1];
-                    municipality = parts[2];
+                    street = null;
+                    barangay = emptyToNull(parts[0]);
+                    city = emptyToNull(parts[1]);
+                    municipality = emptyToNull(parts[2]);
                 }
             } else if (parts.length >= 4) {
-                street = parts[0];
-                barangay = parts[1];
-                city = parts[2];
-                municipality = parts[3];
+                street = emptyToNull(parts[0]);
+                barangay = emptyToNull(parts[1]);
+                city = emptyToNull(parts[2]);
+                municipality = emptyToNull(parts[3]);
             } else {
-                street = address;
-                barangay = "";
-                city = "";
-                municipality = "";
+                street = emptyToNull(address);
+                barangay = null;
+                city = null;
+                municipality = null;
             }
             return new String[] {
                     truncateString(street, MAX_STREET_LENGTH),
@@ -279,7 +287,7 @@ public class EnrollmentUtils {
             String[] tokens = address.trim().split("\\s+");
             if (tokens.length == 4 && tokens[0].equalsIgnoreCase("Barangay")) {
                 return new String[] {
-                        "", // street is empty
+                        null, // street is empty
                         tokens[0] + " " + tokens[1],
                         tokens[2],
                         tokens[3]
@@ -293,20 +301,28 @@ public class EnrollmentUtils {
                 };
             } else if (tokens.length == 3) {
                 return new String[] {
-                        "", // street is empty
+                        null, // street is empty
                         tokens[0],
                         tokens[1],
                         tokens[2]
                 };
             } else {
-                return new String[] { address.trim(), "", "", "" };
+                return new String[] { emptyToNull(address.trim()), null, null, null };
             }
         }
     }
 
+    private static String emptyToNull(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return null;
+        }
+        return str.trim();
+    }
+
     private static String truncateString(String str, int maxLength) {
+        str = emptyToNull(str);
         if (str == null) {
-            return "";
+            return ""; // For DB compatibility we still return "" here
         }
         return str.length() > maxLength ? str.substring(0, maxLength) : str;
     }

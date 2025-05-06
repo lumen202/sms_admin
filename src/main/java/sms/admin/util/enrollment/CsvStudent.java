@@ -36,33 +36,44 @@ public class CsvStudent {
      * @param data the raw CSV row data as an array of strings
      */
     public CsvStudent(String[] data) {
-        setTimestamp(data[0].trim());
-        setEmail(data[1].trim());
-        setFirstName(data[2].trim());
-        setMiddleName(data[3].trim());
+        setTimestamp(trimToNull(data[0]));
+        setEmail(trimToNull(data[1]));
+        setFirstName(trimToNull(data[2]));
+        setMiddleName(trimToNull(data[3]));
 
         // Parse last name and optional name extension
-        String rawLastName = data[4].trim();
-        String[] tokens = rawLastName.split("\\s+");
-        if (tokens.length > 1 && KNOWN_EXTENSIONS.contains(tokens[tokens.length - 1])) {
-            setLastName(String.join(" ", Arrays.copyOf(tokens, tokens.length - 1)).trim());
-            setNameExtension(tokens[tokens.length - 1].trim());
-        } else {
-            setLastName(rawLastName);
+        String rawLastName = trimToNull(data[4]);
+        if (rawLastName != null) {
+            String[] tokens = rawLastName.split("\\s+");
+            if (tokens.length > 1 && KNOWN_EXTENSIONS.contains(tokens[tokens.length - 1])) {
+                setLastName(String.join(" ", Arrays.copyOf(tokens, tokens.length - 1)).trim());
+                setNameExtension(tokens[tokens.length - 1].trim());
+            } else {
+                setLastName(rawLastName);
+            }
         }
 
         // Clean up address string
-        String rawAddress = data[5].trim()
-                .replace("\"", "")
-                .replace(" ,", ",")
-                .replace(", ", ",");
-        while (rawAddress.endsWith(",")) {
-            rawAddress = rawAddress.substring(0, rawAddress.length() - 1).trim();
+        String rawAddress = trimToNull(data[5]);
+        if (rawAddress != null) {
+            rawAddress = rawAddress.replace("\"", "")
+                    .replace(" ,", ",")
+                    .replace(", ", ",");
+            while (rawAddress.endsWith(",")) {
+                rawAddress = rawAddress.substring(0, rawAddress.length() - 1).trim();
+            }
         }
         setAddress(rawAddress);
 
-        setCluster(data[6].trim());
-        setContact(data[7].trim());
+        setCluster(trimToNull(data[6]));
+        setContact(trimToNull(data[7]));
+    }
+
+    // Add helper method
+    private String trimToNull(String str) {
+        if (str == null) return null;
+        str = str.trim();
+        return str.isEmpty() ? null : str;
     }
 
     /**

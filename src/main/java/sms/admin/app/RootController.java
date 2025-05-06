@@ -580,7 +580,7 @@ public class RootController extends FXController {
         try {
             DeletedStudentLoader loader = new DeletedStudentLoader();
             loader.addParameter("OWNER_WINDOW", contentPane.getScene().getWindow());
-            loader.addParameter("SELECTED_YEAR", yearComboBox.getValue());
+            loader.addParameter("selectedYear", yearComboBox.getValue());
             loader.load();
             handleMenuItemCompletion();
         } catch (Exception e) {
