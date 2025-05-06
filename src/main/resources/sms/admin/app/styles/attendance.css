@@ -1,0 +1,57 @@
+.attendance-table {
+    -fx-border-width: 1 1 1 0;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-border-color: #ddd;
+    -fx-background-color: white;
+}
+
+.attendance-table .column-header {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #ddd;
+    -fx-padding: 10px;
+    -fx-font-weight: bold;
+}
+
+.attendance-table .present {
+    -fx-text-fill: #2e7d32;
+}
+
+.attendance-table .absent {
+    -fx-text-fill: #c62828;
+}
+
+.attendance-table .excused {
+    -fx-text-fill: #1565c0;
+}
+
+.attendance-table .half-day {
+    -fx-text-fill: #f57c00;
+}
+
+/* Export Button Styles */
+.attendance-export-button {
+    -fx-background-color: maroon;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.attendance-export-button .label {
+    -fx-text-fill: white;
+}
+
+.attendance-export-button .menu-item {
+    -fx-background-color: white;
+}
+
+.attendance-export-button .menu-item .label {
+    -fx-text-fill: #333333;
+}
+
+.attendance-export-button .menu-item:hover {
+    -fx-background-color: maroon;
+}
+
+.attendance-export-button .menu-item:hover .label {
+    -fx-text-fill: white;
+}

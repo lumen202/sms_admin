@@ -1,0 +1,52 @@
+/* Base Colors */
+* {
+    -sms-primary: #003366;
+    -sms-secondary: #800000;
+    -sms-background: #f8f9fa;
+    -sms-border: #dee2e6;
+    -sms-accent: #ffd700;
+}
+
+/* Header */
+.main-header {
+    -fx-background-color: -sms-primary;
+    -fx-padding: 10px;
+}
+
+.app-title {
+    -fx-font-size: 25px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+/* Navigation */
+.nav-bar {
+    -fx-background-color: -sms-secondary;
+    -fx-padding: 8px;
+    -fx-spacing: 10px;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 8 15;
+}
+
+.nav-button:hover {
+    -fx-background-color: derive(-sms-secondary, 20%);
+}
+
+/* Content Area */
+.content-area {
+    -fx-background-color: white;
+    -fx-padding: 20px;
+}
+
+/* Status Bar */
+.status-bar {
+    -fx-background-color: -sms-background;
+    -fx-padding: 8px;
+    -fx-border-color: -sms-border;
+    -fx-border-width: 1 0 0 0;
+}

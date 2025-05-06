@@ -1,0 +1,58 @@
+.dialog-pane {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.5, 0.0, 0.0);
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-padding: 20px;
+}
+
+.dialog-header {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2C3E50;
+}
+
+.dialog-content {
+    -fx-background-color: white;
+    -fx-spacing: 20;
+}
+
+.modal-pane {
+    -fx-background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-dialog {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 0);
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-padding: 15;
+}
+
+.profile-dialog {
+    -fx-background-color: white;
+    -fx-background-radius: 5;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 0);
+}
+
+.header-section {
+    -fx-padding: 10;
+    -fx-background-color: #f5f5f5;
+    -fx-background-radius: 5;
+}
+
+.section-pane {
+    -fx-background-color: white;
+}
+
+.dialog-button {
+    -fx-background-color: #2196F3;
+    -fx-text-fill: white;
+    -fx-padding: 8 16;
+    -fx-cursor: hand;
+}
+
+.dialog-button:hover {
+    -fx-background-color: #1976D2;
+}
+

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox styleClass="dialog-pane" stylesheets="@school-year-dialog.css" spacing="15" 
+      xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="sms.admin.app.schoolyear.SchoolYearDialogController">
+    <padding>
+        <Insets topRightBottomLeft="20"/>
+    </padding>
+    
+    <Label fx:id="headerLabel" styleClass="dialog-header"/>
+    
+    <GridPane hgap="10" vgap="10" styleClass="dialog-content">
+        <Label text="Start Year:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="startYearCombo" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+        
+        <Label text="Start Month:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="startMonthCombo" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        
+        <Label text="End Year:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="endYearCombo" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+        
+        <Label text="End Month:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="endMonthCombo" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+    </GridPane>
+    
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button fx:id="cancelButton" text="Cancel" styleClass="cancel-button" 
+                onAction="#handleCancel"/>
+        <Button fx:id="saveButton" text="Save" styleClass="primary-button" 
+                onAction="#handleSave" defaultButton="true"/>
+    </HBox>
+</VBox>

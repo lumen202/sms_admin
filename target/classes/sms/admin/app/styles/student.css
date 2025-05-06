@@ -1,0 +1,65 @@
+/* Search Section */
+.search-section {
+    -fx-background-color: white;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 1);
+}
+
+.search-field {
+    -fx-background-radius: 20px;
+    -fx-padding: 8px 15px;
+    -fx-prompt-text-fill: #95a5a6;
+}
+
+/* Student Table */
+.student-table {
+    -fx-background-color: transparent;
+    -fx-border-color: -sms-border;
+    -fx-border-radius: 5px;
+}
+
+.student-table .column-header {
+    -fx-background-color: -sms-primary;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.student-table .table-row-cell:odd {
+    -fx-background-color: derive(-sms-background, 5%);
+}
+
+.student-table .table-row-cell:even {
+    -fx-background-color: white;
+}
+
+/* Export Button Styles */
+.student-export-button {
+    -fx-background-color: maroon;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.student-export-button:hover {
+    -fx-background-color: derive(maroon, 10%);
+}
+
+.student-export-button .label {
+    -fx-text-fill: white;
+}
+
+.student-export-button .menu-item {
+    -fx-background-color: white;
+}
+
+.student-export-button .menu-item .label {
+    -fx-text-fill: -sms-primary;
+}
+
+.student-export-button .menu-item:hover {
+    -fx-background-color: maroon;
+}
+
+.student-export-button .menu-item:hover .label {
+    -fx-text-fill: white;
+}
