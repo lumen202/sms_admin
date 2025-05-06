@@ -645,7 +645,8 @@ public class DetailedPayrollExporter {
             for (LocalDate date : week) {
                 Cell attendanceCell = row.createCell(colNum++);
                 String status = getAttendanceStatus(student, date);
-                attendanceCell.setCellValue(status);
+                // Set cell value as blank if it's a holiday
+                attendanceCell.setCellValue(status.equals(CommonAttendanceUtil.HOLIDAY_MARK) ? "" : status);
                 attendanceCell.setCellStyle(centerStyle);
                 switch (status) {
                     case CommonAttendanceUtil.PRESENT_MARK, CommonAttendanceUtil.EXCUSED_MARK ->
