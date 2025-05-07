@@ -367,6 +367,9 @@ public class AttendanceController extends FXController {
         attendanceTable.setItems(studentList);
         attendanceTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
+        // Add CSS class for styling
+        attendanceTable.getStyleClass().add("attendance-table");
+
         // Initial style application
         Platform.runLater(() -> attendanceTable.refresh());
     }
@@ -476,7 +479,7 @@ public class AttendanceController extends FXController {
         col.setMinWidth(width);
         col.setPrefWidth(width);
         if (CommonAttendanceUtil.isHolidayDate(date)) {
-            col.setStyle("-fx-background-color: lightcoral; -fx-alignment: CENTER;");
+            col.setStyle("-fx-alignment: CENTER;");
         } else {
             col.setStyle("-fx-alignment: CENTER;");
         }
@@ -496,20 +499,21 @@ public class AttendanceController extends FXController {
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 setGraphic(null);
+                getStyleClass().removeAll("holiday");
+                setStyle(null); // Clear any inline styles
+
                 if (empty || getTableRow() == null || getTableRow().getItem() == null) {
                     setText(null);
                     setContextMenu(null);
                 } else if (date.isAfter(LocalDate.now())) {
                     setText("-");
-                    setStyle("-fx-text-fill: #999999; -fx-alignment: CENTER;");
-                    setContextMenu(null);
+                    setStyle("-fx-text-fill: #999999;");
                 } else {
                     setText(item);
                     if (CommonAttendanceUtil.HOLIDAY_MARK.equals(item)) {
-                        setStyle("-fx-background-color: lightcoral; -fx-alignment: CENTER;");
-                    } else {
-                        setStyle("-fx-alignment: CENTER;");
+                        getStyleClass().addAll("holiday", "table-cell");
                     }
+
                     // Create context menu
                     ContextMenu menu = new ContextMenu();
                     MenuItem viewItem = new MenuItem("View Attendance Log");

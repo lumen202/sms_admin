@@ -29,6 +29,16 @@
     -fx-text-fill: #f57c00;
 }
 
+.attendance-table .holiday {
+    -fx-text-fill: #c62828;
+    -fx-font-weight: bold;
+}
+
+.attendance-table .table-cell.holiday {
+    -fx-text-fill: #c62828;
+    -fx-font-weight: bold;
+}
+
 /* Export Button Styles */
 .attendance-export-button {
     -fx-background-color: maroon;
