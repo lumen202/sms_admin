@@ -13,6 +13,9 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import javafx.util.Duration;
+
+import java.net.URL;
+
 import dev.sol.core.application.loader.FXLoader;
 import sms.admin.app.attendance.model.AttendanceSettings;
 
@@ -47,34 +50,94 @@ public class AttendanceSettingsDialogLoader extends FXLoader {
     @Override
     public void load() {
         try {
-            // Create a transparent stage for the dialog
-            Stage stage = new Stage(StageStyle.TRANSPARENT);
-            stage.initModality(Modality.APPLICATION_MODAL);
-            Window owner = (Window) getParameter("OWNER_STAGE");
-            if (owner != null) {
-                stage.initOwner(owner);
-                applyOwnerStageEffects((Stage) owner, stage);
-            }
+            // Create and configure scene
+            Scene scene = createAndConfigureScene();
 
-            // Configure and set the scene
-            Scene scene = new Scene(root);
-            scene.setFill(Color.TRANSPARENT);
+            // Create and configure stage
+            Stage stage = createAndConfigureStage();
             stage.setScene(scene);
 
-            // Get and configure the controller
-            controller = loader.getController();
-            controller.setStage(stage);
-            String currentMonth = (String) getParameter("CURRENT_MONTH");
-            controller.setSettings(settings, currentMonth);
+            // Initialize controller
+            initializeController(stage);
 
-            // Position the dialog and apply entrance animation
-            positionStageRelativeToOwner(stage, (Stage) owner);
-            applyEnterAnimation(stage);
+            // Position and show dialog
+            positionAndShowDialog(stage);
 
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to load settings dialog", e);
         }
+    }
+
+    /**
+     * Creates and configures the scene for the dialog.
+     *
+     * @return The configured Scene instance.
+     */
+    private Scene createAndConfigureScene() {
+        Scene scene = new Scene(root);
+        scene.setFill(Color.TRANSPARENT);
+
+        // Add required stylesheets
+        String[] stylesheets = {
+                "/sms/admin/assets/styles/skins/primer_light.css",
+                "/sms/admin/app/attendance/dialog/attendance-settings-dialog.css"
+        };
+
+        for (String stylesheet : stylesheets) {
+            URL resource = getClass().getResource(stylesheet);
+            if (resource != null) {
+                scene.getStylesheets().add(resource.toExternalForm());
+            } else {
+                System.err.println("Could not find stylesheet: " + stylesheet);
+            }
+        }
+
+        return scene;
+    }
+
+    /**
+     * Creates and configures the stage for the dialog.
+     *
+     * @return The configured Stage instance.
+     */
+    private Stage createAndConfigureStage() {
+        Stage stage = new Stage(StageStyle.TRANSPARENT);
+        stage.initModality(Modality.APPLICATION_MODAL);
+        Window owner = (Window) getParameter("OWNER_STAGE");
+        if (owner != null) {
+            stage.initOwner(owner);
+            applyOwnerStageEffects((Stage) owner, stage);
+        }
+        return stage;
+    }
+
+    /**
+     * Initializes the controller for the dialog.
+     *
+     * @param stage The stage associated with the dialog.
+     */
+    private void initializeController(Stage stage) {
+        controller = loader.getController();
+        if (controller != null) {
+            controller.setStage(stage);
+            String currentMonth = (String) getParameter("CURRENT_MONTH");
+            controller.setSettings(settings, currentMonth);
+        }
+    }
+
+    /**
+     * Positions the dialog stage relative to the owner stage and shows it.
+     *
+     * @param stage The dialog stage to position and show.
+     */
+    private void positionAndShowDialog(Stage stage) {
+        Window owner = stage.getOwner();
+        if (owner instanceof Stage ownerStage) {
+            positionStageRelativeToOwner(stage, ownerStage);
+        }
+        applyEnterAnimation(stage);
+        stage.show();
     }
 
     /**

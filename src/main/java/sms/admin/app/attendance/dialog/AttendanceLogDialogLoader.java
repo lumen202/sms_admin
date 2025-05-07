@@ -3,6 +3,7 @@ package sms.admin.app.attendance.dialog;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.net.URL;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.Student;
 import dev.sol.core.application.loader.FXLoader;
@@ -93,8 +94,23 @@ public class AttendanceLogDialogLoader extends FXLoader {
             configureStageDimensions(stage);
             Scene scene = new Scene(root);
             scene.setFill(Color.TRANSPARENT);
+
+            // Add required stylesheets
+            String[] stylesheets = {
+                "/sms/admin/assets/styles/skins/primer_light.css",
+                "/sms/admin/app/attendance/dialog/attendance-log-dialog.css"
+            };
+
+            for (String stylesheet : stylesheets) {
+                URL resource = getClass().getResource(stylesheet);
+                if (resource != null) {
+                    scene.getStylesheets().add(resource.toExternalForm());
+                } else {
+                    System.err.println("Could not find stylesheet: " + stylesheet);
+                }
+            }
+
             stage.setScene(scene);
-            loadStyles(scene);
 
             // Get and validate the controller
             controller = loader.getController();
@@ -139,17 +155,6 @@ public class AttendanceLogDialogLoader extends FXLoader {
         stage.setHeight(DIALOG_HEIGHT);
         stage.setMinWidth(MIN_WIDTH);
         stage.setMinHeight(MIN_HEIGHT);
-    }
-
-    /**
-     * Loads the CSS styles for the dialog scene.
-     *
-     * @param scene The scene to apply styles to.
-     */
-    private void loadStyles(Scene scene) {
-        scene.getStylesheets().add(getClass()
-                .getResource("/sms/admin/app/attendance/dialog/attendance-log-dialog.css")
-                .toExternalForm());
     }
 
     /**

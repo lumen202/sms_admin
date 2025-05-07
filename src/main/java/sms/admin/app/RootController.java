@@ -44,6 +44,7 @@ import javafx.scene.layout.StackPane;
 import javafx.stage.DirectoryChooser;
 import sms.admin.app.attendance.AttendanceController;
 import sms.admin.app.attendance.AttendanceLoader;
+import sms.admin.app.attendance_tool.AttendanceToolLoader;
 import sms.admin.app.deleted_student.DeletedStudentLoader;
 import sms.admin.app.payroll.PayrollController;
 import sms.admin.app.payroll.PayrollLoader;
@@ -83,6 +84,8 @@ public class RootController extends FXController {
     private MenuItem editSchoolYearMenuItem; // Menu item to edit the current school year
     @FXML
     private MenuItem deletedStudentMenuItem; // Menu item to view deleted students
+    @FXML
+    private MenuItem attendanceToolMenuItem; // Menu item to access attendance tools
 
     private ObservableList<SchoolYear> schoolYearList; // List of school years
     private String selectedMonth; // Selected month for filtering data
@@ -161,6 +164,7 @@ public class RootController extends FXController {
         newSchoolYearMenuItem.setOnAction(event -> handleNewSchoolYear());
         editSchoolYearMenuItem.setOnAction(event -> handleEditSchoolYear());
         deletedStudentMenuItem.setOnAction(event -> handleDeletedStudentMenuItem());
+        attendanceToolMenuItem.setOnAction(event -> handleAttendanceToolMenuItem());
     }
 
     /**
@@ -581,6 +585,23 @@ public class RootController extends FXController {
             DeletedStudentLoader loader = new DeletedStudentLoader();
             loader.addParameter("OWNER_WINDOW", contentPane.getScene().getWindow());
             loader.addParameter("selectedYear", yearComboBox.getValue());
+            loader.load();
+            handleMenuItemCompletion();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    public void handleAttendanceToolMenuItem() {
+        try {
+            AttendanceToolLoader loader = new AttendanceToolLoader();
+            loader.addParameter("OWNER_WINDOW", contentPane.getScene().getWindow());
+            loader.addParameter("selectedYear", yearComboBox.getValue());
+            // Pass the current controller if it's an attendance view
+            if (currentController instanceof AttendanceController) {
+                loader.addParameter("ATTENDANCE_CONTROLLER", currentController);
+            }
             loader.load();
             handleMenuItemCompletion();
         } catch (Exception e) {

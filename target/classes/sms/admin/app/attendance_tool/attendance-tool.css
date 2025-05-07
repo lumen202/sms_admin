@@ -1,0 +1,147 @@
+/* Base Colors */
+* {
+  -sms-primary: #003366;
+  -sms-primary-light: #004d99;
+  -sms-primary-dark: #002147;
+  -sms-secondary: #800000;
+  -sms-secondary-light: #b30000;
+  -sms-secondary-dark: #660000;
+  -sms-background: #f8f9fa;
+  -sms-border: #dee2e6;
+  -sms-accent: #ffd700;
+}
+
+/* Header Styles */
+.header-box {
+  -fx-background-color: linear-gradient(to right, -sms-secondary, -sms-primary);
+  -fx-padding: 16px;
+}
+
+.title-bar {
+  -fx-padding: 20px;
+  -fx-spacing: 10;
+}
+
+.header-date {
+  -fx-font-family: "Segoe UI";
+  -fx-font-size: 32px;
+  -fx-text-fill: white;
+  -fx-font-weight: bold;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 5, 0, 0, 2);
+  -fx-letter-spacing: 1px;
+}
+
+.header-time {
+  -fx-font-family: "Segoe UI";
+  -fx-font-size: 21px;
+  -fx-text-fill: -sms-accent;
+  -fx-font-weight: bold;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 4, 0, 0, 1);
+  -fx-letter-spacing: 0.5px;
+}
+
+.label-field {
+  -fx-text-fill: white;
+  -fx-font-size: 14px;
+}
+
+/* Content Area */
+.content-box {
+  -fx-padding: 15px;
+  -fx-background-color: white;
+  -fx-border-color: -sms-secondary-light;
+  -fx-border-width: 0 0 2 0;
+  -fx-effect: dropshadow(gaussian, derive(-sms-secondary, 70%), 4, 0, 0, 0);
+}
+
+/* Table Styles */
+.main-table {
+  -fx-background-color: white;
+  -fx-border-color: -sms-primary-light;
+  -fx-border-width: 1px;
+  -fx-border-radius: 4px;
+}
+
+.main-table .column-header {
+  -fx-background-color: transparent;  /* Remove background color */
+  -fx-text-fill: -sms-secondary;
+  -fx-font-weight: bold;
+  -fx-padding: 10px;
+  -fx-border-color: -sms-border;  /* Add subtle border */
+  -fx-border-width: 0 0 1 0;  /* Only bottom border */
+  -fx-alignment: CENTER; /* Add this line to center column headers */
+}
+
+.main-table .column-header .label {
+  -fx-alignment: CENTER; /* Add this line to center header labels */
+}
+
+.main-table .table-row-cell:selected {
+  -fx-background-color: derive(-sms-secondary, 95%);
+}
+
+.id-column {
+  -fx-alignment: CENTER;
+}
+
+/* Action Buttons */
+.action-button {
+  -fx-background-radius: 4px;
+  -fx-min-width: 100px;
+  -fx-min-height: 32px;
+  -fx-font-weight: bold;
+  -fx-cursor: hand;
+  -fx-background-color: -sms-secondary;
+  -fx-text-fill: white;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 3, 0, 0, 1);
+}
+
+.action-button:hover {
+  -fx-background-color: -sms-secondary-light;
+}
+
+.login-button {
+  -fx-background-color: -sms-primary;
+}
+
+.login-button:hover {
+  -fx-background-color: -sms-primary-light;
+}
+
+.logout-button {
+  -fx-background-color: linear-gradient(
+    to bottom right,
+    -sms-secondary-light,
+    -sms-secondary
+  );
+  -fx-text-fill: white;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 3, 0, 0, 1);
+}
+
+.logout-button:hover {
+  -fx-background-color: linear-gradient(
+    to bottom right,
+    -sms-secondary,
+    -sms-secondary-dark
+  );
+}
+
+.logout-button:pressed {
+  -fx-background-color: -sms-secondary-dark;
+}
+
+/* Search Field */
+.search-field {
+  -fx-pref-width: 200px;
+  -fx-background-color: white;
+  -fx-background-radius: 4px;
+  -fx-border-color: -sms-secondary-light;
+  -fx-border-radius: 4px;
+  -fx-padding: 6px;
+}
+
+.search-field:focused {
+  -fx-border-color: -sms-secondary;
+  -fx-border-width: 2px;
+  -fx-effect: dropshadow(gaussian, derive(-sms-secondary, 70%), 4, 0, 0, 0);
+}

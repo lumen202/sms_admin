@@ -43,6 +43,8 @@
                      <MenuItem fx:id="generateKeyMenuItem" text="Generate QR Key Code" />
                      <MenuItem fx:id="deletedStudentMenuItem" mnemonicParsing="false"
                         text="Deleted Student" />
+                     <MenuItem fx:id="attendanceToolMenuItem" mnemonicParsing="false"
+                        text="Attendance Tool" />
                   </items>
                   <graphic>
                      <FontIcon iconLiteral="mdi2m-menu" iconSize="24" styleClass="menu-icon" />

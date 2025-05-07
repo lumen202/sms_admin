@@ -9,6 +9,8 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import dev.sol.core.application.loader.FXLoader;
 
+import java.net.URL;
+
 /**
  * Loader for the payroll export dialog, responsible for initializing and
  * displaying the dialog.
@@ -52,20 +54,33 @@ public class PayrollExportDialogLoader extends FXLoader {
                 applyOwnerStageEffects((Stage) owner, stage);
             }
 
-            // Configure the scene
+            // Configure scene with both stylesheets
             Scene scene = new Scene(root);
             scene.setFill(Color.TRANSPARENT);
-            stage.setScene(scene);
-            stage.sizeToScene(); // Adjust stage size to fit content
 
-            // Initialize the controller
+            // Add required stylesheets
+            String[] stylesheets = {
+                    "/sms/admin/assets/styles/skins/primer_light.css",
+                    "/sms/admin/app/payroll/dialog/payroll-export-dialog.css"
+            };
+
+            for (String stylesheet : stylesheets) {
+                URL resource = getClass().getResource(stylesheet);
+                if (resource != null) {
+                    scene.getStylesheets().add(resource.toExternalForm());
+                } else {
+                    System.err.println("Could not find stylesheet: " + stylesheet);
+                }
+            }
+
+            stage.setScene(scene);
+            stage.sizeToScene();
+
+            // Initialize controller
             controller = loader.getController();
             controller.setStage(stage);
             controller.initData(currentYear, currentMonth, exportType);
 
-            System.out.println("Export dialog loaded successfully for export type: " + exportType);
-
-            // Show the dialog and wait for it to close
             stage.showAndWait();
 
         } catch (Exception e) {

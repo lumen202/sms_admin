@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane stylesheets="@../../../../assets/styles/skins/primer_light.css,@attendance-tool.css" xmlns="http://javafx.com/javafx/19"
+    xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="sms.admin.app.attendance_tool.AttendanceToolController">
+    <top>
+        <VBox styleClass="header-box">
+            <VBox alignment="CENTER" styleClass="title-bar">
+                <Label fx:id="dateLabel" styleClass="header-date" />
+                <Label fx:id="timeLabel" styleClass="header-time" />
+            </VBox>
+            <HBox alignment="CENTER_LEFT" spacing="10" styleClass="toolbar">
+                <padding>
+                    <Insets bottom="2" left="10" right="10" top="2" />
+                </padding>
+                <HBox alignment="CENTER_LEFT" spacing="10" styleClass="search-box">
+                    <Label styleClass="label-field" text="School Year:" />
+                    <ComboBox fx:id="yearComboBox" prefHeight="25.0" prefWidth="126.0" />
+                </HBox>
+                <TextField fx:id="searchField" prefHeight="25.0" prefWidth="178.0"
+                    promptText="Search students..." styleClass="search-field" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="timeOutAllButton" onAction="#handleTimeOutAll"
+                    styleClass="action-button, logout-button" text="Time-out All" />
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="5" styleClass="content-box">
+            <TableView fx:id="tableView" styleClass="main-table" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="idColumn" prefWidth="120.0" text="Student ID" />
+                    <TableColumn fx:id="nameColumn" prefWidth="300.0" text="Student Name" />
+                    <TableColumn fx:id="timeColumn" prefWidth="180.0" text="Last Action" />
+                    <TableColumn fx:id="actionColumn" prefWidth="150.0" text="Time In/Out" />
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                </columnResizePolicy>
+            </TableView>
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox styleClass="status-bar">
+            <padding>
+                <Insets bottom="5" left="10" right="10" top="5" />
+            </padding>
+            <Label fx:id="statusLabel" text="Ready" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label fx:id="totalStudentsLabel" />
+        </HBox>
+    </bottom>
+</BorderPane>

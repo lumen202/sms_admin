@@ -722,4 +722,14 @@ public class AttendanceController extends FXController {
             });
         }
     }
+
+    /**
+     * Refreshes the attendance view by reloading the data
+     */
+    public void refreshView() {
+        Platform.runLater(() -> {
+            DataManager.getInstance().refreshData();
+            attendanceTable.refresh();
+        });
+    }
 }
