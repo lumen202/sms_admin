@@ -112,8 +112,8 @@ public class App extends FXApplication {
     private void clearCollections() {
         FXCollectionsRegister collectionsRegistry = DataManager.getInstance().getCollectionsRegistry();
         String[] knownCollections = {
-            "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
-            "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG", "SETTINGS"
+                "CLUSTER", "SCHOOL_YEAR", "STUDENT", "GUARDIAN",
+                "STUDENT_GUARDIAN", "ADDRESS", "ATTENDANCE_RECORD", "ATTENDANCE_LOG", "SETTINGS"
         };
 
         for (String key : knownCollections) {

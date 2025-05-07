@@ -293,7 +293,7 @@ public class AttendanceToolController extends FXController {
     private void handleAttendanceAction(StudentAttendance studentAttendance) {
         try {
             LocalDateTime now = LocalDateTime.now();
-            boolean isPM = now.getHour() >= 12;
+            boolean isPM = now.getHour() >= 13; // Changed from 12 to 13 (1 PM)
             int currentTime = now.getHour() * 100 + now.getMinute();
 
             Student student = findStudentById(studentAttendance.getStudentId());
@@ -323,9 +323,10 @@ public class AttendanceToolController extends FXController {
                     attendanceLogs.add(log);
                 } else {
                     // Update existing log with time in only
-                    if (isPM && log.getTimeInPM() == 0) {
+                    if (isPM) {
                         log.setTimeInPM(currentTime);
-                    } else if (!isPM && log.getTimeInAM() == 0) {
+                        log.setTimeOutAM(0); // Clear any incorrect AM timeout
+                    } else {
                         log.setTimeInAM(currentTime);
                     }
                     AttendanceLogDAO.update(log);

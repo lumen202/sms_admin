@@ -1,8 +1,6 @@
 package sms.admin.app.payroll;
 
 import java.io.File;
-import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -43,8 +41,6 @@ import sms.admin.app.payroll.dialog.PayrollExportDialogController;
 import sms.admin.app.payroll.dialog.PayrollExportDialogLoader;
 import sms.admin.util.attendance.CommonAttendanceUtil;
 import sms.admin.util.datetime.DateTimeUtils;
-import sms.admin.util.exporter.StudentTableExporter;
-import sms.admin.util.exporter.TableDataProvider;
 import sms.admin.util.exporter.exporterv2.DetailedPayrollExporter;
 
 /**
@@ -75,8 +71,6 @@ public class PayrollController extends FXController {
     @FXML
     private MenuButton exportButton;
     @FXML
-    private MenuItem exportCsv;
-    @FXML
     private MenuItem exportDetailedExcel;
     @FXML
     private RadioButton oneWayRadio;
@@ -102,8 +96,6 @@ public class PayrollController extends FXController {
     /** Current academic year in format "YYYY-YYYY" */
     private String currentYear;
 
-    private TableDataProvider<Student> exporter;
-
     /**
      * Initializes the controller and loads initial data.
      * Sets up the UI components and default values.
@@ -126,7 +118,6 @@ public class PayrollController extends FXController {
             yearMonthComboBox.setValue(yearMonthComboBox.getItems().get(0));
         }
 
-        exporter = new StudentTableExporter(); // Initialize exporter
         setupTable();
         updateTotalAmount();
     }
@@ -330,7 +321,6 @@ public class PayrollController extends FXController {
             updateRootController(newValue);
         });
 
-        exportCsv.setOnAction(event -> handleExport("csv"));
         exportDetailedExcel.setOnAction(event -> handleExport("xlsx"));
 
         fareTypeGroup.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
@@ -342,10 +332,10 @@ public class PayrollController extends FXController {
     }
 
     /**
-     * Handles the export process for different file formats.
-     * Supports CSV and Excel (XLSX) exports with date range selection.
+     * Handles the export process for Excel file format.
+     * Supports Excel (XLSX) exports with date range selection.
      * 
-     * @param type Export file type ("csv" or "xlsx")
+     * @param type Export file type ("xlsx")
      */
     private void handleExport(String type) {
         try {
@@ -385,16 +375,10 @@ public class PayrollController extends FXController {
                 String title = String.format("Payroll Report - %s",
                         currentMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")));
 
-                if ("xlsx".equals(type)) {
-                    DetailedPayrollExporter detailedExporter = new DetailedPayrollExporter(currentMonth, currentMonth,
-                            attendanceLog);
-                    detailedExporter.setFareMultiplier(getFareMultiplier());
-                    detailedExporter.exportToExcel(payrollTable, title, file.getAbsolutePath());
-                } else {
-                    try (PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
-                        exporter.writeDataToCsv(writer, payrollTable.getItems(), title);
-                    }
-                }
+                DetailedPayrollExporter detailedExporter = new DetailedPayrollExporter(currentMonth, currentMonth,
+                        attendanceLog);
+                detailedExporter.setFareMultiplier(getFareMultiplier());
+                detailedExporter.exportToExcel(payrollTable, title, file.getAbsolutePath());
 
                 currentMonth = currentMonth.plusMonths(1);
             }

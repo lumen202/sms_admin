@@ -35,7 +35,6 @@
                   <MenuButton fx:id="exportButton" prefHeight="35.0" prefWidth="90.0" styleClass="payroll-export-button" text="Export">
                      <items>
                         <MenuItem fx:id="exportDetailedExcel" text="Excel" />
-                        <MenuItem fx:id="exportCsv" text="CSV" />
                      </items>
                   </MenuButton>
                </HBox>
